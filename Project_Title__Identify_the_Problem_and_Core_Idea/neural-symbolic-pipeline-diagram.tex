@@ -1,0 +1,27 @@
+% Vector rendering of neural-symbolic-pipeline.excalidraw for the proposal.
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners=3pt, line width=0.7pt,
+    align=center, font=\small, inner sep=7pt},
+  flow/.style={-{Stealth[length=2mm]}, line width=0.7pt},
+  label/.style={font=\footnotesize, fill=white, inner sep=2pt}
+]
+\node[font=\small] (input) {Input};
+\node[box, fill=blue!7, below=5mm of input, text width=38mm] (gemmini)
+  {\textbf{Gemmini}\\Neural Inference};
+\node[box, fill=orange!10, below=10mm of gemmini, text width=65mm] (interface)
+  {\textbf{Neural--Symbolic Interface}\\[3pt]
+   \begin{tabular}{@{}l@{}}
+   -- representation conversion\\
+   -- compact encoding\\
+   -- FIFO / double buffering\\
+   -- delta transfers\\
+   -- producer--consumer overlap
+   \end{tabular}};
+\node[box, fill=green!7, below=10mm of interface, text width=38mm] (sat)
+  {\textbf{SAT-Accel}\\Symbolic Solver};
+\node[font=\small, below=5mm of sat] (output) {Output};
+\draw[flow] (input) -- (gemmini);
+\draw[flow] (gemmini) -- node[label, right] {neural outputs} (interface);
+\draw[flow] (interface) -- node[label, right] {symbolic constraints} (sat);
+\draw[flow] (sat) -- (output);
+\end{tikzpicture}
