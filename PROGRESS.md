@@ -32,7 +32,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 | Stage | Scope | Status | Commit |
 |---|---|---|---|
 | 0 | Repo scaffolding, local env, SAT-Accel submodule, server inventory, ESP clone (the toolchain is preinstalled on the server) | **Done** (2026-10-16) | see `git log` |
-| 1 | Sudoku CNF, dataset, int8 LeNet + score traces, NVDLA compiler flow, pysat reference | **Local part done. NVDLA compile on torino pending.** | |
+| 1 | Sudoku CNF, dataset, int8 LeNet + score traces, NVDLA compiler flow, pysat reference | **Done** (2026-10-16) | see `git log` |
 | 2 | Standalone SAT-Accel image builder + byte-exact golden test; SAT-Accel software emulation on the server | not started | |
 | 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | not started | |
 
@@ -73,21 +73,39 @@ With ESP's weights, the output for `seven.pgm` is `[0,2,0,0,0,0,0,124,0,0]`, ide
 
 The exit criterion (float ≥ 99% and int8 within 0.5% of float) passes.
 
-### NVDLA compiler on torino (in progress)
-- **Setup.** `NV_NVDLA/sw` submodule at `4c02fb4351efb43b3490c5720f21fd6d32f8abaa`. The prebuilt x86 `nvdla_compiler` runs on RHEL 8 with `LD_LIBRARY_PATH=$NVC`, where `NVC=~/esp/accelerators/third-party/NV_NVDLA/sw/prebuilt/x86-ubuntu`; `libnvdla_compiler.so` lives there.
-- **Options.** `--profile`, `--cprecision fp16|int8`, `--configtarget`, `--calibtable`, `--quantizationMode per-kernel|per-filter` (default per-kernel), `--informat ncxhwx|nchw|nhwc` (default nhwc). Pass `-h`; `--help` is rejected.
-- **The compiler is deterministic.** `nchw` and `ncxhwx` give the same md5. This means ESP's loadable can be reproduced exactly once we have its options.
+### NVDLA compiler on torino
+**Reproduce:** on torino, run `cd ~/ReasonLink && bash workload/nvdla_compile.sh`. It recompiles ESP's model and checks the md5, then compiles ours to `build/nvdla/rl_lenet.nvdla`.
 
-**Attempts to reproduce ESP's `lenet_mnist.nvdla` (md5 `9831533f…`, 445,736 B), all int8 on nv_small:**
+**Setup:**
+- `NV_NVDLA/sw` submodule at `4c02fb4351efb43b3490c5720f21fd6d32f8abaa`.
+- The prebuilt x86 `nvdla_compiler` runs on RHEL 8. It needs `LD_LIBRARY_PATH=$NVC` to find `libnvdla_compiler.so`, where `NVC=~/esp/accelerators/third-party/NV_NVDLA/sw/prebuilt/x86-ubuntu`.
 
-| `--informat` | `--quantizationMode` | md5 | Notes |
+**Options:**
+- `--profile`, `--cprecision fp16|int8`, `--configtarget`, `--calibtable`
+- `--quantizationMode per-kernel|per-filter` (default per-kernel)
+- `--informat ncxhwx|nchw|nhwc` (default nhwc)
+- Use `-h` for help; `--help` is rejected.
+
+**Quirk.** `--calibtable` with an absolute path fails with a rapidjson `fp_ != 0` assertion. Copy the inputs into the working directory and pass bare file names.
+
+**The compiler is deterministic** (the same flags always give the same md5).
+
+**Reproducing ESP's `lenet_mnist.nvdla`** (md5 `9831533f…`, 445,736 B), all int8 on nv_small:
+
+| `--quantizationMode` | `--informat` | md5 | Notes |
 |---|---|---|---|
-| nhwc (default) | per-kernel (default) | `727b01dc…` (446,096 B) | warns: input treated as 4-channel A8B8G8R8 |
-| nchw | per-kernel | `e4d6150c…` | |
-| ncxhwx | per-kernel | `e4d6150c…` | |
+| **per-filter** | **nchw** | **`9831533f…` = ESP's loadable, byte for byte** | |
+| per-filter | nhwc | `d51c8f3b…` | warns: input treated as 4-channel A8B8G8R8 |
+| per-kernel (default) | nchw / ncxhwx | `e4d6150c…` | |
+| per-kernel (default) | nhwc (default) | `727b01dc…` (446,096 B) | warns: 4-channel input |
 
-- **Emulator hint.** Per-channel weight scales reproduce ESP's `124`; per-tensor scales give `125`. So ESP's loadable was likely built with `per-filter`. Next attempt: per-filter × {nchw, nhwc}.
-- **Our model.** `models/rl_lenet/` is not compiled yet. The scp transfer failed, so torino now gets the repo by cloning the `p1` branch from GitHub.
+So ESP built its demo with `--quantizationMode per-filter --informat nchw`. Our emulator already used per-output-channel weight scales: with them it reproduces ESP's `124`, whereas per-tensor scales give `125`.
+
+**Our classifier loadable.** `rl_lenet.nvdla` was compiled with the same flags: **445,736 B, md5 `eb4c08138cee008fcb65e0cb828863b5`** (2026-10-16). It is a build output under `build/` (gitignored) and can be regenerated with the script above. It is ready to run with `nvdla_runtime --loadable rl_lenet.nvdla --image <cell>.pgm --rawdump` once NVDLA runs on ESP, after P1.
+
+**Not yet verified:**
+- `nvdla_runtime` output for `rl_lenet.nvdla` against our emulator. That needs NVDLA running, either on the board or in an ESP simulation with Linux.
+- Whether softmax runs as a CPU emulator task. The compiler log only shows `mark prob` (the output marker).
 
 ### Sudoku workload
 - **Encoding (`sudoku_cnf.py`).** Variables are numbered `var = 81r + 9c + d`, cell-major. The extended encoding gives **729 vars and 11,988 clauses** (324 at-least-one clauses plus 11,664 binary clauses), with 26,244 literal occurrences. The base formula is identical for every puzzle; the givens are unit literals.
