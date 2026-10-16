@@ -9,7 +9,6 @@
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{xcolor}
-\usepackage{flushend}
 \usepackage[hyphens]{url}
 \usepackage[hidelinks]{hyperref}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
@@ -30,7 +29,7 @@ P1 Milestone $\mid$ Due October 19, 2026, 11:59 PM ET}}
 \pagestyle{plain}
 
 \noindent\textbf{Repository:} \url{https://github.com/AaronCherian404/ReasonLink}\\
-All numbers below are reproducible from the repository (raw per-run data in \texttt{results/p1/}); \texttt{PROGRESS.md} logs every step, decision, and command.
+All numbers below are reproducible from the repository (raw per-run data in \texttt{results/p1/}); \texttt{PROGRESS.md} logs every step, decision, and command, and Appendix~\ref{app:steps} lists the steps to reproduce them.
 
 % =====================================================================
 \section{Summary and Platform Change}
@@ -185,6 +184,99 @@ After P2 & Delta transfers and overlap; SAT-Accel on ESP; VCU118 runs when the b
 \end{center}
 
 \noindent\textbf{Team contributions.} \fillme{Who did what for P1.}
+
+\appendices
+\section{Reproduction Steps}
+\label{app:steps}
+Every step taken for P1, in order. Commands run from the repository root unless noted. Steps A1--A4 and C1--C2 need a machine with the ESP platform (our server); B1--B4 run on any Linux or WSL machine.
+
+\subsection*{A. ESP server: one-time setup}
+\noindent\emph{A1. Inventory} (OS, CAD tools, licenses, RISC-V toolchain):
+{\scriptsize
+\begin{verbatim}
+bash env/server_probe.sh
+\end{verbatim}
+}
+\noindent\emph{A2. ESP, pinned, with only the NVDLA software:}
+{\scriptsize
+\begin{verbatim}
+git clone https://github.com/sld-columbia/esp.git ~/esp
+cd ~/esp && git checkout 2026.1.0
+git submodule update --init \
+    accelerators/third-party/NV_NVDLA/sw
+\end{verbatim}
+}
+\noindent\emph{A3. This repository} (the server receives code through git):
+{\scriptsize
+\begin{verbatim}
+git clone https://github.com/AaronCherian404/\
+ReasonLink.git ~/ReasonLink
+cd ~/ReasonLink
+git submodule update --init third_party/minisat
+\end{verbatim}
+}
+\noindent\emph{A4. Keep it current} before each server step: \texttt{git pull}.
+
+\subsection*{B. Local: workload, image, baselines}
+\noindent\emph{B1. Environment} (venv at \texttt{\textasciitilde/venvs/reasonlink}):
+{\scriptsize
+\begin{verbatim}
+bash env/setup_wsl.sh
+source ~/venvs/reasonlink/bin/activate
+\end{verbatim}
+}
+\noindent\emph{B2. Classifier and workload} (Stage 1):
+{\scriptsize
+\begin{verbatim}
+bash workload/fetch_esp_lenet.sh
+python workload/nvdla_lenet.py --model esp --check
+python workload/train_lenet.py
+python workload/dataset.py --num 1000 --seed 0
+python workload/reference_solve.py
+\end{verbatim}
+}
+\noindent\emph{B3. SAT-Accel image and solver} (Stage 2):
+{\scriptsize
+\begin{verbatim}
+cd handoff && make && make golden && make solvecheck
+\end{verbatim}
+}
+\noindent\emph{B4. Baselines} (Stage 3):
+{\scriptsize
+\begin{verbatim}
+cd baselines && make run
+\end{verbatim}
+}
+
+\subsection*{C. ESP server: builds}
+\noindent\emph{C1. NVDLA loadables.} The script recompiles ESP's demo network and checks that it matches ESP's shipped loadable (md5 \texttt{9831533f}). It then compiles our classifier to \texttt{build/nvdla/rl\_lenet.nvdla} (md5 \texttt{eb4c0813}).
+{\scriptsize
+\begin{verbatim}
+ESP_ROOT=~/esp bash workload/nvdla_compile.sh
+\end{verbatim}
+}
+\noindent Equivalent manual invocation (as run on the server, inside a directory holding the three model files):
+{\scriptsize
+\begin{verbatim}
+NVC=~/esp/accelerators/third-party/NV_NVDLA/\
+sw/prebuilt/x86-ubuntu
+LD_LIBRARY_PATH=$NVC $NVC/nvdla_compiler \
+  --prototxt lenet_mnist.prototxt \
+  --caffemodel rl_lenet.caffemodel \
+  --calibtable rl_lenet.json \
+  --cprecision int8 --configtarget nv_small \
+  --quantizationMode per-filter --informat nchw
+\end{verbatim}
+}
+\noindent The flags were found by recompiling ESP's model with per-kernel quantization (the default) under each \texttt{-{}-informat} (nchw, ncxhwx, nhwc), then with per-filter under nchw and nhwc; only per-filter with nchw reproduces ESP's loadable. Inputs must be in the working directory and passed by bare file name, because \texttt{-{}-calibtable} with an absolute path fails.
+
+\noindent\emph{C2. RISC-V baselines for Ariane} (static Linux binary; built and checked under QEMU locally, server build pending):
+{\scriptsize
+\begin{verbatim}
+cd baselines && make riscv
+file build/riscv64/rl_baselines
+\end{verbatim}
+}
 
 \bibliographystyle{IEEEtran}
 \bibliography{neural-symbolic-references,p1-additional-references}
