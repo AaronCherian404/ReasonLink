@@ -9,8 +9,8 @@ Running record of what is built, what was decided, and what is blocked. Update a
 
 The proposal's P1 calls for three things. On the new platform they mean:
 
-1. **The neural accelerator runs the classifier.** We train an int8 LeNet. The NVDLA (nv_small) compile flow is set up on the server. Per-cell int8 score traces stand in for NVDLA's output buffer in DRAM.
-2. **The SAT solver solves Sudoku CNFs in simulation.** This uses SAT-Accel software emulation on the server if Vitis 2022.2 is available. Otherwise pysat is the functional stand-in, and the blocker is recorded.
+1. **The neural accelerator runs the classifier.** ESP's LeNet with retrained weights is compiled to an NVDLA nv_small loadable on torino. A bit-validated int8 emulator produces per-cell score traces, which stand in for NVDLA's output buffer in DRAM. *(Done in Stage 1.)*
+2. **The SAT solver solves Sudoku CNFs in simulation.** There is no `v++`/XRT on torino, so per decision option C, MiniSat is the functional stand-in. It consumes the exact SAT-Accel memory image the host builds, which is verified byte for byte against SAT-Accel's own code. *(Done in Stage 2.)*
 3. **Both baselines run end to end with cycle counters.** The serial and double-buffered handoffs follow SAT-Accel's native host flow:
    1. scores
    2. argmax
@@ -33,7 +33,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 |---|---|---|---|
 | 0 | Repo scaffolding, local env, SAT-Accel submodule, server inventory, ESP clone (the toolchain is preinstalled on the server) | **Done** (2026-10-16) | see `git log` |
 | 1 | Sudoku CNF, dataset, int8 LeNet + score traces, NVDLA compiler flow, pysat reference | **Done** (2026-10-16) | see `git log` |
-| 2 | Standalone SAT-Accel image builder + byte-exact golden test; SAT-Accel software emulation on the server | not started | |
+| 2 | Standalone SAT-Accel image builder + byte-exact golden test; SAT solver on Sudoku (P1 stand-in: MiniSat reading the SAT-Accel image) | **Done** (2026-10-16) | see `git log` |
 | 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | not started | |
 
 ## Stage 1: workload and classifier
@@ -125,6 +125,73 @@ So ESP built its demo with `--quantizationMode per-filter --informat nchw`. Our 
 
 **What this means for the study.** With 24–40 clues, Sudoku is almost entirely solved by propagation. T_sat will be tiny, so the handoff is likely to dominate (H1). The H3 crossover will need harder instances: fewer clues, 16×16, or non-Sudoku CNFs.
 
+## Stage 2: SAT-Accel memory image and SAT solving
+
+### Reproduce (local WSL, after Stage 1's data exists)
+```bash
+cd handoff
+make            # build/{image_tool,golden_parse,solver_check}
+make golden     # byte-exact golden test   -> results/p1/golden_test.txt
+make solvecheck # 1,000 puzzles end to end -> results/p1/solver_check.txt
+```
+
+### Image builder: C port of SAT-Accel's host conversion (`handoff/sataccel_image.{h,c}`)
+`sa_build_image()` reproduces `parseDIMACS`'s image construction (`host.cpp` 71–376) from an in-memory CNF:
+- de-duplication and |literal| sort of each clause
+- 4-word clause pages with next-page links
+- per-variable, per-polarity occurrence pages of 16 words
+- `lmd` bit fields set at the `LMD_*` offsets
+- `answerStack` = sorted decision set (unit literals plus unused variables)
+- `miscCounters`
+
+It also provides:
+- `sa_regions()`: allocated vs. used bytes per region
+- `sa_decode_clauses()`: the device-side view, used by the solver stand-in
+
+Only one known difference from `host.cpp`: the clause sort is stable. Clauses containing both `x` and `-x` could therefore be ordered differently than by `host.cpp`'s `std::sort`. No test case has such clauses.
+
+### Golden test: byte-exact against SAT-Accel's own code (`handoff/golden_test/`)
+- **Reference build.** `parseDIMACS` is cut verbatim from the pinned `host.cpp` at build time (awk in `handoff/Makefile`). It is compiled unmodified with g++ against the open-source Xilinx `ap_int` headers, plus three small stub headers for the HLS stream and AXI types it never uses.
+- **Comparison.** Both builders dump every region at full allocated size, and `cmp` checks them: `clause_store`, `cmd`, `lit_store`, `answer_stack`, `cls_states`, `misc`, `lmd`. For `lmd`, the golden side extracts bits with `range()`, so the result is independent of `ap_int`'s object layout. `track_lbd` is skipped because `host.cpp` never initializes it.
+- **Result: 13/13 PASS** (`results/p1/golden_test.txt`):
+  - 3 SAT Sudoku instances and 1 UNSAT Sudoku instance (729 vars, about 12,020 clauses)
+  - SAT-Accel's own benchmarks: `aim50`, `nqueens_4`, `quinn`, `4blocks` (758 vars / 47,820 clauses), `dubois20`, `nqueens_3`, `aalto_2`, `hole7_unsat`, `aim-200-1_6-no-1`
+
+### Bytes per Sudoku instance (puzzle 0, 36 givens; `image_tool`)
+
+| Region | Allocated (migrated by host.cpp) | Used |
+|---|---|---|
+| clause_store | 4,194,304 | 202,752 |
+| cmd | 1,048,576 | 96,192 |
+| cls_states | 1,048,576 | 96,192 |
+| lit_store | 4,194,304 | 186,624 |
+| lmd | 46,656 | 46,656 |
+| answer_stack | 2,916 | 2,916 |
+| misc + track_lbd | 1,104 | 1,104 |
+| **Total** | **10,536,436 (10.5 MB)** | **632,436 (632 KB)** |
+
+**Implication for H1.** The neural stage contributes 36 (cell, digit) givens, or 81 × 16 B = 1,296 B of int8 logits. Yet SAT-Accel's native flow rebuilds and migrates 10.5 MB per puzzle, of which 632 KB carries data, and almost all of that is the unchanging base formula. This is the gap the serial baseline will measure, and the one delta transfers target.
+
+### SAT solving on all 1,000 puzzles (`handoff/solver_check.c`)
+For each puzzle, the full chain runs:
+1. NVDLA trace
+2. C argmax (digits 1–9, ties to the lowest)
+3. unit literals `var = 9·cell + d`
+4. SAT-Accel image (C port)
+5. device-side decode
+6. MiniSat
+
+| Check | Result |
+|---|---|
+| Build or decode errors | 0 |
+| C argmax givens == Python reference | 1000/1000 |
+| SAT/UNSAT == pysat reference | 1000/1000 (808 SAT, 192 UNSAT) |
+| Solved grid == pysat reference | 992/1000 |
+| The 8 differing grids | **all valid alternative solutions.** Both grids satisfy every clause of their instance. Each of these puzzles has exactly one misread given, which breaks uniqueness, and the reference already counts it as wrong. |
+| MiniSat work (mean) | 1.17 decisions, 675.7 propagations, 0.158 conflicts per puzzle |
+
+**The stand-in is a different MiniSat build from pysat's `m22`.** On multi-solution instances it may return a different (valid) model, which the 8 differing grids reflect. Stage 3 runs every interface on this same backend, so solutions must be identical across interfaces.
+
 ## Environments
 
 ### Local (WSL Ubuntu 24.04 on Windows)
@@ -163,13 +230,15 @@ So ESP built its demo with `--quantizationMode per-filter --informat nchw`. Our 
 - **ESP:** the full-SoC flow (ModelSim + Vivado + RISC-V) is available as-is.
 - **SAT-Accel software emulation:** not available. `runCompile.sh` uses `v++ -t sw_emu`, which needs XRT, and installing XRT needs root.
 - **Vitis HLS C simulation:** won't work out of the box either. SAT-Accel's kernels contain free-running `while(true)` processes inside dataflow regions (e.g. `discover.cpp:73`, `clause_store_handler.cpp:552`), which sequential csim cannot run.
-- **Next step:** the "SAT solver in simulation" route will be decided in Stage 2.
+- **Decision (Stage 2):** for P1, a MiniSat stand-in reads the SAT-Accel image (option C). See the decision log.
 
 ## Pinned third-party code
 
 | Component | Location | Version |
 |---|---|---|
 | SAT-Accel (Lo, Chang, Cong, FPGA'25) | `third_party/FPGA25_SAT_Accel` (submodule) | `37a0912f133d7b6038dcb291f347c634da6c8c34` |
+| Xilinx HLS arbitrary-precision types (`ap_int.h`, open source) | `third_party/HLS_arbitrary_Precision_Types` (submodule) | `200a9aecaadf471592558540dc5a88256cbf880f`. Used only by the golden test. |
+| MiniSat (niklasso/minisat) | `third_party/minisat` (submodule) | `37dc6c67e2af26379d88ce349eb9c4c6160e8543`. The P1 solver stand-in. Built with `-fpermissive`. |
 | ESP (sld-columbia/esp) | torino: `~/esp`. Cloned 2026-10-16, detached at the tag, no submodules initialized. | tag `2026.1.0` = `a45f2bb8406350883c169505661bedf5b469e1a3` (2026-03-24). `main` was at `98317af` (2026-09-25); we pin the release for reproducibility. |
 
 **ESP submodules.** None are initialized yet. The list below was taken from `main`; submodule commits at `2026.1.0` may differ. Fetch only what each stage needs:
@@ -187,14 +256,14 @@ So ESP built its demo with `--quantizationMode per-filter --informat nchw`. Our 
 - a precompiled `lenet_mnist.nvdla` for nv_small
 - a test image `seven.pgm`, with expected `nvdla_runtime --rawdump` output `0 2 0 0 0 0 0 124 0 0`
 
-The compile command is `nvdla_compiler --prototxt … --caffemodel … --calibtable … --cprecision int8 --configtarget nv_small`. **Proposed for Stage 1:** use this network as the Sudoku digit classifier instead of training our own LeNet, so the score traces come from the exact network NVDLA runs.
+ESP's compile flags turned out to be `--cprecision int8 --configtarget nv_small --quantizationMode per-filter --informat nchw`. We use this network's architecture, with retrained weights (see Stage 1).
 
 ## Key facts about SAT-Accel (from source)
 
 These facts determine what the serial baseline must reproduce.
 
 ### The host-built memory image
-`src/host.cpp` `parseDIMACS` (lines 71–330) builds this image from DIMACS:
+`src/host.cpp` `parseDIMACS` (lines 71–376) builds this image from DIMACS:
 
 | Region | Layout | Allocated size |
 |---|---|---|
@@ -221,9 +290,15 @@ All buffers are migrated to the device in full for every instance (`host.cpp` 49
 - **2026-10-16: classifier.** Use ESP's LeNet architecture and NVDLA flow (approved by the user). Its weights were retrained because ESP's demo weights reach only 74.5% under the runtime's preprocessing (see Stage 1).
 - **2026-10-16: neural output used for the handoff.** The int8 ip2 logits, not the softmax output. In the NVDLA software stack, softmax is expected to run on the CPU as an emulator task; this is to be confirmed from the compiler output. Argmax does not need the softmax.
 
+- **2026-10-16: SAT solver for P1 (option C, chosen by the user).** For P1, a functional stand-in replaces SAT-Accel's simulation. The solver backend receives the SAT-Accel memory image, decodes the clauses from `cmd` and `clause_store`, and solves them with MiniSat (`handoff/solver_backend.h`).
+  - **Why:** torino has no `v++`/XRT, so SAT-Accel's `sw_emu` flow is out, and XRT needs root.
+  - **Rejected for P1:** option A, a threaded C++ harness running SAT-Accel's free-running HLS kernels as threads (about half a day, with risk); option B, asking an admin to install XRT and the U55C platform.
+  - **Consequence:** the P1 numbers for T_solve are MiniSat CPU time, not SAT-Accel cycles. The handoff side (conversion, bytes, transfers) is exact.
+- **2026-10-16: serial baseline input.** The baseline starts from the in-memory CNF plus the predicted units, not from DIMACS text. We port SAT-Accel's image construction; text parsing is not part of the handoff we study.
+  - The faithful mode clears the whole allocated buffers on each build, as `host.cpp` does per run.
+  - `lean_clear` clears only the ranges written last time. It is there so the baseline is not a strawman.
+
 ## Open issues / blockers
-- **SAT-Accel simulation route (Stage 2).** Neither `v++` nor XRT is on torino, so SAT-Accel's native `sw_emu` flow is unavailable. The route will be decided in Stage 2. Candidates:
-  - a threaded C++ harness that runs SAT-Accel's kernels as threads, using the HLS stream headers from Vitis HLS 2023.2
-  - an RTL export with ModelSim co-simulation, which is heavy
-  - pysat as the functional stand-in for P1
-- **Toolchain version.** The server has Vitis HLS 2023.2, but SAT-Accel targets 2022.2. Pragmas or headers may need small fixes.
+- **SAT-Accel itself is not exercised in P1.** It still needs one of: `v++` and XRT on a machine with access, the threaded C++ harness (option A), or an RTL port onto ESP. To revisit after P1.
+- **Toolchain version.** The server has Vitis HLS 2023.2, but SAT-Accel targets 2022.2. Pragmas or headers may need small fixes when we build it.
+- **Windows checkouts.** Git's `core.autocrlf=true` turns SAT-Accel's DIMACS benchmarks into CRLF files, which its parser cannot read. `run_golden.sh` strips the CRs; a Linux checkout (torino) is unaffected.

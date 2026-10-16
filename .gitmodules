@@ -1,3 +1,9 @@
 [submodule "third_party/FPGA25_SAT_Accel"]
 	path = third_party/FPGA25_SAT_Accel
 	url = https://github.com/milo168/FPGA25_SAT_Accel.git
+[submodule "third_party/HLS_arbitrary_Precision_Types"]
+	path = third_party/HLS_arbitrary_Precision_Types
+	url = https://github.com/Xilinx/HLS_arbitrary_Precision_Types.git
+[submodule "third_party/minisat"]
+	path = third_party/minisat
+	url = https://github.com/niklasso/minisat.git

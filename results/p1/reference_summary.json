@@ -7,7 +7,7 @@
   "puzzle_accuracy": 0.79,
   "unsat_rate": 0.19199999999999995,
   "sat_but_wrong_rate": 0.018,
-  "mean_solve_s": 0.000145288,
+  "mean_solve_s": 0.000130493,
   "mean_decisions": 2.034,
   "mean_propagations": 677.276,
   "mean_conflicts": 0.158,

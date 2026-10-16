@@ -1,0 +1,10 @@
+Stage 2 solver check (stand-in: SAT-Accel image -> decode -> MiniSat)
+puzzles                         1000
+errors (build/decode)           0
+predicted givens == reference   1000/1000
+SAT/UNSAT == reference          1000/1000
+solved grid == reference        992/1000
+  differing, both grids valid   8 (multi-solution instances)
+  differing, invalid            0
+SAT                             808 (UNSAT 192)
+mean decisions/propagations/conflicts  1.170 / 675.7 / 0.158

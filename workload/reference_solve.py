@@ -12,12 +12,14 @@ Outputs:
   results/p1/reference_solve.csv     per-puzzle outcome and solver stats
   results/p1/reference_summary.json  aggregate accuracy / UNSAT rate / stats
   data/sudoku/reference.npz          predicted givens and solved grids
+  data/sudoku/reference.bin          the same, for the C tools (handoff/trace.h)
 
 Usage: python workload/reference_solve.py [--solver m22]
 """
 import argparse
 import csv
 import json
+import struct
 import time
 
 import numpy as np
@@ -81,6 +83,12 @@ def main():
         w.writeheader()
         w.writerows(rows)
     np.savez_compressed(DATA / "reference.npz", predicted_givens=pred, solved=solved)
+    # Same content for the C tools: "RLRF", u32 version=1, u32 N, then per
+    # puzzle u8 sat, i8 solved[81] (zeros if UNSAT), i8 predicted_givens[81].
+    with open(DATA / "reference.bin", "wb") as f:
+        f.write(b"RLRF" + struct.pack("<2I", 1, len(puzzle)))
+        for p in range(len(puzzle)):
+            f.write(bytes([rows[p]["sat"]]) + solved[p].tobytes() + pred[p].tobytes())
 
     n = len(rows)
     col = lambda k: np.array([float(r[k]) for r in rows])

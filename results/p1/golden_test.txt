@@ -1,0 +1,19 @@
+Golden test: SAT-Accel parseDIMACS (host.cpp @ 37a0912) vs handoff/sataccel_image.c
+Regions compared byte for byte (full allocated buffers): clause_store cmd lit_store answer_stack cls_states misc lmd
+
+case                                     result detail
+sat_4blocks.dimacs                       PASS   vars=758 clauses=47820
+sat_aim50.dimacs                         PASS   vars=50 clauses=80
+sat_nqueens_4.dimacs                     PASS   vars=16 clauses=80
+sat_quinn.dimacs                         PASS   vars=16 clauses=18
+satlib_aim-200-1_6-no-1.cnf              PASS   vars=200 clauses=320
+satlib_hole7_unsat.cnf                   PASS   vars=56 clauses=204
+sudoku_p0_sat.cnf                        PASS   vars=729 clauses=12024
+sudoku_p1_sat.cnf                        PASS   vars=729 clauses=12013
+sudoku_p2_sat.cnf                        PASS   vars=729 clauses=12026
+sudoku_p5_unsat.cnf                      PASS   vars=729 clauses=12017
+unsat_aalto_2.dimacs                     PASS   vars=6 clauses=8
+unsat_dubois20.dimacs                    PASS   vars=60 clauses=160
+unsat_nqueens_3.dimacs                   PASS   vars=9 clauses=31
+
+passed 13, failed 0
