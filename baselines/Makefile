@@ -13,7 +13,9 @@ BUILD   ?= build/native
 CFLAGS  ?= -O2 -std=gnu11 -Wall -Wextra -pthread
 CXXFLAGS ?= -O2 -std=c++11 -w -pthread
 LDFLAGS ?= -pthread
-INC     := -I$(HANDOFF) -I.
+# EXTRA_INC: `make riscv` adds compat/ (zlib.h stub for MiniSat's headers)
+EXTRA_INC ?=
+INC     := $(EXTRA_INC) -I$(HANDOFF) -I.
 # -fpermissive: MiniSat 2013 headers (see handoff/Makefile)
 MS_FLAGS := -I$(MINISAT) -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -fpermissive
 
@@ -45,7 +47,7 @@ run: $(BUILD)/rl_baselines
 RISCV_CROSS ?= riscv64-unknown-linux-gnu-
 
 riscv:
-	$(MAKE) CROSS=$(RISCV_CROSS) BUILD=build/riscv64 LDFLAGS="-pthread -static"
+	$(MAKE) CROSS=$(RISCV_CROSS) BUILD=build/riscv64 EXTRA_INC=-Icompat LDFLAGS="-pthread -static"
 
 clean:
 	rm -rf build
