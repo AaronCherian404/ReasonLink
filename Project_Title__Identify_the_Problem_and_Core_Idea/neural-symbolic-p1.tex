@@ -270,7 +270,7 @@ LD_LIBRARY_PATH=$NVC $NVC/nvdla_compiler \
 }
 \noindent The flags were found by recompiling ESP's model with per-kernel quantization (the default) under each \texttt{-{}-informat} (nchw, ncxhwx, nhwc), then with per-filter under nchw and nhwc; only per-filter with nchw reproduces ESP's loadable. Inputs must be in the working directory and passed by bare file name, because \texttt{-{}-calibtable} with an absolute path fails.
 
-\noindent\emph{C2. RISC-V baselines for Ariane} (static Linux binary; built and checked under QEMU locally, server build pending):
+\noindent\emph{C2. RISC-V baselines for Ariane} (static Linux binary; checked under QEMU locally and built on the server with ESP's RISC-V GCC 9.2; \texttt{make riscv} supplies a declarations-only \texttt{zlib.h}, which MiniSat's headers include but that toolchain lacks):
 {\scriptsize
 \begin{verbatim}
 cd baselines && make riscv

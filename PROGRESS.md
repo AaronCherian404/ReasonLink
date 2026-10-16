@@ -36,7 +36,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 | 0 | Repo scaffolding, local env, SAT-Accel submodule, server inventory, ESP clone (the toolchain is preinstalled on the server) | **Done** (2026-10-16) | see `git log` |
 | 1 | Sudoku CNF, dataset, int8 LeNet + score traces, NVDLA compiler flow, pysat reference | **Done** (2026-10-16) | see `git log` |
 | 2 | Standalone SAT-Accel image builder + byte-exact golden test; SAT solver on Sudoku (P1 stand-in: MiniSat reading the SAT-Accel image) | **Done** (2026-10-16) | see `git log` |
-| 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | **Done locally** (2026-10-16). RISC-V build verified with Ubuntu's cross compiler + QEMU; torino build pending. | see `git log` |
+| 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | **Done** (2026-10-16). RISC-V build verified locally (Ubuntu cross compiler + QEMU) and built on torino. | see `git log` |
 
 ## Stage 1: workload and classifier
 
@@ -257,7 +257,9 @@ Medians per puzzle, in µs:
 
 ### RISC-V build
 - **Local.** `make riscv RISCV_CROSS=riscv64-linux-gnu-` builds a static RISC-V Linux executable (rv64gc, glibc). Run under `qemu-riscv64`, its serial and double modes produce SAT flags and grids identical to the native run on 50 puzzles, and `rdcycle` works.
-- **torino.** Building with its preinstalled `riscv64-unknown-linux-gnu-` toolchain (GCC 9.2) is pending; the user will run it.
+- **torino (2026-10-16, commit `0eebc8a`).** `make riscv` with the user's toolchain at `~/riscv/bin/riscv64-unknown-linux-gnu-g++` (GCC 9.2) builds `build/riscv64/rl_baselines`: a 6.6 MB static RISC-V Linux ELF.
+  - **First attempt failed:** MiniSat's `utils/ParseUtils.h` includes `<zlib.h>`, which that sysroot lacks. `make riscv` now adds `baselines/compat/` with a declarations-only stub. The gzip reader is never used, so nothing links against zlib.
+  - **ISA flags:** `file` does not report RVC or the double-float ABI for this binary, unlike the Ubuntu rv64gc build. The toolchain's ISA/ABI defaults are to be checked against Ariane's configuration when it runs on ESP.
 
 ## Environments
 
