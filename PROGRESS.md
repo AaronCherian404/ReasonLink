@@ -31,7 +31,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 
 | Stage | Scope | Status | Commit |
 |---|---|---|---|
-| 0 | Repo scaffolding, local env, SAT-Accel submodule, server inventory, ESP clone + RISC-V toolchain | **Local part done. Server part blocked on SSH details.** | see `git log` |
+| 0 | Repo scaffolding, local env, SAT-Accel submodule, server inventory, ESP clone (the toolchain is preinstalled on the server) | **Done** (2026-10-16) | see `git log` |
 | 1 | Sudoku CNF, dataset, int8 LeNet + score traces, NVDLA compiler flow, pysat reference | not started | |
 | 2 | Standalone SAT-Accel image builder + byte-exact golden test; SAT-Accel software emulation on the server | not started | |
 | 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | not started | |
@@ -46,23 +46,59 @@ The proposal's P1 calls for three things. On the new platform they mean:
 - **Not available locally:** Vitis, Vivado, ModelSim, Xcelium.
 - **How commands run:** WSL runs as root, so `~` is `/root`. Run repo commands from `/mnt/c/Columbia_University/Fall2026/AInativeComputing/ReasonLink`.
 
-### Columbia server (pending)
-- **Inventory:** `ssh <host> 'bash -s' < env/server_probe.sh`, then paste the output below.
+### Columbia server: `torino.cs.columbia.edu`
+- **How we work on it:** the user runs commands over an interactive SSH session and pastes back the output.
 - **Credentials:** never commit them. If needed, local settings go in `env/server.env`, which is gitignored.
-- **Planned on the server:**
-  - Clone ESP with submodules at a pinned release, and record the commit here.
-  - Run `./utils/toolchain/build_riscv_toolchain.sh`.
-  - SAT-Accel software emulation.
-  - The NVDLA compiler.
+- **Rule:** no long builds (toolchains, bitstreams, full-SoC simulations) without asking first.
+- **Re-running the inventory:** `bash ~/server_probe.sh`. The script is a copy of `env/server_probe.sh`.
 
-_Inventory: not yet collected._
+**Inventory (2026-10-16, `env/server_probe.sh`):**
+
+| Item | Value |
+|---|---|
+| OS | RHEL 8.10. ESP's primary platform. |
+| glibc | 2.28 |
+| CPUs / RAM / home disk | 16 / 62 GB / 903 GB free of 1.3 TB |
+| gcc / git / python3 | 8.5.0 / 2.43.7 / 3.8.20. The shell auto-activates the conda env `core-v-mini-mcu`. |
+| Vivado | 2023.2. ESP's required version. |
+| Vitis HLS | 2023.2 |
+| Vitis `v++` / XRT | **not installed**. The unified 2023.2 installer `.bin` is in `/opt`. |
+| ModelSim | DE 2023.2. ESP's required version. |
+| Xcelium | 23.09 (`/opt/cadence/installs/XCELIUM2309`) |
+| RISC-V toolchains | gcc 9.2 for `riscv64-unknown-elf` and `riscv64-unknown-linux-gnu` on PATH; `/opt/riscv` and `/opt/riscv32imc` exist. **We don't need to build ESP's toolchain.** |
+| spike / qemu-riscv64 | not on PATH |
+| Other | `/opt/Catapult.tar.gz`, `/opt/prodesign` (proFPGA) |
+| Licenses | Xilinx, FlexLM and Mentor license servers are set. Hostnames are omitted here. |
+
+**What this means for P1:**
+- **ESP:** the full-SoC flow (ModelSim + Vivado + RISC-V) is available as-is.
+- **SAT-Accel software emulation:** not available. `runCompile.sh` uses `v++ -t sw_emu`, which needs XRT, and installing XRT needs root.
+- **Vitis HLS C simulation:** won't work out of the box either. SAT-Accel's kernels contain free-running `while(true)` processes inside dataflow regions (e.g. `discover.cpp:73`, `clause_store_handler.cpp:552`), which sequential csim cannot run.
+- **Next step:** the "SAT solver in simulation" route will be decided in Stage 2.
 
 ## Pinned third-party code
 
 | Component | Location | Version |
 |---|---|---|
 | SAT-Accel (Lo, Chang, Cong, FPGA'25) | `third_party/FPGA25_SAT_Accel` (submodule) | `37a0912f133d7b6038dcb291f347c634da6c8c34` |
-| ESP (sld-columbia/esp) | server, path TBD | TBD (latest release seen: 2026.1.0) |
+| ESP (sld-columbia/esp) | torino: `~/esp`. Cloned 2026-10-16, detached at the tag, no submodules initialized. | tag `2026.1.0` = `a45f2bb8406350883c169505661bedf5b469e1a3` (2026-03-24). `main` was at `98317af` (2026-09-25); we pin the release for reproducibility. |
+
+**ESP submodules.** None are initialized yet. The list below was taken from `main`; submodule commits at `2026.1.0` may differ. Fetch only what each stage needs:
+
+| Submodule | Needed for |
+|---|---|
+| `accelerators/third-party/NV_NVDLA/sw` (`sld-columbia/nvdla-sw`, about 435 MB) | **Stage 1**: prebuilt `nvdla_compiler` (x86) and `nvdla_runtime` (riscv-linux) |
+| `accelerators/third-party/NV_NVDLA/ip` (`sld-columbia/nvdla-hw`) | after P1, for the NVDLA tile in the SoC |
+| `rtl/cores/ariane/ariane`, `soft/ariane/{linux,opensbi,riscv-pk}`, `rtl/caches/esp-caches` | after P1, for the Ariane SoC with Linux and the NVDLA runtime |
+| `accelerators/stratus_hls/common/inc`, `catapult_hls/...`, `chisel/hw` | only if the SAT accelerator is rewritten in an ESP-native HLS flow |
+| `soft/leon3/linux`, `rtl/cores/ibex/ibex`, `rtl/peripherals/bsg`, `utils/zynq`, `eigen`, `spandex-caches`, `riscv-tests` | not planned |
+
+**ESP's LeNet for NVDLA.** ESP's third-party accelerator guide (`esp.cs.columbia.edu/docs/thirdparty_acc/`) provides:
+- the model: `lenet_mnist.prototxt`, `lenet_mnist.caffemodel`, `lenet_mnist.json` (int8 calibration)
+- a precompiled `lenet_mnist.nvdla` for nv_small
+- a test image `seven.pgm`, with expected `nvdla_runtime --rawdump` output `0 2 0 0 0 0 0 124 0 0`
+
+The compile command is `nvdla_compiler --prototxt … --caffemodel … --calibtable … --cprecision int8 --configtarget nv_small`. **Proposed for Stage 1:** use this network as the Sudoku digit classifier instead of training our own LeNet, so the score traces come from the exact network NVDLA runs.
 
 ## Key facts about SAT-Accel (from source)
 
@@ -94,5 +130,8 @@ All buffers are migrated to the device in full for every instance (`host.cpp` 49
 - **2026-10-16: Python venv location.** It lives outside the repo, at `~/venvs/reasonlink`, because I/O on `/mnt/c` is slow.
 
 ## Open issues / blockers
-- **Server access needed.** SSH details are required for the server inventory, the ESP clone and toolchain, and Vitis software emulation.
-- **Vitis version.** If the server's Vitis is not 2022.2, SAT-Accel's `runCompile.sh` paths and possibly its pragmas may need porting. This is to be assessed in Stage 2.
+- **SAT-Accel simulation route (Stage 2).** Neither `v++` nor XRT is on torino, so SAT-Accel's native `sw_emu` flow is unavailable. The route will be decided in Stage 2. Candidates:
+  - a threaded C++ harness that runs SAT-Accel's kernels as threads, using the HLS stream headers from Vitis HLS 2023.2
+  - an RTL export with ModelSim co-simulation, which is heavy
+  - pysat as the functional stand-in for P1
+- **Toolchain version.** The server has Vitis HLS 2023.2, but SAT-Accel targets 2022.2. Pragmas or headers may need small fixes.

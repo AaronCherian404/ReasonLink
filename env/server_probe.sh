@@ -38,6 +38,11 @@ ver "riscv64-unknown-linux-gnu-gcc" riscv64-unknown-linux-gnu-gcc --version
 ver "spike" spike --help
 ver "qemu-riscv64" qemu-riscv64 --version
 echo
+echo "#### Top-level of /opt and /tools"
+for d in /opt /tools; do
+    [ -d "$d" ] && echo "- \`$d\`: $(ls "$d" 2>/dev/null | tr '\n' ' ')"
+done
+echo
 echo "#### Install locations found under /opt, /tools, /usr/local"
 for d in /opt /tools /usr/local /eda /cad; do
     [ -d "$d" ] || continue
