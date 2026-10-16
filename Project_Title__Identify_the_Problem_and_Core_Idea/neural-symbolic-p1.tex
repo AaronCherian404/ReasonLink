@@ -1,0 +1,168 @@
+% COMS 6998, Fall 2026 -- P1: Infrastructure & Baselines (ReasonLink)
+% Same formatting as neural-symbolic-proposal.tex.
+% Build: latexmk -pdf neural-symbolic-p1.tex
+% Source of truth for every number here: PROGRESS.md in the repository.
+\documentclass[conference,10pt,letterpaper]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{flushend}
+\usepackage[hyphens]{url}
+\usepackage[hidelinks]{hyperref}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% Red placeholder; swap the definitions to hide highlighting.
+\newcommand{\fillme}[1]{\textcolor{red}{[#1]}}
+% \newcommand{\fillme}[1]{#1}
+
+\title{ReasonLink: P1 Infrastructure and Baselines}
+\author{\IEEEauthorblockN{Vayun Gupta (vg2684), Aaron Mano Cherian (amc2535)}
+\IEEEauthorblockA{COMS 6998: AI-Native Computing $\mid$ Fall 2026\\
+P1 Milestone $\mid$ Due October 19, 2026, 11:59 PM ET}}
+
+\begin{document}
+\maketitle
+\thispagestyle{plain}
+\pagestyle{plain}
+
+\noindent\textbf{Repository:} \url{https://github.com/AaronCherian404/ReasonLink}\\
+Results below are from commit \texttt{30372c8}. The repository's \texttt{PROGRESS.md} logs every step, decision, and reproduction command.
+
+% =====================================================================
+\section{Summary and Platform Change}
+% =====================================================================
+We could not obtain the VCU118 that the Chipyard/FireSim flow needed, so we moved from Chipyard and Gemmini to ESP~\cite{esp}, the open SoC platform that already integrates NVDLA~\cite{nvdla} as a third-party accelerator alongside Ariane~\cite{espnvdla}. The neural accelerator is now NVDLA \emph{nv\_small} (int8, 64 MACs); the symbolic accelerator is still SAT-Accel~\cite{sataccel}. ESP's full flow is installed on a departmental server, and a VCU118 will be available later through ESP. The research question, the visual-Sudoku workload, the two baselines, and the four ReasonLink mechanisms are unchanged.
+
+For P1 we built every piece of the pipeline that does not need the board, and checked each against a reference (Table~\ref{tab:status}). The main gap is that SAT-Accel itself cannot run yet; a MiniSat stand-in consumes SAT-Accel's exact memory image instead (Sec.~\ref{sec:sat}).
+
+\begin{table}[h]
+\centering
+\caption{Component status (October 16).}
+\label{tab:status}
+\footnotesize
+\begin{tabularx}{\columnwidth}{@{}P{0.33\columnwidth}P{0.15\columnwidth}Y@{}}
+\toprule
+\textbf{Component} & \textbf{Status} & \textbf{Evidence} \\
+\midrule
+ESP toolchain on server & Ready & ESP 2026.1.0 pinned; Vivado, ModelSim, RISC-V GCC present \\
+NVDLA compile flow & Working & ESP's loadable reproduced byte for byte \\
+int8 LeNet classifier & Working (emulated) & 99.20\% MNIST; emulator matches NVDLA reference \\
+Sudoku workload & Working & 1{,}000 puzzles + NVDLA output trace \\
+SAT-Accel host image & Working & C port byte-exact vs.\ SAT-Accel, 13/13 \\
+SAT solving & Stand-in & MiniSat on SAT-Accel's image; SAT-Accel blocked \\
+Serial / double-buffered baselines & In progress & Due Oct 19 (Sec.~\ref{sec:next}) \\
+NVDLA, SAT-Accel on ESP SoC & Not started & After P1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{Setup by Component}
+% =====================================================================
+\subsection{Repository}
+All code is in one repository: \texttt{workload/} (CNF encoder, dataset, classifier, NVDLA compile script), \texttt{handoff/} (SAT-Accel image builder, solver backend, tests), \texttt{models/} (retrained weights), and \texttt{results/p1/} (machine-readable outputs). SAT-Accel, MiniSat, and Xilinx's open-source \texttt{ap\_int} headers are git submodules pinned to fixed commits. Local work runs in WSL Ubuntu 24.04 with a pinned Python environment (\texttt{env/setup\_wsl.sh}).
+
+\subsection{ESP Platform (server)}
+The server runs RHEL 8.10 (ESP's primary platform) with 16 cores and 62\,GB RAM, and already provides ESP's required tools: Vivado 2023.2, ModelSim DE 2023.2, Xcelium 23.09, Vitis HLS 2023.2, and RISC-V GCC 9.2, so ESP's 1--2\,h toolchain build is unnecessary. ESP is pinned to release 2026.1.0 (\texttt{a45f2bb}); only the NVDLA software submodule is fetched so far. The server lacks Vitis \texttt{v++} and XRT, which matters for SAT-Accel (Sec.~\ref{sec:sat}).
+
+\subsection{NVDLA Classifier}
+We use the LeNet~\cite{lenet} that ESP ships for its NVDLA demo, so our classifier is the network ESP already runs on NVDLA.
+\begin{itemize}
+\item \emph{Compiler.} Recompiling ESP's model with the prebuilt \texttt{nvdla\_compiler} reproduces ESP's shipped loadable byte for byte with \texttt{-{}-quantizationMode per-filter -{}-informat nchw}; the compiler is deterministic, and no other flag combination matched.
+\item \emph{int8 emulator.} A Python model of the int8 pipeline (the runtime's input mapping, per-filter weight scales, calibrated requantization) reproduces ESP's published NVDLA output for its test image exactly. It generates the per-cell scores that stand in for NVDLA's output buffer.
+\item \emph{Weights.} ESP's demo weights reach only 74.5\% on MNIST. They were trained with mean-image subtraction and a 1/80 input scale that neither the deploy model nor the NVDLA int8 input path applies. We retrained the same architecture on the input NVDLA actually receives and wrote a new calibration table (Table~\ref{tab:nn}). The retrained model compiles with ESP's flags to a 445{,}736-byte loadable.
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{LeNet accuracy on the MNIST test set (10{,}000 images).}
+\label{tab:nn}
+\footnotesize
+\begin{tabularx}{\columnwidth}{@{}Yrr@{}}
+\toprule
+\textbf{Weights} & \textbf{float} & \textbf{int8 (emulated)} \\
+\midrule
+ESP demo, under NVDLA preprocessing & 74.5\% & 74.5\% \\
+Retrained (ours) & 99.17\% & 99.20\% \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Workload}
+Sudoku uses the standard encoding with variable $81r + 9c + d$: 729 variables and 11{,}988 base clauses, identical for every puzzle; predicted givens are added as unit clauses. We generated 1{,}000 puzzles with unique solutions and 24--40 clues (mean 32.1), in the style of visual Sudoku~\cite{satnet}. Each given cell holds an MNIST \emph{test} image of its digit. The classifier's int8 logits for all puzzles are stored as a binary trace, the input to every interface.
+
+\subsection{SAT Solver}
+\label{sec:sat}
+\emph{Host conversion.} SAT-Accel's host code builds a device memory image from the CNF: paged clause and occurrence stores, 64-byte per-variable metadata, and a decision stack. We ported this conversion to standalone C, since it is exactly the work the serial baseline must time. A golden test compiles SAT-Accel's own unmodified parser next to our port and compares every region byte for byte; all 13 instances match: four Sudoku instances (one of them UNSAT) and nine of SAT-Accel's benchmarks, up to 758 variables and 47{,}820 clauses.
+
+\emph{Solving.} SAT-Accel's simulation flow requires Vitis \texttt{v++} and XRT, which the server lacks and which need root to install. For P1 a MiniSat~\cite{minisat} backend reads the clauses back out of the SAT-Accel image, as the device's copy-in would, and solves them. A PySAT~\cite{pysat} run serves as the software reference. Later, the real accelerator replaces the backend behind the same interface.
+
+% =====================================================================
+\section{Results So Far}
+% =====================================================================
+\textbf{Functional pipeline.} On all 1{,}000 puzzles, the C path (trace $\rightarrow$ argmax $\rightarrow$ SAT-Accel image $\rightarrow$ MiniSat) agrees with the PySAT reference on SAT/UNSAT for every puzzle. It returns the identical grid for 992; the other eight have several solutions because of one misread given, and we verified that both grids satisfy every clause. Table~\ref{tab:func} summarizes accuracy.
+
+\begin{table}[h]
+\centering
+\caption{Visual Sudoku, 1{,}000 puzzles.}
+\label{tab:func}
+\footnotesize
+\begin{tabularx}{\columnwidth}{@{}Yr@{}}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Given-cell accuracy (int8) & 99.26\% \\
+Puzzles solved correctly & 79.0\% \\
+UNSAT from misread givens & 19.2\% \\
+SAT but wrong & 1.8\% \\
+Solver work per puzzle (decisions / conflicts) & 1.2 / 0.16 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Handoff size.} Table~\ref{tab:bytes} gives the first baseline measurement: bytes per puzzle on the native SAT-Accel path. The neural stage produces 1.3\,KB of logits that encode 36 givens. SAT-Accel's host flow nonetheless rebuilds a 632\,KB image, almost all of it the unchanging base formula, and migrates its full 10.5\,MB of allocated buffers on every instance. Meanwhile the solver needs about one decision per puzzle. Both observations are consistent with H1 and motivate delta transfers.
+
+\begin{table}[h]
+\centering
+\caption{Data per puzzle on the native SAT-Accel path (puzzle 0, 36 givens).}
+\label{tab:bytes}
+\footnotesize
+\begin{tabularx}{\columnwidth}{@{}Yr@{}}
+\toprule
+\textbf{Quantity} & \textbf{Bytes} \\
+\midrule
+NVDLA output (int8 logits, $81 \times 16$\,B) & 1{,}296 \\
+SAT-Accel image, bytes in use & 632{,}436 \\
+SAT-Accel buffers migrated per instance & 10{,}536{,}436 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Limitations.} Solver time in P1 is MiniSat CPU time, not SAT-Accel cycles. NVDLA has not yet executed on hardware: the loadable is compiled, and its outputs are emulated. NVDLA's real output layout in memory is still to be confirmed on ESP. Sudoku with $\geq$24 clues is nearly propagation-only, so the H3 crossover will need harder instances.
+
+% =====================================================================
+\section{Next Steps}
+% =====================================================================
+\label{sec:next}
+\begin{center}
+\footnotesize
+\begin{tabularx}{\columnwidth}{@{}P{0.15\columnwidth}Y@{}}
+\toprule
+\textbf{Target} & \textbf{Task} \\
+\midrule
+Oct 19 (P1) & Serial and double-buffered baselines end to end on all 1{,}000 puzzles, with per-puzzle $T_{\text{conv}}$, $T_{\text{xfer}}$, $T_{\text{sync}}$, $T_{\text{sat}}$ cycle counts; cross-compile both for RISC-V (Ariane). \\
+Nov 2 (P2) & Run SAT-Accel functionally (its HLS kernels as threads, or XRT on a machine with access); first ESP SoC with Ariane and NVDLA in simulation; ReasonLink prototype with literal stream and on-chip FIFO; pilot H1--H2 breakdown. \\
+After P2 & Delta transfers and overlap; SAT-Accel on ESP; VCU118 runs when the board is available. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\noindent\textbf{Team contributions.} \fillme{Who did what for P1.}
+
+\bibliographystyle{IEEEtran}
+\bibliography{neural-symbolic-references,p1-additional-references}
+\end{document}
