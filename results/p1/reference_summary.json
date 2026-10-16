@@ -1,0 +1,15 @@
+{
+  "solver": "m22",
+  "puzzles": 1000,
+  "clues_mean": 32.144,
+  "given_cell_accuracy": 0.992595818815331,
+  "puzzles_all_givens_correct": 0.79,
+  "puzzle_accuracy": 0.79,
+  "unsat_rate": 0.19199999999999995,
+  "sat_but_wrong_rate": 0.018,
+  "mean_solve_s": 0.000145288,
+  "mean_decisions": 2.034,
+  "mean_propagations": 677.276,
+  "mean_conflicts": 0.158,
+  "oracle_mean_conflicts": 0.214
+}

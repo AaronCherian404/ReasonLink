@@ -3,3 +3,5 @@
 *.png binary
 *.npy binary
 *.bin binary
+*.caffemodel binary
+*.nvdla binary

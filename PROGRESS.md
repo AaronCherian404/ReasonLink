@@ -3,7 +3,7 @@
 Running record of what is built, what was decided, and what is blocked. Update at the end of every stage.
 
 **Current target:** P1, due Oct 19, 2026 ("Infrastructure and baselines").
-**Branch:** `p1`, with local commits only. One commit per stage.
+**Branch:** `p1`, pushed to `github.com/AaronCherian404/ReasonLink` (public). torino uses a clone of it at `~/ReasonLink`.
 
 ## P1 definition (adapted to ESP + NVDLA)
 
@@ -32,9 +32,80 @@ The proposal's P1 calls for three things. On the new platform they mean:
 | Stage | Scope | Status | Commit |
 |---|---|---|---|
 | 0 | Repo scaffolding, local env, SAT-Accel submodule, server inventory, ESP clone (the toolchain is preinstalled on the server) | **Done** (2026-10-16) | see `git log` |
-| 1 | Sudoku CNF, dataset, int8 LeNet + score traces, NVDLA compiler flow, pysat reference | not started | |
+| 1 | Sudoku CNF, dataset, int8 LeNet + score traces, NVDLA compiler flow, pysat reference | **Local part done. NVDLA compile on torino pending.** | |
 | 2 | Standalone SAT-Accel image builder + byte-exact golden test; SAT-Accel software emulation on the server | not started | |
 | 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | not started | |
+
+## Stage 1: workload and classifier
+
+### Reproduce (local WSL, venv `~/venvs/reasonlink`)
+Run from `workload/`. The whole sequence takes about 1.5 min on a laptop.
+
+```bash
+bash fetch_esp_lenet.sh                     # ESP's NVDLA LeNet assets -> data/nvdla (md5-checked)
+python nvdla_lenet.py --model esp --check   # int8 emulator vs ESP's NVDLA output
+python train_lenet.py                       # retrain -> models/rl_lenet/ (committed)
+python dataset.py --num 1000 --seed 0       # -> data/sudoku/{base.cnf,puzzles.npz,trace.bin}
+python reference_solve.py                   # -> results/p1/reference_*.{csv,json}, data/sudoku/reference.npz
+```
+
+### Classifier: ESP's LeNet architecture with retrained weights
+
+**The int8 emulator matches NVDLA bit for bit on ESP's reference.** `workload/nvdla_lenet.py` loads Caffe weights with a small protobuf reader and emulates the int8 pipeline:
+- input: the runtime's own mapping, `round(p·127/255)`
+- per-channel int8 weights
+- int32 accumulation
+- requantization to each layer's calibrated scale, where ip1 uses the `relu1` scale
+- softmax on the CPU, quantized at about 1/127
+
+With ESP's weights, the output for `seven.pgm` is `[0,2,0,0,0,0,0,124,0,0]`, identical to ESP's published NVDLA `--rawdump`.
+
+**ESP's demo weights are not usable for Sudoku.** They reach only **74.5%** on (inverted) MNIST and 13% on standard MNIST; for example, 1 of 974 eights is classified correctly. The cause is in the caffemodel itself: it was trained in NVIDIA DIGITS with mean-image subtraction (`mean.binaryproto`) and a `Power` scale of 0.0125. The deploy prototxt drops both, and the NVDLA runtime's int8 input path (`TestUtils.cpp`, `createImageCopy`) cannot apply them, because it ignores `--mean` and `--normalize` for int8.
+
+**The fix.** `workload/train_lenet.py` keeps ESP's exact prototxt and retrains the weights on `p/255`, white digits on black.
+- The new `.caffemodel` is ESP's layer records with our weight blobs swapped in. Training-only layers are removed, and the bottom of conv1 is set to `data`.
+- The calibration table uses ESP's JSON format with max-abs/127 scales. The data scale is 1/127, so the runtime's `round(p·127/255)` means exactly `p/255`.
+
+| Model | MNIST test float | MNIST test int8 (emulated) |
+|---|---|---|
+| ESP demo weights | 74.5% (inverted input) | 74.5% |
+| **Retrained (`models/rl_lenet`, seed 0, 8 epochs)** | **99.17%** | **99.20%** |
+
+The exit criterion (float ≥ 99% and int8 within 0.5% of float) passes.
+
+### NVDLA compiler on torino (in progress)
+- **Setup.** `NV_NVDLA/sw` submodule at `4c02fb4351efb43b3490c5720f21fd6d32f8abaa`. The prebuilt x86 `nvdla_compiler` runs on RHEL 8 with `LD_LIBRARY_PATH=$NVC`, where `NVC=~/esp/accelerators/third-party/NV_NVDLA/sw/prebuilt/x86-ubuntu`; `libnvdla_compiler.so` lives there.
+- **Options.** `--profile`, `--cprecision fp16|int8`, `--configtarget`, `--calibtable`, `--quantizationMode per-kernel|per-filter` (default per-kernel), `--informat ncxhwx|nchw|nhwc` (default nhwc). Pass `-h`; `--help` is rejected.
+- **The compiler is deterministic.** `nchw` and `ncxhwx` give the same md5. This means ESP's loadable can be reproduced exactly once we have its options.
+
+**Attempts to reproduce ESP's `lenet_mnist.nvdla` (md5 `9831533f…`, 445,736 B), all int8 on nv_small:**
+
+| `--informat` | `--quantizationMode` | md5 | Notes |
+|---|---|---|---|
+| nhwc (default) | per-kernel (default) | `727b01dc…` (446,096 B) | warns: input treated as 4-channel A8B8G8R8 |
+| nchw | per-kernel | `e4d6150c…` | |
+| ncxhwx | per-kernel | `e4d6150c…` | |
+
+- **Emulator hint.** Per-channel weight scales reproduce ESP's `124`; per-tensor scales give `125`. So ESP's loadable was likely built with `per-filter`. Next attempt: per-filter × {nchw, nhwc}.
+- **Our model.** `models/rl_lenet/` is not compiled yet. The scp transfer failed, so torino now gets the repo by cloning the `p1` branch from GitHub.
+
+### Sudoku workload
+- **Encoding (`sudoku_cnf.py`).** Variables are numbered `var = 81r + 9c + d`, cell-major. The extended encoding gives **729 vars and 11,988 clauses** (324 at-least-one clauses plus 11,664 binary clauses), with 26,244 literal occurrences. The base formula is identical for every puzzle; the givens are unit literals.
+- **Dataset (`dataset.py`, seed 0).** 1,000 puzzles, each with a unique solution and 24–40 clues (mean 32.1). Every given cell gets an MNIST *test* image of its digit and is classified by the int8 stand-in.
+- **NVDLA output trace (`trace.bin`).** Per puzzle: an 81-byte given mask, then 81 × 16 B of int8 ip2 logits (10 used). The 16 B stride is our choice for the stand-in; NVDLA's real output surface layout is to be confirmed on ESP.
+
+### Reference solve (pysat MiniSat 2.2, `results/p1/reference_summary.json`)
+
+| Metric | Value |
+|---|---|
+| Given-cell accuracy (argmax over digits 1–9) | 99.26% |
+| Puzzle accuracy (solution equals ground truth) | **79.0%** (≈ 0.9926^32) |
+| UNSAT rate (misread givens contradict each other) | 19.2% |
+| SAT but wrong | 1.8% |
+| Solver work per puzzle (mean) | 2.0 decisions, 677 propagations, 0.16 conflicts, ~0.1 ms |
+| Oracle (true givens) | always SAT and correct (asserted), 0.21 conflicts |
+
+**What this means for the study.** With 24–40 clues, Sudoku is almost entirely solved by propagation. T_sat will be tiny, so the handoff is likely to dominate (H1). The H3 crossover will need harder instances: fewer clues, 16×16, or non-Sudoku CNFs.
 
 ## Environments
 
@@ -128,6 +199,9 @@ All buffers are migrated to the device in full for every instance (`host.cpp` 49
 - **2026-10-16: scope.** The current scope is P1 only. Later stages (ReasonLink RTL, the calibrated model, ESP SoC, board) will be planned after P1.
 - **2026-10-16: where things run.** Local WSL handles the workload, image builder and baseline harness. The Columbia server handles ESP, Vitis/Vivado, ModelSim and the NVDLA compiler.
 - **2026-10-16: Python venv location.** It lives outside the repo, at `~/venvs/reasonlink`, because I/O on `/mnt/c` is slow.
+- **2026-10-16: GitHub.** The user approved pushing the `p1` branch to GitHub (public) so torino can `git clone` our code. Before this, commits were local only.
+- **2026-10-16: classifier.** Use ESP's LeNet architecture and NVDLA flow (approved by the user). Its weights were retrained because ESP's demo weights reach only 74.5% under the runtime's preprocessing (see Stage 1).
+- **2026-10-16: neural output used for the handoff.** The int8 ip2 logits, not the softmax output. In the NVDLA software stack, softmax is expected to run on the CPU as an emulator task; this is to be confirmed from the compiler output. Argmax does not need the softmax.
 
 ## Open issues / blockers
 - **SAT-Accel simulation route (Stage 2).** Neither `v++` nor XRT is on torino, so SAT-Accel's native `sw_emu` flow is unavailable. The route will be decided in Stage 2. Candidates:
