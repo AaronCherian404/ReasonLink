@@ -1,0 +1,6 @@
+# Top-level dependencies. Exact resolved versions are in requirements.lock.txt.
+--extra-index-url https://download.pytorch.org/whl/cpu
+numpy==1.26.4
+torch==2.4.1+cpu
+torchvision==0.19.1+cpu
+python-sat

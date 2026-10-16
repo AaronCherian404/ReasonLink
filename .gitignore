@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Build outputs
+build/
+*.o
+*.out
+*.elf
+
+# Large or regenerable data
+data/
+*.npy
+*.bin
+*.pt
+
+# LaTeX
+*.aux
+*.log
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+
+# Local secrets (server access)
+env/server.env
