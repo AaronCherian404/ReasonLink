@@ -11,7 +11,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 
 1. **The neural accelerator runs the classifier.** ESP's LeNet with retrained weights is compiled to an NVDLA nv_small loadable on torino. A bit-validated int8 emulator produces per-cell score traces, which stand in for NVDLA's output buffer in DRAM. *(Done in Stage 1.)*
 2. **The SAT solver solves Sudoku CNFs in simulation.** There is no `v++`/XRT on torino, so per decision option C, MiniSat is the functional stand-in. It consumes the exact SAT-Accel memory image the host builds, which is verified byte for byte against SAT-Accel's own code. *(Done in Stage 2.)*
-3. **Both baselines run end to end with cycle counters.** The serial and double-buffered handoffs follow SAT-Accel's native host flow:
+3. **Both baselines run end to end with cycle counters.** *(Done in Stage 3; results below.)* The serial and double-buffered handoffs follow SAT-Accel's native host flow:
    1. scores
    2. argmax
    3. full memory image
@@ -36,7 +36,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 | 0 | Repo scaffolding, local env, SAT-Accel submodule, server inventory, ESP clone (the toolchain is preinstalled on the server) | **Done** (2026-10-16) | see `git log` |
 | 1 | Sudoku CNF, dataset, int8 LeNet + score traces, NVDLA compiler flow, pysat reference | **Done** (2026-10-16) | see `git log` |
 | 2 | Standalone SAT-Accel image builder + byte-exact golden test; SAT solver on Sudoku (P1 stand-in: MiniSat reading the SAT-Accel image) | **Done** (2026-10-16) | see `git log` |
-| 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | not started | |
+| 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | **Done locally** (2026-10-16). RISC-V build verified with Ubuntu's cross compiler + QEMU; torino build pending. | see `git log` |
 
 ## Stage 1: workload and classifier
 
@@ -194,6 +194,71 @@ For each puzzle, the full chain runs:
 
 **The stand-in is a different MiniSat build from pysat's `m22`.** On multi-solution instances it may return a different (valid) model, which the 8 differing grids reflect. Stage 3 runs every interface on this same backend, so solutions must be identical across interfaces.
 
+## Stage 3: baselines end to end with cycle counters
+
+### Reproduce (local WSL, after Stages 1–2)
+```bash
+cd baselines
+make            # build/native/rl_baselines
+make run        # 4 runs x 1,000 puzzles + checks -> results/p1/baseline_*.csv, baselines_summary.{json,md}
+make riscv      # static RISC-V Linux binary for Ariane (torino toolchain)
+make riscv RISCV_CROSS=riscv64-linux-gnu-   # same, with Ubuntu's g++-riscv64-linux-gnu
+```
+
+### What runs (`baselines/harness.c`)
+Two threads: the **host** runs SAT-Accel's native flow, and a second thread stands in for the **device**. Every phase is timed with the cycle counter (`baselines/rl_timer.h`: `rdtsc` on x86, `rdcycle` on RISC-V).
+
+| Phase | What it covers |
+|---|---|
+| T_conv | Argmax over the int8 logits → unit literals, then base CNF + units → SAT-Accel image (`sa_build_image`, Stage 2) |
+| T_xfer | Copy every region into separate "device" buffers, then the scalar kernel arguments |
+| T_sync | Doorbell (slot state → READY) plus detecting completion (busy-poll). `--poll-us` emulates sleep-polling; SAT-Accel's `host.cpp` polls every 1 s. |
+| T_sat | Device thread: decode its copy of the image, MiniSat (P1 stand-in, option C), extract the grid |
+| T_nn | **Not measured in P1.** The NVDLA output is replayed from `trace.bin`. |
+
+**The two baselines:**
+- **Serial:** one buffer set; the host waits for each solve.
+- **Double-buffered:** two buffer sets with explicit ownership states (FREE → READY → DONE → FREE). The host converts and transfers puzzle *i+1* while the device solves puzzle *i*, and it stalls only when the device still owns the slot it needs.
+
+**Configurations:**
+- **Faithful:** clears the full allocated buffers and copies all 10.5 MB, as `host.cpp` does per instance.
+- **Lean:** clears and copies only the used bytes (632 KB). It is there so the baseline is not a strawman.
+
+All runs use 20 warm-up puzzles and then measure all 1,000.
+
+### Results (WSL2 on a laptop, x86 `rdtsc`; `results/p1/baselines_summary.md`)
+Medians per puzzle, in µs:
+
+| Run | T_conv (argmax + image) | T_xfer | T_sync | T_sat (MiniSat stand-in) | Handoff share | Wall µs/puzzle | Bytes moved |
+|---|---|---|---|---|---|---|---|
+| serial, faithful | 1111.5 (0.69 + 1110.8) | 879.9 | 0.1 | 728.4 | **73.6%** | 2808.8 | 10,536,436 |
+| serial, lean | 695.5 (0.46 + 695.1) | 13.3 | 0.2 | 726.0 | **50.5%** | 1450.2 | 632,308 |
+| double, faithful | 1461.3 (0.86 + 1458.2) | 1159.0 | 0.0 | 763.9 | **70.5% exposed** | 2702.8 | 10,536,436 |
+| double, lean | 710.9 (0.49 + 710.5) | 16.1 | 0.0 | 743.1 | **5.1% exposed** | 800.6 | 632,308 |
+
+- **Handoff share.** For serial runs it is T_handoff / (T_handoff + T_sat). For double-buffered runs it is the exposed handoff, (wall − ΣT_sat) / wall.
+- **Correctness.** Every run passes the checks:
+  - SAT/UNSAT and grids are identical across all 4 runs.
+  - Results equal the PySAT reference: 992 exact, plus the same 8 verified alternative solutions as in Stage 2.
+
+### What the numbers say (pilot H1/H2, with host-CPU caveats)
+- **H1 (serial).** The handoff is **74% of end-to-end time** in SAT-Accel's native flow, and still 51% with lean buffer handling.
+  - The argmax, which is the step that actually consumes the neural output, takes under 1 µs.
+  - Almost all of the cost is rebuilding and moving an image of the unchanging base formula.
+- **H2 (double buffering).** It hides the handoff only when the handoff is shorter than the solve.
+  - **Faithful:** the handoff is about 2.6 ms against a 0.76 ms solve, so overlap barely helps (2809 → 2703 µs/puzzle; 70.5% still exposed).
+  - **Lean:** the handoff is about 0.73 ms against 0.74 ms, so it is almost fully hidden (5.1% exposed), but it still moves 632 KB per puzzle for 36 givens.
+  - In the faithful double-buffered run, T_conv and T_xfer grow by about 30% over serial: host and device compete for memory bandwidth.
+
+### Caveats
+- **Host timing.** All times are host x86 cycles under WSL2. On ESP, conversion runs on Ariane and the transfer is DMA over ESP's NoC, so absolute numbers and ratios will change. This harness is the code that will run there.
+- **T_sat is MiniSat, not SAT-Accel.** It includes MiniSat loading about 12k clauses, so it is a rough stand-in for SAT-Accel's copy-in plus search. Search itself is tiny (1.2 decisions per puzzle).
+- **No outlier filtering.** These are single runs of 1,000 puzzles each.
+
+### RISC-V build
+- **Local.** `make riscv RISCV_CROSS=riscv64-linux-gnu-` builds a static RISC-V Linux executable (rv64gc, glibc). Run under `qemu-riscv64`, its serial and double modes produce SAT flags and grids identical to the native run on 50 puzzles, and `rdcycle` works.
+- **torino.** Building with its preinstalled `riscv64-unknown-linux-gnu-` toolchain (GCC 9.2) is pending; the user will run it.
+
 ## Environments
 
 ### Local (WSL Ubuntu 24.04 on Windows)
@@ -301,6 +366,7 @@ All buffers are migrated to the device in full for every instance (`host.cpp` 49
   - `lean_clear` clears only the ranges written last time. It is there so the baseline is not a strawman.
 
 ## Open issues / blockers
+- **The baselines have not run on Ariane yet.** The binary is ready (`make riscv`), but there is no ESP SoC simulation or board yet. All P1 times are host x86.
 - **SAT-Accel itself is not exercised in P1.** It still needs one of: `v++` and XRT on a machine with access, the threaded C++ harness (option A), or an RTL port onto ESP. To revisit after P1.
 - **Toolchain version.** The server has Vitis HLS 2023.2, but SAT-Accel targets 2022.2. Pragmas or headers may need small fixes when we build it.
 - **Windows checkouts.** Git's `core.autocrlf=true` turns SAT-Accel's DIMACS benchmarks into CRLF files, which its parser cannot read. `run_golden.sh` strips the CRs; a Linux checkout (torino) is unaffected.

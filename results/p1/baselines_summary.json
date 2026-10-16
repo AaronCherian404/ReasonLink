@@ -1,0 +1,112 @@
+{
+  "serial_faithful": {
+    "puzzles": 1000,
+    "timer": "rdtsc",
+    "cycles_per_us": 3194.007,
+    "clear": "full",
+    "xfer": "allocated",
+    "median_us": {
+      "argmax": 0.691294665290339,
+      "image": 1110.7652550542311,
+      "conv": 1111.506486992671,
+      "xfer": 879.8828556105232,
+      "sync": 0.14026268571108327,
+      "stall": 0.0,
+      "sat": 728.3941456609206,
+      "handoff": 2024.8321309251983
+    },
+    "xfer_bytes_median": 10536436.0,
+    "wall_us_per_puzzle": 2808.8283588608288,
+    "throughput_puzzles_per_s": 356.0203302723589,
+    "check": {
+      "identical_across_runs": true,
+      "match_reference": 992,
+      "valid_alternative": 8,
+      "wrong": 0
+    },
+    "handoff_fraction": 0.7359043384434772
+  },
+  "serial_lean": {
+    "puzzles": 1000,
+    "timer": "rdtsc",
+    "cycles_per_us": 3194.007,
+    "clear": "lean",
+    "xfer": "used",
+    "median_us": {
+      "argmax": 0.46086311019355936,
+      "image": 695.116823475966,
+      "conv": 695.5476302963643,
+      "xfer": 13.33998328745053,
+      "sync": 0.15028144897616066,
+      "stall": 0.0,
+      "sat": 725.9696049507718,
+      "handoff": 709.8492583140863
+    },
+    "xfer_bytes_median": 632308.0,
+    "wall_us_per_puzzle": 1450.177149893535,
+    "throughput_puzzles_per_s": 689.5709259199231,
+    "check": {
+      "identical_across_runs": true,
+      "match_reference": 992,
+      "valid_alternative": 8,
+      "wrong": 0
+    },
+    "handoff_fraction": 0.5049386532913626
+  },
+  "double_faithful": {
+    "puzzles": 1000,
+    "timer": "rdtsc",
+    "cycles_per_us": 3194.007,
+    "clear": "full",
+    "xfer": "allocated",
+    "median_us": {
+      "argmax": 0.8616136407966545,
+      "image": 1458.1808994156868,
+      "conv": 1461.2566597380655,
+      "xfer": 1159.0306470837413,
+      "sync": 0.010018763265077377,
+      "stall": 0.020037526530154753,
+      "sat": 763.9256895805174,
+      "handoff": 2672.259641259396
+    },
+    "xfer_bytes_median": 10536436.0,
+    "wall_us_per_puzzle": 2702.794387113115,
+    "throughput_puzzles_per_s": 369.9874488299908,
+    "check": {
+      "identical_across_runs": true,
+      "match_reference": 992,
+      "valid_alternative": 8,
+      "wrong": 0
+    },
+    "exposed_handoff_us_per_puzzle": 1904.2264991905154,
+    "exposed_handoff_fraction": 0.7045399044299633
+  },
+  "double_lean": {
+    "puzzles": 1000,
+    "timer": "rdtsc",
+    "cycles_per_us": 3194.007,
+    "clear": "lean",
+    "xfer": "used",
+    "median_us": {
+      "argmax": 0.49060631363675783,
+      "image": 710.4805969429622,
+      "conv": 710.896375618463,
+      "xfer": 16.060077513919037,
+      "sync": 0.010018763265077377,
+      "stall": 13.014373481335515,
+      "sat": 743.146774568747,
+      "handoff": 727.8130573915461
+    },
+    "xfer_bytes_median": 632308.0,
+    "wall_us_per_puzzle": 800.6269040737857,
+    "throughput_puzzles_per_s": 1249.021229378822,
+    "check": {
+      "identical_across_runs": true,
+      "match_reference": 992,
+      "valid_alternative": 8,
+      "wrong": 0
+    },
+    "exposed_handoff_us_per_puzzle": 41.195196503952495,
+    "exposed_handoff_fraction": 0.0514536749818689
+  }
+}

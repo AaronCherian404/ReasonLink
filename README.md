@@ -25,6 +25,7 @@ The full proposal and the P1 report are in [`Project_Title__Identify_the_Problem
 ```
 workload/     Sudoku CNF encoder, puzzle generator, int8 NVDLA LeNet emulator, training, reference solve
 handoff/      SAT-Accel memory-image builder (C), solver backend, golden test, tools
+baselines/    serial and double-buffered handoff baselines with cycle counters (x86 / RISC-V)
 models/       retrained LeNet (Caffe model + int8 calibration) for NVDLA
 results/p1/   machine-readable results
 env/          environment setup and server inventory scripts
@@ -67,7 +68,15 @@ make golden          # byte-exact check vs SAT-Accel's own host code
 make solvecheck      # trace -> SAT-Accel image -> solver on all puzzles
 ```
 
-### 4. NVDLA loadable (on the ESP machine)
+### 4. Baselines (local)
+```bash
+cd baselines
+make run             # serial + double-buffered, faithful + lean, 1,000 puzzles each
+                     # -> results/p1/baseline_*.csv, baselines_summary.{json,md}
+make riscv           # static RISC-V Linux binary for Ariane (ESP's RISC-V toolchain)
+```
+
+### 5. NVDLA loadable (on the ESP machine)
 ```bash
 git clone https://github.com/sld-columbia/esp.git ~/esp
 cd ~/esp && git checkout 2026.1.0

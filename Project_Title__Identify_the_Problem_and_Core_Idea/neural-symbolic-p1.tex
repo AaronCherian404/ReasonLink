@@ -30,14 +30,14 @@ P1 Milestone $\mid$ Due October 19, 2026, 11:59 PM ET}}
 \pagestyle{plain}
 
 \noindent\textbf{Repository:} \url{https://github.com/AaronCherian404/ReasonLink}\\
-Results below are from commit \texttt{30372c8}. The repository's \texttt{PROGRESS.md} logs every step, decision, and reproduction command.
+All numbers below are reproducible from the repository (raw per-run data in \texttt{results/p1/}); \texttt{PROGRESS.md} logs every step, decision, and command.
 
 % =====================================================================
 \section{Summary and Platform Change}
 % =====================================================================
 We could not obtain the VCU118 that the Chipyard/FireSim flow needed, so we moved from Chipyard and Gemmini to ESP~\cite{esp}, the open SoC platform that already integrates NVDLA~\cite{nvdla} as a third-party accelerator alongside Ariane~\cite{espnvdla}. The neural accelerator is now NVDLA \emph{nv\_small} (int8, 64 MACs); the symbolic accelerator is still SAT-Accel~\cite{sataccel}. ESP's full flow is installed on a departmental server, and a VCU118 will be available later through ESP. The research question, the visual-Sudoku workload, the two baselines, and the four ReasonLink mechanisms are unchanged.
 
-For P1 we built every piece of the pipeline that does not need the board, and checked each against a reference (Table~\ref{tab:status}). The main gap is that SAT-Accel itself cannot run yet; a MiniSat stand-in consumes SAT-Accel's exact memory image instead (Sec.~\ref{sec:sat}).
+For P1 we built every piece of the pipeline that does not need the board, checked each against a reference (Table~\ref{tab:status}), and ran both baselines end to end (Sec.~\ref{sec:baselines}). The main gap is that SAT-Accel itself cannot run yet; a MiniSat stand-in consumes SAT-Accel's exact memory image instead (Sec.~\ref{sec:sat}).
 
 \begin{table}[h]
 \centering
@@ -54,7 +54,7 @@ int8 LeNet classifier & Working (emulated) & 99.20\% MNIST; emulator matches NVD
 Sudoku workload & Working & 1{,}000 puzzles + NVDLA output trace \\
 SAT-Accel host image & Working & C port byte-exact vs.\ SAT-Accel, 13/13 \\
 SAT solving & Stand-in & MiniSat on SAT-Accel's image; SAT-Accel blocked \\
-Serial / double-buffered baselines & In progress & Due Oct 19 (Sec.~\ref{sec:next}) \\
+Serial / double-buffered baselines & Working (host) & End to end, cycle-counted, 1{,}000 puzzles; RISC-V build \\
 NVDLA, SAT-Accel on ESP SoC & Not started & After P1 \\
 \bottomrule
 \end{tabularx}
@@ -124,7 +124,31 @@ Solver work per puzzle (decisions / conflicts) & 1.2 / 0.16 \\
 \end{tabularx}
 \end{table}
 
-\textbf{Handoff size.} Table~\ref{tab:bytes} gives the first baseline measurement: bytes per puzzle on the native SAT-Accel path. The neural stage produces 1.3\,KB of logits that encode 36 givens. SAT-Accel's host flow nonetheless rebuilds a 632\,KB image, almost all of it the unchanging base formula, and migrates its full 10.5\,MB of allocated buffers on every instance. Meanwhile the solver needs about one decision per puzzle. Both observations are consistent with H1 and motivate delta transfers.
+\textbf{Handoff size.} Table~\ref{tab:bytes} gives bytes per puzzle on the native SAT-Accel path. The neural stage produces 1.3\,KB of logits that encode 36 givens. SAT-Accel's host flow nonetheless rebuilds a 632\,KB image, almost all of it the unchanging base formula, and migrates its full 10.5\,MB of allocated buffers on every instance.
+
+\textbf{Baselines.}
+\label{sec:baselines}
+Both baselines run end to end on all 1{,}000 puzzles. A host thread performs SAT-Accel's native flow: argmax, image build, copy into separate device buffers, and a doorbell plus completion poll. A device thread decodes its copy and solves it. Every phase is timed with the cycle counter (\texttt{rdtsc}; \texttt{rdcycle} on RISC-V). The double-buffered baseline uses two buffer sets with explicit ownership states. We run each baseline \emph{faithful} (full buffers cleared and copied, as SAT-Accel's host does) and \emph{lean} (only the bytes in use), so that the serial baseline is not a strawman. All four runs return identical answers that match the PySAT reference. Table~\ref{tab:baselines} gives the breakdown.
+
+\begin{table}[h]
+\centering
+\caption{Baseline breakdown, median $\mu$s per puzzle (host x86, 1{,}000 puzzles). Share: $T_{\text{handoff}}/(T_{\text{handoff}}+T_{\text{sat}})$ for serial runs; exposed fraction of wall time for double-buffered runs.}
+\label{tab:baselines}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}Yrrrrr@{}}
+\toprule
+\textbf{Run} & $T_{\text{conv}}$ & $T_{\text{xfer}}$ & $T_{\text{sat}}$ & \textbf{Share} & \textbf{Wall} \\
+\midrule
+Serial, faithful & 1112 & 880 & 728 & 73.6\% & 2809 \\
+Serial, lean & 696 & 13 & 726 & 50.5\% & 1450 \\
+Double, faithful & 1461 & 1159 & 764 & 70.5\% & 2703 \\
+Double, lean & 711 & 16 & 743 & 5.1\% & 801 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+These pilot numbers support H1 and H2. In the native flow, the handoff is 74\% of end-to-end time, yet the argmax that actually consumes the neural output takes under 1\,$\mu$s; the rest is rebuilding and moving the base formula. Double buffering hides the handoff only when it is shorter than the solve. The faithful handoff (2.6\,ms vs.\ a 0.76\,ms solve) stays 70\% exposed; the lean one is nearly hidden but still moves 632\,KB per puzzle. $T_{\text{sync}}$ is below 1\,$\mu$s with busy polling, whereas SAT-Accel's host polls once per second.
 
 \begin{table}[h]
 \centering
@@ -142,7 +166,7 @@ SAT-Accel buffers migrated per instance & 10{,}536{,}436 \\
 \end{tabularx}
 \end{table}
 
-\textbf{Limitations.} Solver time in P1 is MiniSat CPU time, not SAT-Accel cycles. NVDLA has not yet executed on hardware: the loadable is compiled, and its outputs are emulated. NVDLA's real output layout in memory is still to be confirmed on ESP. Sudoku with $\geq$24 clues is nearly propagation-only, so the H3 crossover will need harder instances.
+\textbf{Limitations.} All times are host x86 cycles; on ESP, conversion runs on Ariane and transfers use DMA over the NoC, so absolute values and ratios will change. The same harness cross-compiles to a static RISC-V binary for that purpose. Solver time in P1 is MiniSat CPU time, not SAT-Accel cycles. NVDLA has not yet executed on hardware: the loadable is compiled, and its outputs are emulated. NVDLA's real output layout in memory is still to be confirmed on ESP. Sudoku with $\geq$24 clues is nearly propagation-only, so the H3 crossover will need harder instances.
 
 % =====================================================================
 \section{Next Steps}
@@ -154,8 +178,7 @@ SAT-Accel buffers migrated per instance & 10{,}536{,}436 \\
 \toprule
 \textbf{Target} & \textbf{Task} \\
 \midrule
-Oct 19 (P1) & Serial and double-buffered baselines end to end on all 1{,}000 puzzles, with per-puzzle $T_{\text{conv}}$, $T_{\text{xfer}}$, $T_{\text{sync}}$, $T_{\text{sat}}$ cycle counts; cross-compile both for RISC-V (Ariane). \\
-Nov 2 (P2) & Run SAT-Accel functionally (its HLS kernels as threads, or XRT on a machine with access); first ESP SoC with Ariane and NVDLA in simulation; ReasonLink prototype with literal stream and on-chip FIFO; pilot H1--H2 breakdown. \\
+Nov 2 (P2) & Run SAT-Accel functionally (its HLS kernels as threads, or XRT on a machine with access); first ESP SoC with Ariane and NVDLA in simulation, running the RISC-V baselines; ReasonLink prototype with literal stream and on-chip FIFO, compared against Table~\ref{tab:baselines}. \\
 After P2 & Delta transfers and overlap; SAT-Accel on ESP; VCU118 runs when the board is available. \\
 \bottomrule
 \end{tabularx}
