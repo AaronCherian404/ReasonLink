@@ -8,15 +8,10 @@
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{tabularx}
-\usepackage{xcolor}
 \usepackage[hyphens]{url}
 \usepackage[hidelinks]{hyperref}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
-
-% Red placeholder; swap the definitions to hide highlighting.
-\newcommand{\fillme}[1]{\textcolor{red}{[#1]}}
-% \newcommand{\fillme}[1]{#1}
 
 \title{ReasonLink: P1 Infrastructure and Baselines}
 \author{\IEEEauthorblockN{Vayun Gupta (vg2684), Aaron Mano Cherian (amc2535)}
@@ -168,6 +163,17 @@ SAT-Accel buffers migrated per instance & 10{,}536{,}436 \\
 \textbf{Limitations.} All times are host x86 cycles; on ESP, conversion runs on Ariane and transfers use DMA over the NoC, so absolute values and ratios will change. The same harness cross-compiles to a static RISC-V binary for that purpose. Solver time in P1 is MiniSat CPU time, not SAT-Accel cycles. NVDLA has not yet executed on hardware: the loadable is compiled, and its outputs are emulated. NVDLA's real output layout in memory is still to be confirmed on ESP. Sudoku with $\geq$24 clues is nearly propagation-only, so the H3 crossover will need harder instances.
 
 % =====================================================================
+\section{Problems Encountered}
+% =====================================================================
+\begin{itemize}
+\item \emph{No VCU118 for Chipyard.} We moved to ESP, whose full flow is installed on the server; a VCU118 will be available later through ESP.
+\item \emph{SAT-Accel cannot run.} Its emulation flow needs Vitis \texttt{v++} and XRT, which the server lacks and which need root to install. \emph{Open:} a MiniSat stand-in solves SAT-Accel's exact memory image meanwhile.
+\item \emph{ESP's LeNet weights are mis-preprocessed} (74.5\% on MNIST under NVDLA's int8 input path). We retrained the same network (99.20\%).
+\item \emph{The NVDLA compiler's default flags do not reproduce ESP's loadable}, and \texttt{-{}-calibtable} fails with an absolute path. A flag search found ESP's settings; inputs are passed by bare file name.
+\item \emph{Toolchain issues.} A Windows checkout turns SAT-Accel's benchmarks into CRLF files that its parser rejects; the golden test normalizes them. MiniSat's 2013 headers need \texttt{-fpermissive} on modern g++, and the server's RISC-V sysroot lacks the \texttt{zlib.h} that MiniSat's headers include; the RISC-V build supplies a stub.
+\end{itemize}
+
+% =====================================================================
 \section{Next Steps}
 % =====================================================================
 \label{sec:next}
@@ -182,8 +188,6 @@ After P2 & Delta transfers and overlap; SAT-Accel on ESP; VCU118 runs when the b
 \bottomrule
 \end{tabularx}
 \end{center}
-
-\noindent\textbf{Team contributions.} \fillme{Who did what for P1.}
 
 \appendices
 \section{Reproduction Steps}
