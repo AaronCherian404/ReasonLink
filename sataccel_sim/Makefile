@@ -21,7 +21,8 @@ ifeq ($(HLS_INC),)
   HLS_FLAGS := -Ishim -I$(APINT)
   HLS_DEPS  := $(wildcard shim/*.h)
 else
-  HLS_FLAGS := -I$(HLS_INC) -DHLS_STREAM_THREAD_SAFE
+  # Vitis HLS keeps ap_utils.h (ap_wait) under include/etc/
+  HLS_FLAGS := -I$(HLS_INC) $(if $(wildcard $(HLS_INC)/etc/ap_utils.h),-I$(HLS_INC)/etc) -DHLS_STREAM_THREAD_SAFE
 endif
 CXXFLAGS ?= -O2 -std=c++14 -w -pthread
 CFLAGS   ?= -O2 -std=c11 -Wall -Wextra
