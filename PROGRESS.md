@@ -37,6 +37,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 | 1 | Sudoku CNF, dataset, int8 LeNet + score traces, NVDLA compiler flow, pysat reference | **Done** (2026-10-16) | see `git log` |
 | 2 | Standalone SAT-Accel image builder + byte-exact golden test; SAT solver on Sudoku (P1 stand-in: MiniSat reading the SAT-Accel image) | **Done** (2026-10-16) | see `git log` |
 | 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | **Done** (2026-10-16). RISC-V build verified locally (Ubuntu cross compiler + QEMU) and built on torino. | see `git log` |
+| P2-1 | SAT-Accel's kernels in functional simulation; cross-checked against Vitis HLS 2023.2 headers; `--solver sataccel` in the baselines | **Done** (2026-10-21) | branch `p2` |
 
 ## Stage 1: workload and classifier
 
@@ -263,7 +264,7 @@ Medians per puzzle, in µs:
 
 ## P2 Stage 1: SAT-Accel in functional simulation (`sataccel_sim/`)
 
-**Status (2026-10-21):** functional check done; SAT-Accel is a solver option in the baselines (`--solver sataccel`). Still to do: the cross-check build against Vitis HLS 2023.2's headers on torino.
+**Status: done (2026-10-21).** Functional check passes with our shim and with Vitis HLS 2023.2's own headers on torino, and SAT-Accel is a solver option in the baselines (`--solver sataccel`).
 
 ### Reproduce (local WSL, after P1 Stages 1–2)
 ```
@@ -274,6 +275,15 @@ cd ../baselines
 make run-sataccel   # about 12 min; the four P1 configurations with --solver sataccel -> results/p2
 ```
 `HLS_INC=/path/to/Vitis_HLS/<ver>/include make` builds against vendor headers instead of `shim/`.
+
+Vendor-header cross-check, run by the user on torino (output in `results/p2/sataccel_benchmarks_vitis2023.2.txt`):
+```
+cd ~/ReasonLink && git fetch origin && git checkout p2 && git pull --ff-only
+git submodule update --init third_party/FPGA25_SAT_Accel third_party/HLS_arbitrary_Precision_Types
+HLS_ROOT=/opt/Xilinx/Vitis_HLS/2023.2
+cd sataccel_sim && make clean && make -k -j8 HLS_INC=$HLS_ROOT/include
+BENCH_ONLY=1 OUT=/tmp/sa_p2 bash run_check.sh
+```
 
 ### What runs
 - **Kernels.** SAT-Accel's 16 kernel sources compiled unmodified, with `FPGA_HW` undefined (their sw_emu code path).
@@ -286,6 +296,7 @@ make run-sataccel   # about 12 min; the four P1 configurations with --solver sat
 | Set | Result |
 |---|---|
 | SAT-Accel's benchmarks (our P1 golden set plus `testcases_sim.sh` instances present in the repo) | **16/16 pass** (10 SAT, 6 UNSAT). Slowest: `hole7` (4,419 decisions, 3,558 conflicts, 24.7 s) and `4blocks` (11,649 decisions, 23.8 s). |
+| Same benchmarks, built against **Vitis HLS 2023.2's headers** on torino | **16/16 pass**, with decision and conflict counts **identical** to the shim build on every instance (the search is deterministic, so this cross-validates the shim). |
 | 1,000 Sudoku puzzles | SAT/UNSAT matches PySAT on **1000/1000**. Grids: 991 identical, 9 valid alternative solutions, 0 wrong. Mean 1.44 decisions and 0.14 conflicts per puzzle, 12 ms simulation time. |
 
 Times are simulation wall time on the laptop, not hardware cycles. `sim` excludes the conversion of the image into the kernels' `ap_int` buffer types.
@@ -301,7 +312,12 @@ Times are simulation wall time on the laptop, not hardware cycles. `sim` exclude
 - **Symptom.** `4blocks`, `qg6-10` and `hole7` hung: `restartCalculator` and `pqHandler` had exited, and the solver was blocked reading `restartValueStream`.
 - **Cause.** `restart.cpp`'s sw_emu path does `ap_axiu<1,0,0,0> pkt; stop.read_nb(pkt); if (pkt.data) break;`. When the stream is empty, `pkt.data` is uninitialised (`ap_uint`'s default constructor does not zero it). Stack garbage reads as "stop", so the kernel exits early and writes its final 0. The solver then consumes that 0 as a restart value at its next restart, and its end-of-solve flush (`FLUSH_RESTART_*`, waiting for a 0) blocks forever. Only instances that reach a restart were affected.
 - **Fix.** `shim/ap_axi_sdata.h` zero-initialises all `ap_axiu`/`ap_axis` fields, so an empty `read_nb` means "no stop". This matches the `FPGA_HW` path, which stops on a blocking read of a real stop message. The kernel sources stay unmodified.
-- **Caveat.** A build with `HLS_INC` (vendor headers) may still hit this, depending on whether Vitis's `ap_axiu` zero-initialises.
+- **Vendor headers.** The Vitis HLS 2023.2 build does not hang on these instances and gives the same search trace, so Vitis's sw_emu types do not expose the bug.
+- **Vendor include path.** Vitis HLS 2023.2 keeps `ap_utils.h` under `include/etc/`; the Makefile adds it when `HLS_INC` is set.
+
+### Fidelity notes
+- **Unbounded streams.** As in sw_emu, streams have no depth limit. Vitis's csim reports a maximum occupancy of up to 8,055 entries (`4blocks`), far above hardware FIFO depths (`k2k.cfg` sets 16 for `messageStream`). In hardware, a full FIFO stalls the producer; that changes timing, not answers, unless the protocol deadlocks under backpressure. Only hw_emu/RTL can rule that out.
+- **No timing.** Simulation time says nothing about SAT-Accel's cycle count.
 
 ## Environments
 
