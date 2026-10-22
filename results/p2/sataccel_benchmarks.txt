@@ -1,0 +1,18 @@
+SAT-Accel functional simulation (threaded sw_emu path) on SAT-Accel benchmarks
+PASS   build/cases/sat_quinn.dimacs                 vars=16     clauses=18      result=SAT expect=SAT decisions=5 conflicts=1 sim=0.01s
+PASS   build/cases/sat_aim50.dimacs                 vars=50     clauses=80      result=SAT expect=SAT decisions=61 conflicts=23 sim=0.03s
+PASS   build/cases/sat_nqueens_4.dimacs             vars=16     clauses=80      result=SAT expect=SAT decisions=6 conflicts=2 sim=0.01s
+PASS   build/cases/sat_nqueens_8.dimacs             vars=64     clauses=736     result=SAT expect=SAT decisions=30 conflicts=10 sim=0.03s
+PASS   build/cases/sat_4blocks.dimacs               vars=758    clauses=47820   result=SAT expect=SAT decisions=11649 conflicts=2093 sim=23.75s
+PASS   build/cases/sat_aalto.dimacs                 vars=12     clauses=11      result=SAT expect=SAT decisions=6 conflicts=0 sim=0.01s
+PASS   build/cases/sat_sudoku_4_2_2.dimacs          vars=64     clauses=320     result=SAT expect=SAT decisions=10 conflicts=0 sim=0.01s
+PASS   build/cases/sat_sudoku_6_2_3.dimacs          vars=216    clauses=1692    result=SAT expect=SAT decisions=42 conflicts=0 sim=0.02s
+PASS   build/cases/sat_bmc-ibm-2.dimacs             vars=2810   clauses=11683   result=SAT expect=SAT decisions=317 conflicts=31 sim=0.32s
+PASS   build/cases/sat_bmc-ibm-5.dimacs             vars=9396   clauses=41207   result=SAT expect=SAT decisions=2904 conflicts=109 sim=2.39s
+PASS   build/cases/unsat_aalto_2.dimacs             vars=6      clauses=8       result=UNSAT expect=UNSAT decisions=9 conflicts=3 sim=0.01s
+PASS   build/cases/unsat_nqueens_3.dimacs           vars=9      clauses=31      result=UNSAT expect=UNSAT decisions=12 conflicts=5 sim=0.01s
+PASS   build/cases/unsat_dubois20.dimacs            vars=60     clauses=160     result=UNSAT expect=UNSAT decisions=370 conflicts=177 sim=0.23s
+PASS   build/cases/unsat_qg6-10.dimacs              vars=1000   clauses=33466   result=UNSAT expect=UNSAT decisions=356 conflicts=240 sim=2.70s
+PASS   build/cases/satlib_hole7_unsat.cnf           vars=56     clauses=204     result=UNSAT expect=UNSAT decisions=4419 conflicts=3558 sim=24.74s
+PASS   build/cases/satlib_aim-200-1_6-no-1.cnf      vars=200    clauses=320     result=UNSAT expect=UNSAT decisions=236 conflicts=26 sim=0.05s
+passed 16, failed 0

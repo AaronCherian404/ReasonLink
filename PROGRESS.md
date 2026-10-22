@@ -261,6 +261,39 @@ Medians per puzzle, in µs:
   - **First attempt failed:** MiniSat's `utils/ParseUtils.h` includes `<zlib.h>`, which that sysroot lacks. `make riscv` now adds `baselines/compat/` with a declarations-only stub. The gzip reader is never used, so nothing links against zlib.
   - **ISA flags:** `file` does not report RVC or the double-float ABI for this binary, unlike the Ubuntu rv64gc build. The toolchain's ISA/ABI defaults are to be checked against Ariane's configuration when it runs on ESP.
 
+## P2 Stage 1: SAT-Accel in functional simulation (`sataccel_sim/`)
+
+**Status:** functional check done (2026-10-21). Still to do in this stage: SAT-Accel as a backend option in the baselines (in place of the MiniSat stand-in), and a cross-check build against Vitis HLS 2023.2's headers on torino.
+
+### Reproduce (local WSL, after P1 Stages 1–2)
+```
+cd sataccel_sim
+make            # build/sataccel_check
+make check      # about 8 min; writes results/p2/sataccel_{benchmarks.txt,sudoku.csv,sudoku.txt}
+```
+`HLS_INC=/path/to/Vitis_HLS/<ver>/include make` builds against vendor headers instead of `shim/`.
+
+### What runs
+- **Kernels.** SAT-Accel's 16 kernel sources compiled unmodified, with `FPGA_HW` undefined (their sw_emu code path).
+- **Execution.** The 7 kernels (solver, clause_store_handler, location_handler, restartCalculator, timer, pqHandler, message) run as threads, wired exactly as `k2k.cfg`'s `stream_connect` lines, as Vitis sw_emu does. Scalar arguments follow `host.cpp`'s `setArg` calls.
+- **Input.** Our `sa_image` (the byte-exact port of SAT-Accel's host conversion), copied field by field into the kernels' buffer types.
+- **HLS headers.** `shim/`: a thread-safe unbounded `hls::stream` with a blocked-read watchdog (`RL_STREAM_TIMEOUT_S`, default 30 s), `ap_axiu`, and Xilinx's open-source `ap_int` (submodule `third_party/HLS_arbitrary_Precision_Types`).
+- **Checks.** Every SAT answer is checked against every clause. In Sudoku mode, SAT/UNSAT and the grid are also compared with the PySAT reference; a different grid counts only if it is itself a valid solution.
+
+### Results (`results/p2/`)
+| Set | Result |
+|---|---|
+| SAT-Accel's benchmarks (our P1 golden set plus `testcases_sim.sh` instances present in the repo) | **16/16 pass** (10 SAT, 6 UNSAT). Slowest: `hole7` (4,419 decisions, 3,558 conflicts, 24.7 s) and `4blocks` (11,649 decisions, 23.8 s). |
+| 1,000 Sudoku puzzles | SAT/UNSAT matches PySAT on **1000/1000**. Grids: 991 identical, 9 valid alternative solutions, 0 wrong. Mean 1.44 decisions and 0.14 conflicts per puzzle, 12 ms simulation time. |
+
+Times are simulation wall time on the laptop, not hardware cycles.
+
+### Problem found: uninitialised `read_nb` packet in SAT-Accel's sw_emu restart kernel
+- **Symptom.** `4blocks`, `qg6-10` and `hole7` hung: `restartCalculator` and `pqHandler` had exited, and the solver was blocked reading `restartValueStream`.
+- **Cause.** `restart.cpp`'s sw_emu path does `ap_axiu<1,0,0,0> pkt; stop.read_nb(pkt); if (pkt.data) break;`. When the stream is empty, `pkt.data` is uninitialised (`ap_uint`'s default constructor does not zero it). Stack garbage reads as "stop", so the kernel exits early and writes its final 0. The solver then consumes that 0 as a restart value at its next restart, and its end-of-solve flush (`FLUSH_RESTART_*`, waiting for a 0) blocks forever. Only instances that reach a restart were affected.
+- **Fix.** `shim/ap_axi_sdata.h` zero-initialises all `ap_axiu`/`ap_axis` fields, so an empty `read_nb` means "no stop". This matches the `FPGA_HW` path, which stops on a blocking read of a real stop message. The kernel sources stay unmodified.
+- **Caveat.** A build with `HLS_INC` (vendor headers) may still hit this, depending on whether Vitis's `ap_axiu` zero-initialises.
+
 ## Environments
 
 ### Local (WSL Ubuntu 24.04 on Windows)
@@ -367,8 +400,10 @@ All buffers are migrated to the device in full for every instance (`host.cpp` 49
   - The faithful mode clears the whole allocated buffers on each build, as `host.cpp` does per run.
   - `lean_clear` clears only the ranges written last time. It is there so the baseline is not a strawman.
 
+- **2026-10-21: SAT-Accel functional simulation (P2, option A).** Run SAT-Accel's unmodified kernels as threads with a header shim, since torino has no `v++`/XRT. Zero-initialising `ap_axiu` in the shim is a deliberate fidelity choice: it reproduces the hardware path's stop semantics (see P2 Stage 1).
+
 ## Open issues / blockers
 - **The baselines have not run on Ariane yet.** The binary is ready (`make riscv`), but there is no ESP SoC simulation or board yet. All P1 times are host x86.
-- **SAT-Accel itself is not exercised in P1.** It still needs one of: `v++` and XRT on a machine with access, the threaded C++ harness (option A), or an RTL port onto ESP. To revisit after P1.
+- **SAT-Accel in the baselines.** SAT-Accel now runs in functional simulation (P2 Stage 1, option A), but the baselines still use the MiniSat stand-in until the backend option is wired in. Simulation gives functional results and search counters, not cycles; cycle-level numbers still need hw_emu/RTL or the board.
 - **Toolchain version.** The server has Vitis HLS 2023.2, but SAT-Accel targets 2022.2. Pragmas or headers may need small fixes when we build it.
 - **Windows checkouts.** Git's `core.autocrlf=true` turns SAT-Accel's DIMACS benchmarks into CRLF files, which its parser cannot read. `run_golden.sh` strips the CRs; a Linux checkout (torino) is unaffected.
