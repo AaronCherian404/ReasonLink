@@ -263,13 +263,15 @@ Medians per puzzle, in µs:
 
 ## P2 Stage 1: SAT-Accel in functional simulation (`sataccel_sim/`)
 
-**Status:** functional check done (2026-10-21). Still to do in this stage: SAT-Accel as a backend option in the baselines (in place of the MiniSat stand-in), and a cross-check build against Vitis HLS 2023.2's headers on torino.
+**Status (2026-10-21):** functional check done; SAT-Accel is a solver option in the baselines (`--solver sataccel`). Still to do: the cross-check build against Vitis HLS 2023.2's headers on torino.
 
 ### Reproduce (local WSL, after P1 Stages 1–2)
 ```
 cd sataccel_sim
 make            # build/sataccel_check
 make check      # about 8 min; writes results/p2/sataccel_{benchmarks.txt,sudoku.csv,sudoku.txt}
+cd ../baselines
+make run-sataccel   # about 12 min; the four P1 configurations with --solver sataccel -> results/p2
 ```
 `HLS_INC=/path/to/Vitis_HLS/<ver>/include make` builds against vendor headers instead of `shim/`.
 
@@ -286,7 +288,14 @@ make check      # about 8 min; writes results/p2/sataccel_{benchmarks.txt,sudoku
 | SAT-Accel's benchmarks (our P1 golden set plus `testcases_sim.sh` instances present in the repo) | **16/16 pass** (10 SAT, 6 UNSAT). Slowest: `hole7` (4,419 decisions, 3,558 conflicts, 24.7 s) and `4blocks` (11,649 decisions, 23.8 s). |
 | 1,000 Sudoku puzzles | SAT/UNSAT matches PySAT on **1000/1000**. Grids: 991 identical, 9 valid alternative solutions, 0 wrong. Mean 1.44 decisions and 0.14 conflicts per puzzle, 12 ms simulation time. |
 
-Times are simulation wall time on the laptop, not hardware cycles.
+Times are simulation wall time on the laptop, not hardware cycles. `sim` excludes the conversion of the image into the kernels' `ap_int` buffer types.
+
+### Baselines with SAT-Accel as the solver (`results/p2/baselines_summary.md`)
+- **Build.** `make sataccel` in `baselines/` links `sataccel_sim/build/libsataccel.a` and enables `--solver sataccel`; the default build and `make riscv` are unchanged (MiniSat).
+- **Correctness.** All four configurations (serial/double × faithful/lean) **PASS**: SAT/UNSAT and grids identical across runs, and equal to the PySAT reference (991 identical, 9 valid alternatives).
+- **Handoff.** T_conv, T_xfer and bytes moved match P1's (same host code): faithful 10.5 MB per puzzle, lean 632 KB.
+- **T_sat is not meaningful as a time.** It is simulation time (about 150 ms per puzzle), dominated by converting the full allocated device buffers into `ap_int` types for the simulator. So the "handoff share" column in that table should not be read as a result; P1's MiniSat numbers remain the timing baseline until SAT-Accel runs in hw_emu/RTL or on the board.
+- **Harness fix.** `sa_image.misc` (miscCounters) is an inline array, so the device's view kept the init-time copy; the SAT-Accel path now reads it from the transferred device buffer. MiniSat never reads it, so P1 results are unaffected.
 
 ### Problem found: uninitialised `read_nb` packet in SAT-Accel's sw_emu restart kernel
 - **Symptom.** `4blocks`, `qg6-10` and `hole7` hung: `restartCalculator` and `pqHandler` had exited, and the solver was blocked reading `restartValueStream`.

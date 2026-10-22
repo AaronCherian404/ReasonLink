@@ -3,6 +3,8 @@
 # run as concurrent threads connected by streams, like Vitis sw_emu.
 #   make            build/sataccel_check
 #   make check      SAT-Accel's benchmarks + all Sudoku puzzles
+#   make lib        build/libsataccel.a (kernels + backend), linked by
+#                   `make sataccel` in baselines/
 # HLS headers: shim/ (thread-safe hls::stream etc.) + Xilinx's open-source
 # ap_int. On a machine with Vitis HLS, HLS_INC=/path/to/Vitis_HLS/<ver>/include
 # compiles against the vendor headers instead of the shim.
@@ -52,6 +54,12 @@ $(BUILD)/sataccel_check: $(BUILD)/sataccel_check.o $(BUILD)/sataccel_backend.o $
 
 kernels: $(KOBJS)
 
+lib: $(BUILD)/libsataccel.a
+
+$(BUILD)/libsataccel.a: $(KOBJS) $(BUILD)/sataccel_backend.o
+	rm -f $@
+	ar rcs $@ $^
+
 check: $(BUILD)/sataccel_check
 	mkdir -p $(RESULTS)
 	bash run_check.sh
@@ -59,4 +67,4 @@ check: $(BUILD)/sataccel_check
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all kernels check clean
+.PHONY: all kernels lib check clean

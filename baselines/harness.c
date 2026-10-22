@@ -8,8 +8,12 @@
  *          base CNF + units -> SAT-Accel memory image  (T_conv, image part)
  *   xfer   copy the image regions into the device buffers (T_xfer)
  *   sync   hand the slot to the device, wait for completion (T_sync)
- * Device thread (stand-in for SAT-Accel, P1 option C):
- *   sat    decode the device copy of the image, solve with MiniSat (T_sat)
+ * Device thread, --solver:
+ *   minisat   stand-in for SAT-Accel (P1 option C): decode the device copy of
+ *             the image, solve with MiniSat (T_sat)
+ *   sataccel  SAT-Accel's own kernels in functional simulation on the device
+ *             copy (sataccel_sim/, `make sataccel` builds only). T_sat is then
+ *             simulation time, not hardware time.
  *
  * serial:          one buffer set; the host waits for each solve.
  * double-buffered: two buffer sets with explicit ownership; the host converts
@@ -19,7 +23,7 @@
  * memory (NVDLA runs on ESP after P1).
  *
  * Usage: rl_baselines --mode serial|double [--clear full|lean]
- *          [--xfer allocated|used] [--n N] [--warmup W] [--poll-us U]
+ *          [--xfer allocated|used] [--solver minisat|sataccel] [--n N] [--warmup W] [--poll-us U]
  *          [--data DIR] [--csv FILE]
  */
 #define _GNU_SOURCE
@@ -36,6 +40,9 @@
 #include "sataccel_image.h"
 #include "solver_backend.h"
 #include "trace.h"
+#ifdef RL_WITH_SATACCEL
+#include "sataccel_backend.h"
+#endif
 
 enum { SLOT_FREE = 0, SLOT_READY = 1, SLOT_DONE = 2 };
 
@@ -61,7 +68,7 @@ typedef struct {
 } rec_t;
 
 typedef struct {
-    int dbl, lean_clear, xfer_used, poll_us;
+    int dbl, lean_clear, xfer_used, poll_us, sataccel;
     uint32_t n;
     rl_cnf base;
     rl_trace tr;
@@ -174,7 +181,14 @@ static void *device_main(void *arg)
         while (atomic_load_explicit(&s->state, memory_order_acquire) != SLOT_READY)
             rl_cpu_relax();
         uint64_t t0 = rl_cycles();
-        s->res = rl_solve_image(&s->dev_view, model);
+#ifdef RL_WITH_SATACCEL
+        if (c->sataccel) {
+            /* miscCounters is an inline array in sa_image: read the device's copy */
+            memcpy(s->dev_view.misc, s->dev[7], sizeof s->dev_view.misc);
+            s->res = rl_sataccel_solve(&s->dev_view, model);
+        } else
+#endif
+            s->res = rl_solve_image(&s->dev_view, model);
         memset(s->grid, 0, RL_CELLS);
         if (s->res.sat == 1)
             for (uint32_t v = 0; v < c->base.num_vars && v < 729; v++)
@@ -241,7 +255,7 @@ int main(int argc, char **argv)
     static struct option opts[] = {
         {"mode", 1, 0, 'm'}, {"clear", 1, 0, 'c'}, {"xfer", 1, 0, 'x'}, {"n", 1, 0, 'n'},
         {"warmup", 1, 0, 'w'}, {"poll-us", 1, 0, 'p'}, {"data", 1, 0, 'd'}, {"csv", 1, 0, 'o'},
-        {0, 0, 0, 0}};
+        {"solver", 1, 0, 's'}, {0, 0, 0, 0}};
     int o;
     while ((o = getopt_long(argc, argv, "", opts, NULL)) != -1) {
         switch (o) {
@@ -253,9 +267,13 @@ int main(int argc, char **argv)
         case 'p': c.poll_us = atoi(optarg); break;
         case 'd': data = optarg; break;
         case 'o': csv = optarg; break;
+        case 's': c.sataccel = !strcmp(optarg, "sataccel"); break;
         default: die("bad option (see header comment for usage)");
         }
     }
+#ifndef RL_WITH_SATACCEL
+    if (c.sataccel) die("--solver sataccel needs the `make sataccel` build");
+#endif
     char path[4096];
     snprintf(path, sizeof path, "%s/base.cnf", data);
     if (rl_cnf_read_dimacs(&c.base, path)) die("cannot read base.cnf");
@@ -274,12 +292,13 @@ int main(int argc, char **argv)
     const char *mode = c.dbl ? "double" : "serial";
     const char *clear = c.lean_clear ? "lean" : "full";
     const char *xfer = c.xfer_used ? "used" : "allocated";
+    const char *solver = c.sataccel ? "sataccel" : "minisat";
     FILE *f = csv ? fopen(csv, "w") : NULL;
     if (csv && !f) die("cannot write csv");
     if (f) {
-        fprintf(f, "# mode=%s clear=%s xfer=%s timer=%s cycles_per_us=%.3f wall_cycles=%llu "
+        fprintf(f, "# mode=%s clear=%s xfer=%s solver=%s timer=%s cycles_per_us=%.3f wall_cycles=%llu "
                    "puzzles=%u warmup=%u poll_us=%d\n",
-                mode, clear, xfer, RL_TIMER_NAME, cyc_per_us, (unsigned long long)wall, n, warmup,
+                mode, clear, xfer, solver, RL_TIMER_NAME, cyc_per_us, (unsigned long long)wall, n, warmup,
                 c.poll_us);
         fprintf(f, "puzzle,givens,argmax_cyc,image_cyc,xfer_cyc,xfer_bytes,sync_cyc,stall_cyc,"
                    "sat_cyc,sat,decisions,propagations,conflicts,grid\n");
@@ -299,8 +318,8 @@ int main(int argc, char **argv)
     }
     uint64_t sum_sat = 0;
     for (uint32_t k = 0; k < n; k++) sum_sat += c.rec[k].sat;
-    printf("%-6s clear=%-4s xfer=%-9s puzzles=%u  wall %.1f ms  (%.1f us/puzzle, solver %.1f us/puzzle)\n",
-           mode, clear, xfer, n, wall / cyc_per_us / 1e3, wall / cyc_per_us / n,
+    printf("%-6s clear=%-4s xfer=%-9s solver=%-8s puzzles=%u  wall %.1f ms  (%.1f us/puzzle, solver %.1f us/puzzle)\n",
+           mode, clear, xfer, solver, n, wall / cyc_per_us / 1e3, wall / cyc_per_us / n,
            sum_sat / cyc_per_us / n);
     return 0;
 }
