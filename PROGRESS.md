@@ -40,7 +40,9 @@ The proposal's P1 calls for three things. On the new platform they mean:
 | P2-1 | SAT-Accel's kernels in functional simulation; cross-checked against Vitis HLS 2023.2 headers; `--solver sataccel` in the baselines | **Done** (2026-10-21) | branch `p2` |
 | P2-2 | SAT-Accel to RTL with Vitis HLS only (no v++): capacity patch, 7 kernels synthesized for xcvu9p | **Done** (2026-10-22) | branch `p2` |
 | P2-3 | Replace the v++ linker and XRT: block design, shell RTL, driver core, standalone RTL testbench, out-of-context netlist | **Done** (2026-10-22): 16/16 RTL tests pass; synthesized netlist meets 10 ns | branch `p2` |
-| P2-4 | SAT-Accel as an ESP third-party tile; Linux driver + library; bare-metal test; VCU118 SoC (Ariane, NVDLA, SAT-Accel); Linux image; full-SoC simulation | **In progress**: everything builds; full-SoC simulation running | branch `p2` |
+| P2-4 | SAT-Accel as an ESP third-party tile; Linux driver + library; bare-metal test; VCU118 SoC (Ariane, NVDLA, SAT-Accel); Linux image; full-SoC simulation; bitstream | **In progress**: everything builds; full-SoC simulation and baseline bitstream running | branch `p2` |
+| P2-5 | Board baselines (Ariane, real NVDLA + SAT-Accel): rl_board, run script, summary | **Code done**, tested on the host over a fake device; the run itself needs the board | branch `p2` |
+| P2-6 | ReasonLink: phase B (DRAM-level delta, hardware literal producer), then phase A (resident on-chip base) | **Phase B passes in RTL**; phase A not started | branch `p2` |
 
 ## Stage 1: workload and classifier
 
@@ -428,6 +430,36 @@ ESP issues found and worked around:
 - **NVDLA RTL generation** needs Perl's Capture::Tiny (and YAML, IO::Tee, Clone), installed locally with cpanm.
 - **riscv-tests** must be initialized for any bare-metal build (`util.h`, crt).
 - **`make sim` without `vsim.tcl`** leaves `vsim -c` at a prompt; `esp_soc/socs/reasonlink-vcu118/vsim.tcl` runs a bounded time and quits.
+
+### P2-4 addendum: bitstream flow
+- **Encrypted IP.** Vivado refuses the funcsim netlist as a synthesis source (it holds encrypted Xilinx IP, written for simulation only). The tile's single Verilog entry `sataccel_top_sel.v` is a black-box stub under `` `SYNTHESIS `` and the funcsim netlist otherwise (ModelSim unchanged). The SoC's `make vivado-syn-rl` (added by `install.sh`) creates ESP's Vivado project, adds `sataccel_top.dcp` to fill the stub (`add_sataccel_dcp.tcl`), then runs ESP's synthesis on that project, answering "n" to ESP's "overwrite existing Vivado project?" prompt (appending to `srcs.tcl` does not work: ESP regenerates it).
+- **Baseline bitstream:** `cd ~/esp/socs/reasonlink-vcu118 && make vivado-syn-rl` (running).
+- torino is shared: never kill processes by name pattern (another user runs ESP builds too).
+
+### P2-5: board baselines (`board/`)
+```
+python workload/export_board.py          # data/board: each MNIST image once + emulator logits (7.8 MB)
+bash workload/nvdla_compile.sh           # also build/nvdla/rl_lenet_ip2.nvdla (torino)
+make -C board host                       # x86 test build over a fake /dev/sataccel
+# ESP: make NV_NVDLA CU_SATACCEL && make linux  -> /root/CU_SATACCEL/rl in the initramfs
+# board: sh /root/CU_SATACCEL/rl/run_baselines.sh ; then python3 board/summarize_board.py <results>
+```
+- **`rl_board`.** P1's serial and double-buffered handoff with the real accelerators: NVDLA classifies every given cell (`rl_nvdla.cpp`, a C wrapper over NVDLA's runtime filling the input tensor as `nvdla_runtime` does), then argmax, image build, transfer into the SAT-Accel tile's DMA buffers, solve. `rdcycle` per phase; T_sat = the tile's busy counter. Double buffering uses two SAT-Accel buffer sets (driver DMA buffer 64 MB). Every answer checked against PySAT, every NVDLA output against the int8 emulator (bit-exact expected).
+- **Logits loadable.** `rl_lenet_ip2.nvdla` is our classifier without the Softmax layer (NVDLA outputs the int8 ip2 logits, the handoff's input per the 2026-10-16 decision; quantized softmax can tie where logits do not). 444,080 B, md5 `de91e998...`.
+- **Handoff modes:** `full` (P1's), `delta` (ReasonLink iii as a CPU-only optimization: base image resident, givens as fixed decisions; the proposal's ablation), `reasonlink` (the tile's ReasonLink core, phase B).
+- **Host test** (fake device running sataccel_sim): serial/double x faithful/lean/delta all match the reference; delta writes 3,940 B per puzzle (lean 632 KB, faithful 5.3 MB).
+- **`summarize_board.py`:** correctness checks plus the proposal's decomposition (T_nn, T_conv, T_xfer, T_sync, T_sat; serial handoff share; exposed handoff for double-buffered runs).
+
+### P2-6: ReasonLink
+**Two measurements that shaped the design.**
+- **Image delta (`results/p2/image_delta.txt`):** a puzzle's SAT-Accel image differs from the base formula's by 1,212 B of 632,313 B (0.19%) on average.
+- **Fixed decisions (`results/p2/delta_check.txt`, `sataccel_sim/delta_check.cc`):** SAT-Accel's host conversion already turns unit clauses into level-0 fixed decisions (answerStack prefix + miscCounters[3]). Passing the givens only that way, on one base image restored between puzzles, gives SAT/UNSAT 1000/1000 and the same grids (same 9 valid alternatives) as the unit-clause images. The kernels write back only answerStack, miscCounters, trackLBD and the device-only buckets, so the base image stays valid in DRAM.
+
+**Phase B (`sataccel_hw/rtl/reasonlink_core.v`, block design `make bd REASONLINK=1`):** in the SAT-Accel tile (separate tiles). Per given cell the CPU pushes {cell, address of NVDLA's output}; the core fetches the 10 int8 logits, takes the argmax over digits 1-9 (ties: lowest), queues the literal on chip and, on COMMIT, writes the delta (answerStack prefix + zeros, base miscCounters with the count). Mechanisms: (i) hardware literals, (ii) on-chip FIFO with a credit wait per cell (NVDLA reuses one output buffer), (iii) delta transfer at the DRAM level, (iv) conversion overlapped with NVDLA.
+- Unit test `tb/tb_reasonlink.sv`: PASS (ties, negative logits, both NVDLA layouts, odd num_vars, second puzzle).
+- End to end in RTL (`results/p2/hw/rtl_reasonlink.txt`): puzzles 0, 3, 5 PASS with search counts identical to the unit-clause runs; conversion about 67 cycles per cell, delta write about 1,200 cycles; the unmodified flow still passes in the same build.
+- Board path: `rl_board --handoff reasonlink`; `sataccel.ko` translates NVDLA's output buffer address (VA->PA ioctl, PFN mappings included) and puts NVDLA's tile in coherent-DMA mode too, so the core reads NVDLA's output coherently.
+- What phase B leaves: SAT-Accel still copies the whole base image in from DRAM each solve (about 150k of 203k cycles in RTL). Phase A (resident on-chip base, rollback of assignments and learned clauses) targets that.
 
 ## Environments
 
