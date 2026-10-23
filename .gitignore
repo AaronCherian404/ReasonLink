@@ -29,3 +29,5 @@ env/server.env
 
 # Build variants (e.g. sataccel_sim/build_vcu118)
 build_*/
+# Board workload export (regenerate: workload/export_board.py)
+data/board/

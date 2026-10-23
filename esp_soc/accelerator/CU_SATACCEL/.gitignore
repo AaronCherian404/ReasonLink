@@ -10,3 +10,4 @@ sw/kmd/*.mod*
 sw/kmd/.*.cmd
 sw/kmd/Module.symvers
 sw/kmd/modules.order
+sw/rl/

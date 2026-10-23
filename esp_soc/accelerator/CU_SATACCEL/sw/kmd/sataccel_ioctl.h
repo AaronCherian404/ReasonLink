@@ -10,9 +10,10 @@
 #define SATACCEL_SHELL_ID_OFF     0xF0000
 #define SATACCEL_SHELL_ID         0x5A7A0001
 
-/* DMA buffer: 32 MB covers SAT-Accel's buffers at the VCU118 capacities
- * (sa_dev_mem_required: about 17 MB) */
-#define SATACCEL_DEFAULT_MEM_SIZE (32UL << 20)
+/* DMA buffer: 64 MB holds two sets of SAT-Accel's buffers at the VCU118
+ * capacities (sa_dev_mem_required: about 17 MB each), for the
+ * double-buffered baseline */
+#define SATACCEL_DEFAULT_MEM_SIZE (64UL << 20)
 
 /* mmap offsets: registers at 0, the DMA buffer at SATACCEL_MEM_PGOFF pages
  * (i.e. byte offset SATACCEL_MEM_PGOFF * page size) */

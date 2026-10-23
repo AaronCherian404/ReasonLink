@@ -4,7 +4,9 @@
 #
 #   hw   netlist/ <- sataccel_hw's out-of-context netlist (glbl removed: ESP's
 #        simulation already compiles glbl.v); out -> netlist
-#   sw   sw/sataccel.ko (KSRC) and sw/sataccel_run (static, Linux)
+#   sw   sw/sataccel.ko (KSRC), sw/sataccel_run (static, Linux) and sw/rl/
+#        (board baselines: ../../../board; needs NVDLA's runtime built first,
+#        i.e. make NV_NVDLA before make CU_SATACCEL)
 HERE    := $(realpath .)
 REPO    := $(realpath $(HERE)/../../..)
 NETLIST := $(REPO)/sataccel_hw/build/vivado_bd/sataccel_top_funcsim.v
@@ -27,11 +29,12 @@ kmd:
 
 umd:
 	$(MAKE) -C sw/umd CROSS_COMPILE=$(CROSS_COMPILE) REPO=$(REPO)
+	$(MAKE) -C $(REPO)/board stage CROSS_COMPILE=$(CROSS_COMPILE) ESP_ROOT=$(ESP_ROOT) DEST=$(HERE)/sw/rl
 
 clean:
 	-$(MAKE) -C sw/kmd KDIR=$(KSRC) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) clean
 	$(MAKE) -C sw/umd clean
-	rm -f sw/sataccel.ko
+	rm -rf sw/sataccel.ko sw/rl
 
 distclean: clean
 	rm -rf netlist out

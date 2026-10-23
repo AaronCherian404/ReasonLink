@@ -40,5 +40,12 @@ got=$(md5sum "$ESP_DIR/esp_recompiled.nvdla" | cut -d' ' -f1)
 RL_DIR="$REPO/build/nvdla"
 cp "$REPO"/models/rl_lenet/{lenet_mnist.prototxt,rl_lenet.caffemodel,rl_lenet.json} "$RL_DIR/"
 compile "$RL_DIR" lenet_mnist.prototxt rl_lenet.caffemodel rl_lenet.json rl_lenet.nvdla
-ls -l "$RL_DIR/rl_lenet.nvdla"
-md5sum "$RL_DIR/rl_lenet.nvdla"
+
+# Logits variant for the board baselines: the handoff consumes the int8 ip2
+# logits (decision 2026-10-16), and quantized softmax outputs can tie where
+# the logits do not, so drop the Softmax layer; NVDLA then outputs ip2.
+awk 'BEGIN { RS = "layer {"; ORS = "" } NR == 1 { print; next } !/name: "prob"/ { print "layer {" $0 }' \
+    "$RL_DIR/lenet_mnist.prototxt" > "$RL_DIR/lenet_mnist_ip2.prototxt"
+compile "$RL_DIR" lenet_mnist_ip2.prototxt rl_lenet.caffemodel rl_lenet.json rl_lenet_ip2.nvdla
+ls -l "$RL_DIR/rl_lenet.nvdla" "$RL_DIR/rl_lenet_ip2.nvdla"
+md5sum "$RL_DIR/rl_lenet.nvdla" "$RL_DIR/rl_lenet_ip2.nvdla"
