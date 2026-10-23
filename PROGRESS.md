@@ -2,8 +2,25 @@
 
 Running record of what is built, what was decided, and what is blocked. Update at the end of every stage.
 
-**Current target:** P1, due Oct 19, 2026 ("Infrastructure and baselines").
-**Branch:** `p1`, pushed to `github.com/AaronCherian404/ReasonLink` (public). torino uses a clone of it at `~/ReasonLink`.
+**Current target:** P2: everything up to the VCU118 board run, without Vitis (v++/XRT), Vitis HLS only (see "P2 hardware plan"). P1 (Oct 19) is done.
+**Branch:** `p2` (also merged into `main`), pushed to `github.com/AaronCherian404/ReasonLink` (public). torino uses a clone of it at `~/ReasonLink`; ESP at `~/esp` (tag 2026.1.0).
+
+## Status at a glance (2026-10-23, paused)
+
+| Item | State |
+|---|---|
+| SAT-Accel as RTL without Vitis (P2-2, P2-3) | **Done.** 7 HLS kernels + block design + shell + driver core; 16/16 RTL tests pass; netlist 112k LUT / 434 URAM, meets 10 ns |
+| SAT-Accel in an ESP SoC (P2-4) | **Builds end to end**: tile, Linux driver, bare-metal test, 2x3 VCU118 SoC, Linux image with both accelerators. Full-SoC simulation: bare-metal test boots, finds the tile, reads its ID over APB, sets coherence, loads the image; still running (12 h). **Bitstream: synthesis passes; implementation fails** (SAT-Accel black box not linked to its checkpoint, see P2-4 addendum) |
+| Board baselines (P2-5) | **Code done** (rl_board: full / delta / reasonlink handoffs, serial and double-buffered); tested on the host over a fake device; needs the board |
+| ReasonLink (P2-6) | **Phase B passes in RTL** (puzzles 0, 3, 5 end to end; unit test). Not yet in a netlist or bitstream. Phase A (resident on-chip base) not started |
+| Key measurements | Image delta per puzzle: 1.2 KB of 632 KB. Givens as fixed decisions: 1000/1000 match. RTL Sudoku solve: about 203k cycles, mostly copy-in memory stalls (testbench memory model). ReasonLink: about 67 cycles/cell conversion, 1,200 cycles delta write |
+
+Next steps when resuming:
+1. Fix the bitstream link (P2-4 addendum), rebuild the baseline bitstream.
+2. Out-of-context synthesis of SAT-Accel + ReasonLink (`make synth REASONLINK=1`), point the tile at it, build the ReasonLink bitstream.
+3. Decide whether to wait for the full-SoC simulation or stop it (see P2-4).
+4. ReasonLink phase A design (resident base, rollback in SAT-Accel's copy-in/reset).
+5. Board: program, boot Linux, `run_baselines.sh`, `summarize_board.py`.
 
 ## P1 definition (adapted to ESP + NVDLA)
 
@@ -40,7 +57,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 | P2-1 | SAT-Accel's kernels in functional simulation; cross-checked against Vitis HLS 2023.2 headers; `--solver sataccel` in the baselines | **Done** (2026-10-21) | branch `p2` |
 | P2-2 | SAT-Accel to RTL with Vitis HLS only (no v++): capacity patch, 7 kernels synthesized for xcvu9p | **Done** (2026-10-22) | branch `p2` |
 | P2-3 | Replace the v++ linker and XRT: block design, shell RTL, driver core, standalone RTL testbench, out-of-context netlist | **Done** (2026-10-22): 16/16 RTL tests pass; synthesized netlist meets 10 ns | branch `p2` |
-| P2-4 | SAT-Accel as an ESP third-party tile; Linux driver + library; bare-metal test; VCU118 SoC (Ariane, NVDLA, SAT-Accel); Linux image; full-SoC simulation; bitstream | **In progress**: everything builds; full-SoC simulation and baseline bitstream running | branch `p2` |
+| P2-4 | SAT-Accel as an ESP third-party tile; Linux driver + library; bare-metal test; VCU118 SoC (Ariane, NVDLA, SAT-Accel); Linux image; full-SoC simulation; bitstream | **In progress**: everything builds; full-SoC simulation running (image loaded, solve pending); bitstream implementation fails (black box link) | branch `p2` |
 | P2-5 | Board baselines (Ariane, real NVDLA + SAT-Accel): rl_board, run script, summary | **Code done**, tested on the host over a fake device; the run itself needs the board | branch `p2` |
 | P2-6 | ReasonLink: phase B (DRAM-level delta, hardware literal producer), then phase A (resident on-chip base) | **Phase B passes in RTL**; phase A not started | branch `p2` |
 
@@ -430,10 +447,13 @@ ESP issues found and worked around:
 - **NVDLA RTL generation** needs Perl's Capture::Tiny (and YAML, IO::Tee, Clone), installed locally with cpanm.
 - **riscv-tests** must be initialized for any bare-metal build (`util.h`, crt).
 - **`make sim` without `vsim.tcl`** leaves `vsim -c` at a prompt; `esp_soc/socs/reasonlink-vcu118/vsim.tcl` runs a bounded time and quits.
+- **Third-party tiles need an empty design point** in `.esp_config` (see the tile-line note above); the first full-SoC simulation failed to compile on `HLSCFG_*_0`.
+
+**Full-SoC simulation (ModelSim, bare-metal `quinn`), status 2026-10-23 13:00:** Xilinx simulation libraries compiled once (48 min). The simulation started 00:50; the UART transcript shows Ariane booting the test, ESP's plug-and-play finding the tile (`apbctrl: slv297: Columbia University SLD SAT-Accel CDCL solver (HLS)`, interrupt 7), the shell ID `0x5a7a0001` read over APB through the NoC, coherent DMA set, and the 602-word image loaded (by 10:15). The register replay and the solve have not reported yet (no output since). It is either very slow (Ariane + the 121 MB gate-level SAT-Accel netlist) or stuck; ModelSim has no progress indicator in batch mode. It is bounded at 60 ms of simulated time. If it does not report, the next step is a waveform/transcript check of the first APB writes after the image load.
 
 ### P2-4 addendum: bitstream flow
 - **Encrypted IP.** Vivado refuses the funcsim netlist as a synthesis source (it holds encrypted Xilinx IP, written for simulation only). The tile's single Verilog entry `sataccel_top_sel.v` is a black-box stub under `` `SYNTHESIS `` and the funcsim netlist otherwise (ModelSim unchanged). The SoC's `make vivado-syn-rl` (added by `install.sh`) creates ESP's Vivado project, adds `sataccel_top.dcp` to fill the stub (`add_sataccel_dcp.tcl`), then runs ESP's synthesis on that project, answering "n" to ESP's "overwrite existing Vivado project?" prompt (appending to `srcs.tcl` does not work: ESP regenerates it).
-- **Baseline bitstream:** `cd ~/esp/socs/reasonlink-vcu118 && make vivado-syn-rl` (running).
+- **Baseline bitstream** (`cd ~/esp/socs/reasonlink-vcu118 && make vivado-syn-rl`, 2026-10-23): synthesis passes (10:49-12:13), **implementation fails** at `opt_design`'s DRC: `INBB-3 Black Box Instances: ... CU_SATACCEL_rtl_i/acc of type 'CU_SATACCEL_sataccel_top' has undefined contents`. ESP reads third-party sources into a library named after the accelerator, so Vivado names the stub's cell type `CU_SATACCEL_sataccel_top`, while the checkpoint's top is `sataccel_top`: the checkpoint is never linked. Candidate fixes: (a) link it explicitly in implementation (`read_checkpoint -cell <that cell> sataccel_top.dcp` as an `opt_design` pre-hook, `STEPS.OPT_DESIGN.TCL.PRE`); (b) write the out-of-context checkpoint with its top renamed to `CU_SATACCEL_sataccel_top`. The other critical warnings (unclocked `FDCP` in ESP's mem tile) come from ESP itself.
 - torino is shared: never kill processes by name pattern (another user runs ESP builds too).
 
 ### P2-5: board baselines (`board/`)
@@ -577,8 +597,16 @@ All buffers are migrated to the device in full for every instance (`host.cpp` 49
 
 - **2026-10-23: coherent DMA for the SAT-Accel tile.** ACC_COH_RECALL through the tile CSR, as ESP's NVDLA example does: correct without cache flushes, the simplest setup for the baselines.
 
+- **2026-10-23: ReasonLink staged B then A (user).** Phase B first (hardware literal producer, on-chip FIFO, DRAM-level delta, overlap with NVDLA; SAT-Accel unmodified), then phase A (base formula resident on chip) if time allows.
+- **2026-10-23: delta = fixed decisions.** Givens are passed as level-0 fixed decisions (answerStack prefix + miscCounters[3]) on a base image, instead of unit clauses: SAT-Accel's host conversion does this for unit clauses anyway, and it matches on all 1000 puzzles.
+- **2026-10-23: logits from NVDLA.** The board loadable drops the Softmax layer so NVDLA outputs the int8 ip2 logits the handoff consumes (decision of 2026-10-16).
+- **2026-10-23: baseline bitstream first (user),** so the baseline board run does not wait for ReasonLink.
+
 ## Open issues / blockers
-- **The baselines have not run on Ariane yet.** The binary is ready (`make riscv`), but there is no ESP SoC simulation or board yet. All P1 times are host x86.
-- **SAT-Accel in the baselines.** SAT-Accel now runs in functional simulation (P2 Stage 1, option A), but the baselines still use the MiniSat stand-in until the backend option is wired in. Simulation gives functional results and search counters, not cycles; cycle-level numbers still need hw_emu/RTL or the board.
-- **Toolchain version.** The server has Vitis HLS 2023.2, but SAT-Accel targets 2022.2. Pragmas or headers may need small fixes when we build it.
+- **Bitstream implementation:** the SAT-Accel checkpoint is not linked to its black box (library-prefixed cell type); fix options in the P2-4 addendum.
+- **Full-SoC simulation:** reached the image load in about 9.5 h; the solve has not reported (P2-4).
+- **ReasonLink in hardware builds:** phase B passes in RTL but has no out-of-context netlist or bitstream yet; phase A not started.
+- **No board numbers yet.** Every cycle count so far is from RTL simulation with the testbench's memory model (one burst at a time, 30-cycle latency); the board run measures the real memory system. P1's timing numbers are host x86 (MiniSat stand-in).
+- **dubois20** takes a slightly different search path in RTL than in the functional model (352/175 vs 370/177 decisions/conflicts); likely the `FPGA_HW` code paths, not verified.
+- **NVDLA on ESP is unverified on our classifier** until the board: `rl_board` counts every cell whose logits differ from the int8 emulator.
 - **Windows checkouts.** Git's `core.autocrlf=true` turns SAT-Accel's DIMACS benchmarks into CRLF files, which its parser cannot read. `run_golden.sh` strips the CRs; a Linux checkout (torino) is unaffected.
