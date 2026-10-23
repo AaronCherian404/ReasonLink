@@ -6,7 +6,8 @@
 #   tools/socgen/thirdparty.py            + compatible string / IRQ type for CU_SATACCEL
 #   socs/reasonlink-vcu118                 copy of socs/xilinx-vcu118-xcvu9p whose
 #                                          Makefile uses esp_soc/socs/reasonlink-vcu118/esp_defconfig,
-#                                          plus vsim.tcl (batch `make sim`)
+#                                          plus vsim.tcl (batch `make sim`) and a
+#                                          vivado-syn-rl target (adds SAT-Accel's .dcp)
 # Idempotent. Usage: bash esp_soc/install.sh [esp_root]
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -33,6 +34,24 @@ ln -sfn "$HERE/socs/reasonlink-vcu118/vsim.tcl" "$SOC/vsim.tcl"
 if ! grep -q '^ESP_DEFCONFIG' "$SOC/Makefile"; then
   sed -i "/^DESIGN   = esp-\$(BOARD)/a ESP_DEFCONFIG = $HERE/socs/reasonlink-vcu118/esp_defconfig" "$SOC/Makefile"
 fi
+ln -sfn "$HERE/socs/reasonlink-vcu118/add_sataccel_dcp.tcl" "$SOC/add_sataccel_dcp.tcl"
+sed -i '/^### ReasonLink: SAT-Accel/,$d' "$SOC/Makefile"     # replace an older version
+cat >> "$SOC/Makefile" <<'MK'
+### ReasonLink: SAT-Accel's synthesized checkpoint ###
+# The SAT-Accel tile's simulation netlist holds encrypted Xilinx IP, which
+# Vivado will not re-synthesize. ESP's Vivado flow reads a black-box stub
+# instead (CU_SATACCEL/out/sataccel_top_sel.v); this target creates ESP's
+# project, adds the out-of-context checkpoint that fills the stub, then runs
+# ESP's synthesis and implementation on that project (answering "n" to ESP's
+# "overwrite existing Vivado project?"). Use instead of vivado-syn.
+SATACCEL_DCP = $(ESP_ROOT)/accelerators/third-party/CU_SATACCEL/out/sataccel_top.dcp
+vivado-syn-rl:
+	rm -rf vivado
+	$(MAKE) vivado-setup
+	cd vivado && vivado -mode batch -nojournal -nolog -source $(DESIGN_PATH)/add_sataccel_dcp.tcl 	  -tclargs $(DESIGN).xpr $(SATACCEL_DCP)
+	yes n | $(MAKE) vivado-syn
+.PHONY: vivado-syn-rl
+MK
 echo "installed into $ESP:"
 ls -l "$ESP/accelerators/third-party/CU_SATACCEL" "$ESP/soft/common/apps/baremetal/sataccel" | sed 's/^/  /'
 grep -n "cu_sataccel" "$TP" | sed 's/^/  /'

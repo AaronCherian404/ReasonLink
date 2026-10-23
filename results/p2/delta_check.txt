@@ -1,0 +1,3 @@
+# Givens as fixed decisions on one DRAM-resident base image (sataccel_sim/delta_check.cc), VCU118 capacities, 2026-10-23
+# The 9 differing grids are the same 9 valid alternative solutions as in every unit-clause run (results/p2/vcu118_caps/sataccel_sudoku.csv).
+puzzles 1000, errors 0, SAT/UNSAT == reference 1000/1000, identical grid or UNSAT 991, other 9 (puzzles 54 60 252 329 378 512 638 995 997)
