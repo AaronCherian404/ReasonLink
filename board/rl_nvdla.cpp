@@ -88,6 +88,13 @@ extern "C" int rl_nvdla_classify(rl_nvdla *n, const uint8_t *px, int8_t *out)
     return 0;
 }
 
+extern "C" void *rl_nvdla_output(rl_nvdla *n, uint32_t *group, uint32_t *surf_stride)
+{
+    *group = n->out.pixelFormat == NVDLA_PIXEL_FORMAT_FEATURE_X8 ? 8 : 32;
+    *surf_stride = n->out.stride[2];
+    return n->out_buf + offset(n->out, 0, 0, 0);
+}
+
 extern "C" void rl_nvdla_close(rl_nvdla *n)
 {
     if (!n) return;

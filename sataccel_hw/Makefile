@@ -31,15 +31,21 @@ regs:
 	for k in solver clause_store_handler location_handler restartCalculator timer pqHandler message; do \
 	  cp build/hls/$$k/sol/impl/misc/drivers/$${k}_v1_0/src/x$$(echo $$k | tr A-Z a-z)_hw.h drv/hls_regs/; done
 
-bd:
-	mkdir -p build/vivado_bd
-	cd build/vivado_bd && vivado -mode batch -nojournal -log bd.log \
-	  -source ../../vivado/sataccel_bd.tcl -tclargs ../hls . $(PART) $(PERIOD_NS)
+# REASONLINK=1: the block design with rtl/reasonlink_core.v, in build/vivado_bd_rl
+# (applies to bd, sim-setup and synth)
+REASONLINK ?= 0
+BD_DIR := build/vivado_bd$(if $(filter 1,$(REASONLINK)),_rl,)
 
-SIMDIR := build/vivado_bd/sataccel_bd.sim/sim_1/behav/xsim
+bd:
+	mkdir -p $(BD_DIR)
+	cd $(BD_DIR) && vivado -mode batch -nojournal -log bd.log \
+	  -source $(CURDIR)/vivado/sataccel_bd.tcl -tclargs $(CURDIR)/build/hls . $(PART) $(PERIOD_NS) \
+	  $(REASONLINK) $(CURDIR)/rtl
+
+SIMDIR := $(BD_DIR)/sataccel_bd.sim/sim_1/behav/xsim
 
 sim-setup:
-	cd build/vivado_bd && vivado -mode batch -nojournal -log sim_setup.log \
+	cd $(BD_DIR) && vivado -mode batch -nojournal -log sim_setup.log \
 	  -source ../../vivado/sim_setup.tcl -tclargs $(CURDIR)
 	cd $(SIMDIR) && bash compile.sh > compile.out 2>&1 && bash elaborate.sh > elaborate.out 2>&1 || \
 	  (tail -30 $(SIMDIR)/compile.out $(SIMDIR)/elaborate.out; exit 1)
@@ -48,7 +54,7 @@ JOBS ?= 8
 
 # Out-of-context synthesis -> structural netlist for ESP + reports (long: ~1-2 h)
 synth:
-	cd build/vivado_bd && vivado -mode batch -nojournal -log synth.log \
+	cd $(BD_DIR) && vivado -mode batch -nojournal -log synth.log \
 	  -source ../../vivado/synth_ooc.tcl -tclargs $(CURDIR) $(PERIOD_NS) $(JOBS)
 
 build/tb_tool: tools/tb_tool.c drv/sataccel_drv.c drv/sataccel_drv.h drv/sataccel_caps.h \

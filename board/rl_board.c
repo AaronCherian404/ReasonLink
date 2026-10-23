@@ -23,13 +23,15 @@
  * (identical answers across runs are checked by the summary script), and
  * NVDLA's logits against the emulator's (nn_mismatch).
  *
+ * --handoff reasonlink: the same, but the SAT-Accel tile's ReasonLink core turns
+ * NVDLA's logits into literals and writes the delta (prepare_rl).
  * --handoff delta (ReasonLink mechanism iii as a CPU-only optimization, the
  * proposal's ablation): each buffer set holds the base formula's image,
  * loaded once outside the timed run; a puzzle's givens are written only as
  * level-0 fixed decisions (sa_dev_load_decisions), with no image build.
  *
  * Usage: rl_board --mode serial|double [--clear full|lean] [--xfer allocated|used]
- *          [--handoff full|delta] [--nn nvdla|trace] [--n N] [--data DIR]
+ *          [--handoff full|delta|reasonlink] [--nn nvdla|trace] [--n N] [--data DIR]
  *          [--loadable FILE] [--csv FILE]
  */
 #define _GNU_SOURCE
@@ -113,12 +115,58 @@ static rl_nvdla *NV;
 static cells_t CELLS;
 static rl_cnf BASE;
 static rl_reference REF;
-static int USE_TRACE, LEAN_XFER, DELTA;
+static int USE_TRACE, LEAN_XFER, DELTA, RL;
 static rec_t *R;
+static uint32_t RL_LOGIT_PA, RL_GROUP, RL_SURF;   /* NVDLA's output tensor, for ReasonLink */
+
+/* ReasonLink (phase B): after each NVDLA classification the tile fetches the
+ * logits, converts them to a literal and queues it; COMMIT writes the delta.
+ * The CPU never sees logits or literals (it reads them here only to count
+ * NVDLA mismatches). NVDLA reuses one output buffer, so each push waits for
+ * the tile to take it (pending == 0) before the next submit: the credit. */
+static void prepare_rl(slot_t *s, uint32_t p)
+{
+    rec_t *r = &R[p];
+    int8_t out[16];
+    uint64_t t0 = rl_cycles();
+    if (sa_rl_setup(&s->dev, &s->img, RL_GROUP, RL_SURF)) {
+        fprintf(stderr, "rl_board: no ReasonLink in this SAT-Accel tile\n");
+        exit(1);
+    }
+    sa_rl_begin(&s->dev);
+    for (int cell = 0; cell < RL_CELLS; cell++) {
+        int16_t im = cell_image(&CELLS, p, cell);
+        if (im < 0) continue;
+        r->givens++;
+        if (rl_nvdla_classify(NV, CELLS.images + (size_t)im * IMG, out)) {
+            fprintf(stderr, "rl_board: NVDLA submit failed (puzzle %u)\n", p);
+            exit(1);
+        }
+        if (memcmp(out, cell_ip2(&CELLS, p, cell), 10)) r->nn_mismatch++;
+        sa_rl_push(&s->dev, RL_LOGIT_PA, (uint32_t)cell);
+        while ((S.regs[(SA_RL_BASE + 0x24) / 4] >> 16) & 0x7F) rl_cpu_relax();
+    }
+    uint64_t t1 = rl_cycles();
+    if (sa_rl_commit(&s->dev)) {
+        fprintf(stderr, "rl_board: ReasonLink commit failed (puzzle %u)\n", p);
+        exit(1);
+    }
+    uint64_t t2 = rl_cycles();
+    r->nn = t1 - t0;               /* NVDLA, with the tile's conversion overlapped */
+    r->argmax = 0;
+    r->image = 0;
+    r->xfer = t2 - t1;             /* the tile writes the delta */
+    r->xfer_bytes = (size_t)s->img.num_vars * 4 + 32;
+    s->puzzle = p;
+}
 
 /* nn + conv + xfer for puzzle p into slot s */
 static void prepare(slot_t *s, uint32_t p)
 {
+    if (RL) {
+        prepare_rl(s, p);
+        return;
+    }
     rec_t *r = &R[p];
     uint8_t buf[RL_CELLS + RL_CELLS * 16];
     rl_trace tr = {.num_puzzles = 1, .cells = RL_CELLS, .classes = 10, .stride = 16, .ip2_scale = 0, .data = buf};
@@ -238,7 +286,10 @@ int main(int argc, char **argv)
         case 'd': data = optarg; break;
         case 'l': loadable = optarg; break;
         case 'o': csv = optarg; break;
-        case 'h': DELTA = !strcmp(optarg, "delta"); break;
+        case 'h':
+            RL = !strcmp(optarg, "reasonlink");
+            DELTA = RL || !strcmp(optarg, "delta");
+            break;
         default: die("bad option (see the header comment)");
         }
     }
@@ -252,6 +303,7 @@ int main(int argc, char **argv)
     uint32_t n = n_req && n_req < CELLS.num_puzzles ? n_req : CELLS.num_puzzles;
     R = calloc(n, sizeof(rec_t));
 
+    if (RL && USE_TRACE) die("--handoff reasonlink reads NVDLA's real output; not with --nn trace");
     if (!USE_TRACE && !(NV = rl_nvdla_open(loadable, 0))) die("NVDLA setup failed");
 
     sa_caps caps;
@@ -259,6 +311,13 @@ int main(int argc, char **argv)
     sa_hw_caps(&caps);
     sa_default_config(&cfg);
     if (sa_linux_open(&S, &caps)) die("cannot open /dev/sataccel (insmod sataccel.ko?)");
+    if (RL) {
+        void *va = rl_nvdla_output(NV, &RL_GROUP, &RL_SURF);
+        struct sataccel_va2pa x = {.va = (uint64_t)(uintptr_t)va, .pa = 0};
+        if (ioctl(S.fd, SATACCEL_IOC_VA2PA, &x) || (x.pa >> 32)) die("cannot translate NVDLA's output address");
+        if (x.pa & 7) die("NVDLA's output buffer is not 8-byte aligned");
+        RL_LOGIT_PA = (uint32_t)x.pa;
+    }
     slot_t slot[2];
     memset(slot, 0, sizeof slot);
     size_t need = sa_dev_mem_required(&caps);
@@ -316,7 +375,7 @@ int main(int argc, char **argv)
     if (f) {
         fprintf(f, "# mode=%s clear=%s xfer=%s solver=sataccel nn=%s handoff=%s timer=%s cycles_per_us=%.3f "
                    "wall_cycles=%llu puzzles=%u warmup=0 poll_us=0 base_load_cycles=%llu\n",
-                mode, clear, xfer, USE_TRACE ? "trace" : "nvdla", DELTA ? "delta" : "full", RL_TIMER_NAME, cpu,
+                mode, clear, xfer, USE_TRACE ? "trace" : "nvdla", RL ? "reasonlink" : DELTA ? "delta" : "full", RL_TIMER_NAME, cpu,
                 (unsigned long long)wall, n, (unsigned long long)base_load);
         fprintf(f, "puzzle,givens,nn_cyc,argmax_cyc,image_cyc,xfer_cyc,xfer_bytes,sync_cyc,stall_cyc,sat_cyc,sat,"
                    "decisions,propagations,conflicts,grid,tile_busy,tile_mem_active,tile_mem_stall,nn_mismatch\n");
@@ -342,7 +401,7 @@ int main(int argc, char **argv)
     if (f) fclose(f);
     printf("%-6s clear=%-4s xfer=%-9s nn=%-5s handoff=%-5s puzzles=%u  wall %.1f ms (%.1f us/puzzle)  "
            "matches reference %u/%u  NVDLA cells != emulator: %u\n",
-           mode, clear, xfer, USE_TRACE ? "trace" : "nvdla", DELTA ? "delta" : "full", n, wall / cpu / 1e3,
+           mode, clear, xfer, USE_TRACE ? "trace" : "nvdla", RL ? "reasonlink" : DELTA ? "delta" : "full", n, wall / cpu / 1e3,
            wall / cpu / n, correct, n, mism);
     if (NV) rl_nvdla_close(NV);
     sa_linux_close(&S);

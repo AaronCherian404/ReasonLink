@@ -39,7 +39,13 @@ static void die(const char *m)
 typedef struct { FILE *ops; } rec_ctx;
 
 static void rec_wr32(void *c, uint32_t off, uint32_t v) { fprintf(((rec_ctx *)c)->ops, "W %05x %08x\n", off, v); }
-static uint32_t rec_rd32(void *c, uint32_t off) { (void)c; (void)off; return 0; }
+/* Reads are not replayed (polls are): answer what the hardware would, so the
+ * driver's ID checks pass; status reads see "no error". */
+static uint32_t rec_rd32(void *c, uint32_t off)
+{
+    (void)c;
+    return off == SA_RL_BASE ? SA_RL_ID_VALUE : 0;
+}
 static int rec_poll(void *c, uint32_t off, uint32_t mask, uint32_t val)
 {
     fprintf(((rec_ctx *)c)->ops, "P %05x %08x %08x\n", off, mask, val);
@@ -156,6 +162,95 @@ static int gen(const rl_cnf *inst, int expect, const int8_t *ref_grid, const cha
     return 0;
 }
 
+/* ReasonLink test: the base formula's image is loaded once (faithful); the
+ * emulator's int8 logits for each given cell sit in memory where NVDLA would
+ * have written them (group-32 layout, 64 B per cell); the recorded program
+ * is ReasonLink's (setup, begin, one push per given cell, commit), then the
+ * usual SAT-Accel start/wait. The checker sees the full instance (base +
+ * givens), so the result is checked exactly as for gen-sudoku. */
+#define RL_LOGIT_BASE (SA_HW_MEM_BASE + 0x2000000u)
+
+static int gen_rl(const rl_cnf *base, const rl_trace *tr, uint32_t k, int expect, const int8_t *ref_grid,
+                  const char *out)
+{
+    sa_caps caps;
+    sa_config cfg;
+    sa_image img;
+    sa_hw_caps(&caps);
+    sa_default_config(&cfg);
+    if (sa_image_init(&img, &caps, &cfg) ||
+        sa_build_image(&img, base->num_vars, base->num_clauses, base->offsets, base->lits) || img.decision_count)
+        die("base image");
+
+    rec_ctx rc;
+    rc.ops = open_in(out, "ops.txt", "w");
+    sa_dev d;
+    sa_hw_ops ops;
+    uint8_t *shadow;
+    size_t size;
+    dev_setup(&d, &ops, &rc, &shadow, &size);
+    if (sa_dev_load(&d, &img, 0) == (size_t)-1) die("base image too large");
+
+    const uint8_t *mask = rl_trace_mask(tr, k);
+    const int8_t *scores = rl_trace_scores(tr, k);
+    fprintf(rc.ops, "# ReasonLink: base image (%u vars, %u clauses) + puzzle %u\n", img.num_vars, img.num_clauses, k);
+    fprintf(rc.ops, "W %05x 00000001\n", SA_SHELL_BASE + SA_SHELL_CTRL);   /* clear counters */
+    if (sa_rl_setup(&d, &img, 32, 0)) die("sa_rl_setup");
+    sa_rl_begin(&d);
+    uint32_t givens = 0;
+    for (uint32_t cell = 0; cell < RL_CELLS; cell++)
+        if (mask[cell]) {
+            sa_rl_push(&d, RL_LOGIT_BASE + 64 * cell, cell);
+            givens++;
+        }
+    if (sa_rl_commit(&d)) die("sa_rl_commit");
+    fprintf(rc.ops, "R %05x\nR %05x\nR %05x\n", SA_RL_BASE + 0x24, SA_RL_BASE + 0x28, SA_RL_BASE + 0x2C);
+    fprintf(rc.ops, "C reasonlink\n");
+    sa_dev_start(&d, &img);
+    sa_dev_wait(&d);
+    fprintf(rc.ops, "C done\n");
+    fclose(rc.ops);
+
+    FILE *m = open_in(out, "mem.txt", "w");
+    size_t words = 0;
+    for (size_t a = 0; a + 8 <= size; a += 8) {
+        uint64_t w;
+        memcpy(&w, shadow + a, 8);
+        if (w) {
+            fprintf(m, "%08llx %016llx\n", (unsigned long long)(SA_HW_MEM_BASE + a), (unsigned long long)w);
+            words++;
+        }
+    }
+    for (uint32_t cell = 0; cell < RL_CELLS; cell++)       /* NVDLA's output for each given cell */
+        if (mask[cell])
+            for (int h = 0; h < 2; h++) {
+                uint64_t w = 0;
+                for (int b = 0; b < 8; b++) {
+                    int c = 8 * h + b;
+                    if (c < 10) w |= (uint64_t)(uint8_t)scores[(size_t)cell * tr->stride + c] << (8 * b);
+                }
+                fprintf(m, "%08llx %016llx\n", (unsigned long long)(RL_LOGIT_BASE + 64 * cell + 8 * h),
+                        (unsigned long long)w);
+            }
+    fclose(m);
+
+    /* the full instance, for the checker */
+    int32_t units[RL_CELLS];
+    uint32_t u = rl_argmax_units(tr, k, units);
+    rl_cnf inst;
+    memset(&inst, 0, sizeof inst);
+    if (rl_cnf_with_units(&inst, base, units, u)) die("rl_cnf_with_units");
+    FILE *c = open_in(out, "inst.cnf", "w");
+    write_cnf(c, &inst);
+    fclose(c);
+    FILE *meta = open_in(out, "meta.txt", "w");
+    fprintf(meta, "%u %d %d\n", inst.num_vars, expect, 1);
+    for (int i = 0; i < RL_CELLS; i++) fprintf(meta, "%d%c", ref_grid[i], i + 1 == RL_CELLS ? '\n' : ' ');
+    fclose(meta);
+    printf("%s: ReasonLink, %u givens, %zu memory words\n", out, givens, words);
+    return 0;
+}
+
 static int check(const char *out)
 {
     rl_cnf inst;
@@ -234,6 +329,21 @@ int main(int argc, char **argv)
         if (rl_cnf_with_units(&inst, &base, units, n)) die("rl_cnf_with_units");
         return gen(&inst, rl_reference_sat(&ref, k), rl_reference_solved(&ref, k), argv[4]);
     }
+    if (argc == 5 && !strcmp(argv[1], "gen-rl-sudoku")) {
+        char p[4096];
+        rl_cnf base;
+        rl_trace tr;
+        rl_reference ref;
+        snprintf(p, sizeof p, "%s/base.cnf", argv[2]);
+        if (rl_cnf_read_dimacs(&base, p)) die("cannot read base.cnf");
+        snprintf(p, sizeof p, "%s/trace.bin", argv[2]);
+        if (rl_trace_read(&tr, p)) die("cannot read trace.bin");
+        snprintf(p, sizeof p, "%s/reference.bin", argv[2]);
+        if (rl_reference_read(&ref, p)) die("cannot read reference.bin");
+        uint32_t k = (uint32_t)atoi(argv[3]);
+        if (k >= tr.num_puzzles) die("puzzle out of range");
+        return gen_rl(&base, &tr, k, rl_reference_sat(&ref, k), rl_reference_solved(&ref, k), argv[4]);
+    }
     if (argc == 5 && !strcmp(argv[1], "gen-cnf")) {
         rl_cnf c;
         if (rl_cnf_read_dimacs(&c, argv[2])) die("cannot read cnf");
@@ -241,6 +351,7 @@ int main(int argc, char **argv)
     }
     if (argc == 3 && !strcmp(argv[1], "check")) return check(argv[2]);
     fprintf(stderr, "usage: tb_tool gen-sudoku <data_dir> <puzzle> <out_dir>\n"
+                    "       tb_tool gen-rl-sudoku <data_dir> <puzzle> <out_dir>   (ReasonLink)\n"
                     "       tb_tool gen-cnf <file.cnf> <1|0> <out_dir>\n"
                     "       tb_tool check <out_dir>\n");
     return 2;

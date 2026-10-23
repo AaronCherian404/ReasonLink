@@ -49,6 +49,11 @@ static unsigned int tile = 4;
 module_param(tile, uint, 0444);
 MODULE_PARM_DESC(tile, "ESP tile number of the SAT-Accel tile (for its coherence CSR)");
 
+static int nvdla_tile = 2;
+module_param(nvdla_tile, int, 0444);
+MODULE_PARM_DESC(nvdla_tile, "ESP tile number of NVDLA, also put in coherent-DMA mode so ReasonLink "
+		 "reads its outputs coherently (-1: leave it)");
+
 static unsigned long mem_size = SATACCEL_DEFAULT_MEM_SIZE;
 module_param(mem_size, ulong, 0444);
 MODULE_PARM_DESC(mem_size, "Bytes of DMA memory to reserve for SAT-Accel's buffers");
@@ -113,6 +118,35 @@ static long sataccel_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			return left;
 		return left ? 0 : -ETIMEDOUT;
 	}
+	case SATACCEL_IOC_VA2PA: {
+		struct sataccel_va2pa x;
+		struct vm_area_struct *vma;
+		unsigned long pfn = 0;
+		int ret;
+
+		if (copy_from_user(&x, (void __user *)arg, sizeof(x)))
+			return -EFAULT;
+		down_read(&current->mm->mmap_sem);
+		vma = find_vma(current->mm, x.va);
+		if (!vma || x.va < vma->vm_start) {
+			ret = -EFAULT;
+		} else if (vma->vm_flags & (VM_IO | VM_PFNMAP)) {
+			ret = follow_pfn(vma, x.va, &pfn);
+		} else {
+			struct page *pg;
+
+			ret = get_user_pages(x.va & PAGE_MASK, 1, 0, &pg, NULL) == 1 ? 0 : -EFAULT;
+			if (!ret) {
+				pfn = page_to_pfn(pg);
+				put_page(pg);
+			}
+		}
+		up_read(&current->mm->mmap_sem);
+		if (ret)
+			return ret;
+		x.pa = ((u64)pfn << PAGE_SHIFT) | (x.va & ~PAGE_MASK);
+		return copy_to_user((void __user *)arg, &x, sizeof(x)) ? -EFAULT : 0;
+	}
 	default:
 		return -ENOTTY;
 	}
@@ -146,17 +180,26 @@ static const struct file_operations sataccel_fops = {
 	.mmap = sataccel_mmap,
 };
 
-static int sataccel_set_coherence(struct device *dev)
+static int set_tile_coherence(struct device *dev, unsigned int t)
 {
-	void __iomem *csr = ioremap(ESP_CSR_BASE + tile * ESP_CSR_TILE_SIZE, ESP_CSR_TILE_SIZE);
+	void __iomem *csr = ioremap(ESP_CSR_BASE + t * ESP_CSR_TILE_SIZE, ESP_CSR_TILE_SIZE);
 
 	if (!csr)
 		return -ENOMEM;
 	iowrite32(ESP_ACC_COH_RECALL, csr + 4 * ESP_COH_REG_INDEX);
-	dev_info(dev, "tile %u: coherence mode %u (coherent DMA)\n", tile,
+	dev_info(dev, "tile %u: coherence mode %u (coherent DMA)\n", t,
 		 ioread32(csr + 4 * ESP_COH_REG_INDEX));
 	iounmap(csr);
 	return 0;
+}
+
+static int sataccel_set_coherence(struct device *dev)
+{
+	int ret = set_tile_coherence(dev, tile);
+
+	if (!ret && nvdla_tile >= 0)
+		ret = set_tile_coherence(dev, (unsigned int)nvdla_tile);
+	return ret;
 }
 
 static int sataccel_probe(struct platform_device *pdev)

@@ -34,6 +34,11 @@ done
 for mode in serial double; do
   ./rl_board --mode $mode --handoff delta $ARGS --csv results/board_${mode}_delta.csv
 done
+# ReasonLink (phase B hardware), only if this bitstream's SAT-Accel tile has it
+for mode in serial double; do
+  ./rl_board --mode $mode --handoff reasonlink $ARGS --csv results/board_${mode}_reasonlink.csv \
+    || { echo "(no ReasonLink in this bitstream: skipped)"; rm -f results/board_${mode}_reasonlink.csv; break; }
+done
 # NVDLA isolated: the same pipeline replaying the emulator's logits
 ./rl_board --mode serial --clear full --xfer allocated --nn trace $ARGS --csv results/board_serial_faithful_trace.csv
 ls -l results

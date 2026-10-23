@@ -10,6 +10,7 @@
 //   P <off> <mask> <val>     poll (APB reads) until (rd & mask) == val
 //   D <addr> <bytes>         dump memory range to +dump file
 //   C <label>                print the shell counters
+//   R <off>                  print a register (APB read)
 //   #...                     comment
 //
 // Plusargs: +ops=<file> +mem=<file> +dump=<file> [+max_poll_cycles=N] [+fill=<hex64>]
@@ -150,6 +151,11 @@ module tb_sataccel;
             "D": begin
                 rc = $fscanf(fd, "%h %h", a, b);
                 mem.dump(dfd, a, b);
+            end
+            "R": begin
+                rc = $fscanf(fd, "%h", a);
+                apb_read(a, r);
+                $display("REG %05h %0d", a, r);
             end
             "C": begin
                 rc = $fscanf(fd, "%s", label);

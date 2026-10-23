@@ -20,3 +20,11 @@ int rl_nvdla_classify(rl_nvdla *n, const uint8_t *pixels, int8_t *out)
 }
 
 void rl_nvdla_close(rl_nvdla *n) { (void)n; }
+
+void *rl_nvdla_output(rl_nvdla *n, uint32_t *group, uint32_t *surf_stride)
+{
+    (void)n;
+    *group = 32;
+    *surf_stride = 0;
+    return NULL;
+}

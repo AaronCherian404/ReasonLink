@@ -143,6 +143,47 @@ size_t sa_dev_load_decisions(sa_dev *d, const sa_image *base, const int32_t *lit
     return ans_bytes + sizeof base->misc;
 }
 
+/* reasonlink_core registers */
+#define RL_ID          0x00
+#define RL_CTRL        0x04
+#define RL_ANSWER_ADDR 0x08
+#define RL_MISC_ADDR   0x0C
+#define RL_NUM_VARS    0x10
+#define RL_LAYOUT      0x14
+#define RL_LOGIT_ADDR  0x18
+#define RL_CELL        0x1C
+#define RL_COMMIT      0x20
+#define RL_STATUS      0x24
+#define RL_MISC_BASE   0x40
+
+int sa_rl_setup(sa_dev *d, const sa_image *base, uint32_t group, uint32_t surf_stride)
+{
+    if (rd(d, SA_RL_BASE + RL_ID) != SA_RL_ID_VALUE || base->decision_count != 0) return -1;
+    wr(d, SA_RL_BASE + RL_ANSWER_ADDR, (uint32_t)buf_addr(d, SA_BUF_ANSWER_STACK));
+    wr(d, SA_RL_BASE + RL_MISC_ADDR, (uint32_t)buf_addr(d, SA_BUF_MISC));
+    wr(d, SA_RL_BASE + RL_NUM_VARS, base->num_vars);
+    wr(d, SA_RL_BASE + RL_LAYOUT, (group == 8 ? ((surf_stride >> 8) << 8) : 0) | (group & 0xFF));
+    for (int k = 0; k < 8; k++) wr(d, SA_RL_BASE + RL_MISC_BASE + 4 * k, (uint32_t)base->misc[k]);
+    d->num_vars = base->num_vars;
+    d->num_clauses = base->num_clauses;
+    return 0;
+}
+
+void sa_rl_begin(sa_dev *d) { wr(d, SA_RL_BASE + RL_CTRL, 1); }
+
+void sa_rl_push(sa_dev *d, uint32_t logit_addr, uint32_t cell)
+{
+    wr(d, SA_RL_BASE + RL_LOGIT_ADDR, logit_addr);
+    wr(d, SA_RL_BASE + RL_CELL, cell);
+}
+
+int sa_rl_commit(sa_dev *d)
+{
+    wr(d, SA_RL_BASE + RL_COMMIT, 1);
+    if (poll(d, SA_RL_BASE + RL_STATUS, 0x2u, 0x2u)) return -1;      /* done */
+    return (rd(d, SA_RL_BASE + RL_STATUS) & 0x4u) ? -1 : 0;           /* error */
+}
+
 void sa_dev_start(sa_dev *d, const sa_image *img)
 {
     const uint32_t M = SA_KERNEL_BASE_MESSAGE, C = SA_KERNEL_BASE_CLAUSE_STORE,

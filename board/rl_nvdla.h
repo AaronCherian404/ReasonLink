@@ -26,6 +26,11 @@ int rl_nvdla_classify(rl_nvdla *n, const uint8_t *pixels, int8_t *out);
 
 void rl_nvdla_close(rl_nvdla *n);
 
+/* For ReasonLink: the CPU address of channel 0 in the output tensor buffer
+ * (NVDLA writes every classification there), and the tensor's layout:
+ * channel group (8 or 32) and surface stride in bytes. */
+void *rl_nvdla_output(rl_nvdla *n, uint32_t *group, uint32_t *surf_stride);
+
 #ifdef __cplusplus
 }
 #endif

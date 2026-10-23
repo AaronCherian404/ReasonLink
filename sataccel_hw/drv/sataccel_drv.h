@@ -111,6 +111,24 @@ size_t sa_dev_load(sa_dev *d, const sa_image *img, int used_only);
  * unsuitable (it has decisions of its own). */
 size_t sa_dev_load_decisions(sa_dev *d, const sa_image *base, const int32_t *lits, uint32_t k);
 
+/* ReasonLink phase B (rtl/reasonlink_core.v, block design built with
+ * REASONLINK=1): the tile turns NVDLA's logits into fixed-decision literals
+ * and writes the delta itself (what sa_dev_load_decisions does on the CPU).
+ *   sa_rl_setup   once: the base image (sa_dev_load'ed, no decisions) and
+ *                 NVDLA's output tensor layout (channel group 8 or 32, surface
+ *                 stride for group 8); 0 on success, -1 if no ReasonLink
+ *   sa_rl_begin   per puzzle, before the first cell
+ *   sa_rl_push    per given cell, in increasing cell order, as soon as NVDLA
+ *                 has written its logits at logit_addr (channel 0, 8-byte aligned)
+ *   sa_rl_commit  after the last cell: wait until the delta is written;
+ *                 0 on success, -1 on error/timeout. Then sa_dev_start as usual. */
+#define SA_RL_BASE 0x70000u
+#define SA_RL_ID_VALUE 0x524C0001u
+int sa_rl_setup(sa_dev *d, const sa_image *base, uint32_t group, uint32_t surf_stride);
+void sa_rl_begin(sa_dev *d);
+void sa_rl_push(sa_dev *d, uint32_t logit_addr, uint32_t cell);
+int sa_rl_commit(sa_dev *d);
+
 /* Program kernel arguments (host.cpp setArg) and start the seven kernels in
  * host.cpp's enqueue order. */
 void sa_dev_start(sa_dev *d, const sa_image *img);

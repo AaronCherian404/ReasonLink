@@ -7,12 +7,16 @@
 #     (ESP's third-party socket: one 64-bit master, 32-bit addresses)
 #   - SmartConnect: one AXI4-Lite slave -> the kernels' control ports,
 #     64 KB per kernel (see KERNEL_BASE below and sataccel_regs.h)
+#   - with REASONLINK=1: rtl/reasonlink_core.v as one more cell (memory
+#     master on mem_sc, control window at 0x70000)
 #
-# vivado -mode batch -source sataccel_bd.tcl -tclargs <hls_dir> <out_dir> <part> <period_ns>
+# vivado -mode batch -source sataccel_bd.tcl -tclargs <hls_dir> <out_dir> <part> <period_ns> [reasonlink 0|1] [rtl_dir]
 set hls_dir [lindex $argv 0]
 set out_dir [lindex $argv 1]
 set part    [lindex $argv 2]
 set period  [lindex $argv 3]
+set reasonlink [expr {[llength $argv] > 4 ? [lindex $argv 4] : 0}]
+set rtl_dir [lindex $argv 5]
 set freq_hz [expr {int(1000.0 / $period * 1e6)}]
 
 create_project -force sataccel_bd $out_dir -part $part
@@ -32,10 +36,23 @@ array set KERNEL_BASE {
     restartCalculator    0x40000
     pqHandler            0x50000
     solver               0x60000
+    reasonlink           0x70000
 }
 set kernels {message clause_store_handler location_handler timer restartCalculator pqHandler solver}
 foreach k $kernels {
     create_bd_cell -type ip -vlnv columbia.edu:reasonlink:$k:1.0 ${k}_1
+}
+# Control-window owners: the kernels, plus ReasonLink when enabled
+set ctrl_cells $kernels
+if {$reasonlink} {
+    add_files -norecurse $rtl_dir/reasonlink_core.v
+    update_compile_order -fileset sources_1
+    create_bd_cell -type module -reference reasonlink_core reasonlink_1
+    lappend ctrl_cells reasonlink
+}
+proc ctrl_pin {k} {
+    if {$k eq "reasonlink"} { return [get_bd_intf_pins reasonlink_1/s_axi] }
+    return [get_bd_intf_pins ${k}_1/s_axi_control]
 }
 
 # Clock and reset
@@ -95,14 +112,14 @@ connect_bd_intf_net [get_bd_intf_pins mem_sc/M00_AXI] [get_bd_intf_ports M_AXI]
 
 # Control: one AXI4-Lite slave -> seven kernel control ports
 create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect ctrl_sc
-set_property -dict [list CONFIG.NUM_SI 1 CONFIG.NUM_MI [llength $kernels]] [get_bd_cells ctrl_sc]
+set_property -dict [list CONFIG.NUM_SI 1 CONFIG.NUM_MI [llength $ctrl_cells]] [get_bd_cells ctrl_sc]
 create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL
 set_property -dict [list CONFIG.PROTOCOL AXI4LITE CONFIG.DATA_WIDTH 32 CONFIG.ADDR_WIDTH 20 \
     CONFIG.FREQ_HZ $freq_hz] [get_bd_intf_ports S_AXI_CTRL]
 connect_bd_intf_net [get_bd_intf_ports S_AXI_CTRL] [get_bd_intf_pins ctrl_sc/S00_AXI]
 set i 0
-foreach k $kernels {
-    connect_bd_intf_net [get_bd_intf_pins ctrl_sc/M[format %02d $i]_AXI] [get_bd_intf_pins ${k}_1/s_axi_control]
+foreach k $ctrl_cells {
+    connect_bd_intf_net [get_bd_intf_pins ctrl_sc/M[format %02d $i]_AXI] [ctrl_pin $k]
     incr i
 }
 
@@ -122,14 +139,14 @@ assign_bd_address
 # Two passes so no move overlaps a window that is still auto-placed:
 # park every window at a scratch offset (0x80000+), then place it.
 set i 0
-foreach k $kernels {
+foreach k $ctrl_cells {
     set ctrl_seg($k) [get_bd_addr_segs -of_objects [get_bd_addr_spaces S_AXI_CTRL] -filter "NAME =~ *${k}_1*"]
     if {[llength $ctrl_seg($k)] != 1} { error "control segment for $k: '$ctrl_seg($k)'" }
     set_property range 64K $ctrl_seg($k)
     set_property offset [expr {0x80000 + $i * 0x10000}] $ctrl_seg($k)
     incr i
 }
-foreach k $kernels { set_property offset $KERNEL_BASE($k) $ctrl_seg($k) }
+foreach k $ctrl_cells { set_property offset $KERNEL_BASE($k) $ctrl_seg($k) }
 foreach sp [get_bd_addr_spaces -of_objects [get_bd_cells *_1]] {
     # (each kernel's address spaces also list its own control slave; skip it)
     foreach seg [get_bd_addr_segs -quiet -of_objects $sp -filter {NAME =~ SEG_M_AXI*}] {

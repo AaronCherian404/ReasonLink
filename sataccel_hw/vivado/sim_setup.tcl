@@ -5,7 +5,9 @@
 # Run from build/vivado_bd: vivado -mode batch -source ../../vivado/sim_setup.tcl -tclargs <sataccel_hw dir>
 set root [lindex $argv 0]
 open_project sataccel_bd.xpr
-add_files -norecurse [glob $root/rtl/*.v]
+foreach f [glob $root/rtl/*.v] {
+    if {[llength [get_files -quiet [file tail $f]]] == 0} { add_files -norecurse $f }
+}
 add_files -fileset sim_1 -norecurse [glob $root/tb/*.sv]
 set_property top sataccel_top [current_fileset]
 set_property top tb_sataccel [get_filesets sim_1]

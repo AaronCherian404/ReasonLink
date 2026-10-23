@@ -29,7 +29,16 @@ struct sataccel_wait {
 	__u32 timeout_ms;
 };
 
+/* Physical address of a user virtual address in the calling process (e.g.
+ * NVDLA's output tensor, for ReasonLink to read). Works for normal pages and
+ * for PFN mappings such as NVDLA's DMA buffers. */
+struct sataccel_va2pa {
+	__u64 va;
+	__u64 pa;   /* out */
+};
+
 #define SATACCEL_IOC_MAGIC 'S'
+#define SATACCEL_IOC_VA2PA _IOWR(SATACCEL_IOC_MAGIC, 4, struct sataccel_va2pa)
 #define SATACCEL_IOC_INFO  _IOR(SATACCEL_IOC_MAGIC, 1, struct sataccel_info)
 #define SATACCEL_IOC_ARM   _IO(SATACCEL_IOC_MAGIC, 2)   /* before start: forget old interrupts */
 #define SATACCEL_IOC_WAIT  _IOW(SATACCEL_IOC_MAGIC, 3, struct sataccel_wait)
