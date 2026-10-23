@@ -1,0 +1,12 @@
+# SAT-Accel image delta per puzzle vs the base formula's image (handoff/image_delta.c), VCU118 capacities, 2026-10-23
+base formula: 729 vars, 11988 clauses; 1000 puzzles (VCU118 capacities)
+region          used B/puzzle differs B/puzzle  differs %
+clause_store           202690              514      0.25%
+track_lbd                  80                0      0.00%
+cmd                     96161              257      0.27%
+lit_store              186624               64      0.03%
+answer_stack             2916               53      1.81%
+lmd                     46656               64      0.14%
+cls_states              96161              257      0.27%
+misc                     1024                2      0.20%
+total                  632313             1212      0.19%
