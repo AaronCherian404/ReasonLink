@@ -16,13 +16,14 @@ ReasonLink measures that handoff and designs a data-movement-aware interface to 
 - **Symbolic accelerator:** [SAT-Accel](https://github.com/milo168/FPGA25_SAT_Accel), a CDCL SAT solver
 - **Workload:** visual Sudoku, where handwritten digits are classified and the givens become unit clauses
 
-The full proposal and the P1 report are in [`Project_Title__Identify_the_Problem_and_Core_Idea/`](Project_Title__Identify_the_Problem_and_Core_Idea/). [`PROGRESS.md`](PROGRESS.md) is the running log of results, decisions, and open issues.
+The proposal and P1 report are organized by milestone in [Project Updates](Project%20Updates/). [`PROGRESS.md`](PROGRESS.md) is the running log of results, decisions, and open issues.
 
 **Status:** P1 (infrastructure and baselines) is in progress. See the stage table in `PROGRESS.md`.
 
 ## Repository layout
 
 ```
+Project Updates/ milestone reports, figures, bibliographies, and original course template
 workload/     Sudoku CNF encoder, puzzle generator, int8 NVDLA LeNet emulator, training, reference solve
 handoff/      SAT-Accel memory-image builder (C), solver backend, golden test, tools
 baselines/    serial and double-buffered handoff baselines with cycle counters (x86 / RISC-V)

@@ -1,0 +1,79 @@
+% Editable vector figure. Coordinates and node sizes are in millimetres.
+% Sources: board/rl_board.c, sataccel_hw/rtl/reasonlink_core.v,
+% results/p2/image_delta.txt, results/p2/hw/rtl_reasonlink.txt.
+% Milestone 1 writes 729 answerStack words + 1 alignment word + 8 counter words
+% = 2,952 B on AXI (payload is 2,948 B; m_axi_wstrb is always 0xFF).
+\begin{tikzpicture}[x=1mm,y=1mm,
+  font=\fontsize{8}{9.4}\selectfont,
+  block/.style={draw=black!55, rounded corners=1.5pt, line width=.55pt,
+    align=center, inner sep=2pt, outer sep=0pt},
+  neural/.style={block, fill=blue!7},
+  memory/.style={block, fill=black!3},
+  host/.style={block, fill=orange!12, draw=orange!65!black},
+  rl/.style={block, fill=teal!10, draw=teal!65!black},
+  solver/.style={block, fill=blue!4},
+  data/.style={-{Stealth[length=1.7mm]}, line width=.7pt, draw=black!75},
+  control/.style={-{Stealth[length=1.5mm]}, dashed, line width=.6pt,
+    draw=black!60},
+  smallnote/.style={align=center, font=\fontsize{7}{8.2}\selectfont}
+]
+\path[use as bounding box] (-1,-30) rectangle (180,94);
+
+\node[font=\bfseries\fontsize{9}{10.5}\selectfont] at (40,91)
+  {(a) Full-image baseline};
+\node[font=\bfseries\fontsize{9}{10.5}\selectfont] at (130,91)
+  {(b) ReasonLink Milestone 1: base in DRAM};
+\draw[black!20] (0,87) -- (80,87);
+\draw[black!20] (89,87) -- (179,87);
+\node[smallnote] at (40,82) {Given-cell images + known cell positions};
+\node[smallnote] at (128,82) {Given-cell images + known cell positions};
+
+\node[neural, minimum width=70mm, minimum height=10mm] (bnn) at (40,72)
+  {\textbf{NVDLA: LeNet int8}\\One $28\!\times\!28$ given-cell crop per inference};
+\node[neural, minimum width=62mm, minimum height=10mm] (rnn) at (128,72)
+  {\textbf{NVDLA: LeNet int8}\\One $28\!\times\!28$ given-cell crop per inference};
+\draw[data] (40,79) -- (bnn.north);
+\draw[data] (128,79) -- (rnn.north);
+
+\node[memory, minimum width=70mm, minimum height=9mm] (bscores) at (40,58)
+  {\textbf{DRAM: classifier scores}\\CPU collects the scores for all given cells};
+\node[memory, minimum width=62mm, minimum height=9mm] (rscores) at (128,58)
+  {\textbf{DRAM: one cell's scores}\\10 int8 logits; one reused output buffer};
+\draw[data] (bnn) -- (bscores);
+\draw[data] (rnn) -- (rscores);
+
+\node[host, minimum width=70mm, minimum height=18mm] (cpu) at (40,40)
+  {\textbf{Ariane CPU}\\Argmax $\rightarrow$ given literals\\Build full image: Sudoku rules + givens + metadata};
+\node[rl, minimum width=62mm, minimum height=18mm] (core) at (128,40)
+  {\textbf{ReasonLink hardware (SAT-Accel tile)}\\Argmax $\rightarrow$ literals $\rightarrow$ on-chip FIFO\\COMMIT after all given cells};
+\draw[data] (bscores) -- (cpu);
+\draw[data] (rscores) -- (core);
+
+\node[block, minimum width=18mm, minimum height=13mm,
+  font=\fontsize{7}{8}\selectfont] (ctrl) at (170,58)
+  {\textbf{CPU control}\\Cell + address\\Wait for credit};
+\draw[control] (ctrl.south) |- (core.east);
+
+\node[memory, minimum width=70mm, minimum height=15mm] (bimage) at (40,18)
+  {\textbf{DRAM: new solver image each puzzle}\\Rules + givens + metadata\\$\approx$632\,KB copied per puzzle (lean)};
+\node[memory, minimum width=62mm, minimum height=15mm] (rimage) at (128,18)
+  {\textbf{DRAM: reusable base image}\\CPU loads base once; hardware updates givens\\2,952\,B / COMMIT (includes 4\,B padding)};
+\draw[data] (cpu) -- node[right, font=\fontsize{7}{8}\selectfont] {copy} (bimage);
+\draw[data] (core) -- node[right, font=\fontsize{7}{8}\selectfont] {delta write} (rimage);
+
+\node[solver, minimum width=70mm, minimum height=16mm] (bsat) at (40,-3)
+  {\textbf{SAT-Accel}\\Full-image copy-in $\rightarrow$ CDCL search\\SAT / UNSAT; completed grid if SAT};
+\node[solver, minimum width=62mm, minimum height=16mm] (rsat) at (128,-3)
+  {\textbf{SAT-Accel (unmodified)}\\Full-image copy-in $\rightarrow$ CDCL search\\SAT / UNSAT; completed grid if SAT};
+\draw[data] (bimage) -- (bsat);
+\draw[data] (rimage) -- (rsat);
+
+\node[smallnote, text width=80mm, anchor=north] at (40,-14)
+  {\textbf{Serial:} prepare $i$, then solve $i$.\\
+   \textbf{Double-buffered:} prepare $i{+}1$ while solving $i$;\\
+   two image buffers, same bytes copied per puzzle.};
+\node[smallnote, text width=88mm, anchor=north] at (134,-14)
+  {\textbf{Remaining cost:} full-image reads on every solve.\\
+   \textbf{Milestone 2:} keep the base on chip and\\
+   roll back assignments and learned clauses.};
+\end{tikzpicture}

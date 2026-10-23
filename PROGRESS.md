@@ -44,7 +44,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 - NVDLA running on an ESP SoC
 - VCU118 board work
 
-**P1 report:** `Project_Title__Identify_the_Problem_and_Core_Idea/neural-symbolic-p1.tex` (IEEEtran; 2 pages total: about 1.4 pages of body, then Appendix A and references). Its numbers come from this file. Build it with `latexmk -pdf` in that folder; locally, IEEEtran.bst must be on BSTINPUTS (Overleaf has it). It covers what was built, the results (functional + baseline breakdown), limitations and open issues, the next steps, and (Appendix A) every reproduction step.
+**P1 report:** `Project Updates/P1 Exploration and Progress/neural-symbolic-p1.tex` (IEEEtran; two pages of main content plus references on page three). Build it with `latexmk -pdf neural-symbolic-p1.tex` from that milestone folder. It covers the project direction, software and RTL findings, implementation progress, blockers, and next steps. Figure sources and reproduction commands are in `figures/` and the milestone README; auxiliary files are kept in `build/`.
 
 ## Stage status
 

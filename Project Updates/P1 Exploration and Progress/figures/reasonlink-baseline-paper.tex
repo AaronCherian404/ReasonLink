@@ -1,0 +1,61 @@
+% Compact report layout; detailed standalone layout is in
+% reasonlink-baseline-comparison.tex. Both describe ReasonLink Milestone 1.
+\begin{tikzpicture}[x=1mm,y=1mm,
+  font=\fontsize{7.5}{8.7}\selectfont,
+  block/.style={draw=black!55, rounded corners=1.5pt, line width=.55pt,
+    align=center, minimum width=30mm, minimum height=18mm,
+    inner sep=2pt, outer sep=0pt},
+  neural/.style={block, fill=blue!7},
+  memory/.style={block, fill=black!3},
+  host/.style={block, fill=orange!12, draw=orange!65!black},
+  rl/.style={block, fill=teal!10, draw=teal!65!black},
+  solver/.style={block, fill=blue!4},
+  data/.style={-{Stealth[length=1.5mm]}, line width=.65pt, draw=black!75},
+  control/.style={-{Stealth[length=1.3mm]}, dashed, line width=.6pt,
+    draw=black!60}
+]
+\path[use as bounding box] (0,-34) rectangle (179,49);
+\node[anchor=west, font=\bfseries\fontsize{8.5}{10}\selectfont] at (2,45)
+  {(a) Full-image baseline};
+\node[neural] (bn) at (17,31)
+  {\textbf{NVDLA}\\LeNet int8\\Given-cell images};
+\node[memory] (bl) at (53,31)
+  {\textbf{Scores in DRAM}\\CPU collects scores\\for all given cells};
+\node[host] (bc) at (89,31)
+  {\textbf{Ariane CPU}\\Argmax + build\\full solver image};
+\node[memory] (bi) at (125,31)
+  {\textbf{Image in DRAM}\\Rules + givens\\$\approx$632\,KB (lean)};
+\node[solver] (bs) at (161,31)
+  {\textbf{SAT-Accel}\\Copy-in $\rightarrow$ search\\SAT/UNSAT + grid};
+\draw[data] (bn) -- (bl);
+\draw[data] (bl) -- (bc);
+\draw[data] (bc) -- (bi);
+\draw[data] (bi) -- (bs);
+
+\node[anchor=west, font=\bfseries\fontsize{8.5}{10}\selectfont] at (2,10)
+  {(b) ReasonLink Milestone 1: base in DRAM};
+\node[font=\fontsize{7}{8}\selectfont] at (118,10)
+  {CPU: cell + score address; wait for credit};
+\node[neural] (rn) at (17,-4)
+  {\textbf{NVDLA}\\LeNet int8\\Given-cell images};
+\node[memory] (rl) at (53,-4)
+  {\textbf{Scores in DRAM}\\One given cell\\10 int8 logits};
+\node[rl] (rc) at (89,-4)
+  {\textbf{ReasonLink}\\Hardware argmax\\+ literal FIFO};
+\node[memory] (ri) at (125,-4)
+  {\textbf{Base in DRAM}\\Loaded once\\2,952\,B/COMMIT};
+\node[solver] (rs) at (161,-4)
+  {\textbf{SAT-Accel}\\Copy-in $\rightarrow$ search\\SAT/UNSAT + grid};
+\draw[data] (rn) -- (rl);
+\draw[data] (rl) -- (rc);
+\draw[data] (rc) -- (ri);
+\draw[data] (ri) -- (rs);
+\draw[control] (118,8) -| (rc.north);
+
+\node[font=\fontsize{7.2}{8.5}\selectfont] at (89,-21)
+  {\textbf{Serial:} prepare $i$, then solve $i$. \quad
+   \textbf{Double-buffered:} prepare $i{+}1$ while solving $i$; two image buffers.};
+\node[font=\fontsize{7.2}{8.5}\selectfont] at (89,-28)
+  {\textbf{Milestone 1 still reloads the full image each solve.} \quad
+   Milestone 2: base on chip + state rollback.};
+\end{tikzpicture}

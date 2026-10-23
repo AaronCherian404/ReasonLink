@@ -1,0 +1,13 @@
+% Build: python3 generate-baseline-walltime.py
+%        latexmk -pdf baseline-walltime-figure.tex
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+\begin{minipage}{88mm}
+\centering
+\input{baseline-walltime-chart.tex}
+\end{minipage}
+\end{document}
