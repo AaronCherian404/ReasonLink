@@ -40,7 +40,12 @@
 module reasonlink_core #(
     parameter ADDR_W = 32
 ) (
+    // (attributes: Vivado's block design associates both AXI interfaces with this clock)
+    (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 ap_clk CLK" *)
+    (* X_INTERFACE_PARAMETER = "ASSOCIATED_BUSIF s_axi:m_axi, ASSOCIATED_RESET ap_rst_n" *)
     input  wire              ap_clk,
+    (* X_INTERFACE_INFO = "xilinx.com:signal:reset:1.0 ap_rst_n RST" *)
+    (* X_INTERFACE_PARAMETER = "POLARITY ACTIVE_LOW" *)
     input  wire              ap_rst_n,
     // AXI4-Lite slave (control)
     input  wire [15:0]       s_axi_awaddr,

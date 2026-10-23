@@ -1,0 +1,10 @@
+# ReasonLink phase B, end to end in RTL (xsim, block design with reasonlink_core), torino 2026-10-23
+# rl_<k>: base image + NVDLA logits in memory -> ReasonLink (literal producer, delta writer) -> SAT-Accel; sudoku_0: the unmodified flow in the same build
+PASS rl_0 result=SAT expect=SAT model_ok=1 grid==ref=yes iterations=1 decisions=1 conflicts=0 restarts=0 | cycles=207177 busy=202558 mem_active=88970 mem_stall=186680 rd_beats=81404 wr_beats=3472 sim_cycle=207253 | wall=547s
+PASS rl_3 result=SAT expect=SAT model_ok=1 grid==ref=yes iterations=4 decisions=3 conflicts=1 restarts=0 | cycles=211171 busy=207176 mem_active=88943 mem_stall=186680 rd_beats=81386 wr_beats=3472 sim_cycle=211247 | wall=662s
+PASS rl_5 result=UNSAT expect=UNSAT model_ok=1 grid==ref=yes iterations=1 decisions=1 conflicts=0 restarts=0 | cycles=192319 busy=188177 mem_active=85304 mem_stall=182311 rd_beats=81390 wr_beats=556 sim_cycle=192395 | wall=483s
+PASS sudoku_0 result=SAT expect=SAT model_ok=1 grid==ref=yes iterations=1 decisions=1 conflicts=0 restarts=0 | cycles=203607 busy=202894 mem_active=88619 mem_stall=187002 rd_beats=81476 wr_beats=3103 sim_cycle=203683 | wall=435s
+# ReasonLink registers after COMMIT (STATUS: [1] done, [15:8] literals; CYC_CONV; CYC_COMMIT):
+rl_0: STATUS 0x2402 (done, 36 literals) CYC_CONV 2412 CYC_COMMIT 1181
+rl_3: STATUS 0x1B02 (done, 27 literals) CYC_CONV 1809 CYC_COMMIT 1181
+rl_5: STATUS 0x1D02 (done, 29 literals) CYC_CONV 1943 CYC_COMMIT 1181
