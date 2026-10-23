@@ -101,6 +101,16 @@ int sa_dev_probe(sa_dev *d);
  * 2*pos+2 before bounds-checking them; see patches/0001). */
 size_t sa_dev_load(sa_dev *d, const sa_image *img, int used_only);
 
+/* Delta load (ReasonLink mechanism iii): the device buffers already hold the
+ * image of a base formula with no decisions (sa_dev_load once); pass an
+ * instance's unit literals only as level-0 fixed decisions. Writes the
+ * answerStack (zeroed, then the sorted unique literals as its prefix) and
+ * miscCounters (the base image's, with [3] = their count), the two buffers
+ * the kernels overwrite. lits must be sorted ascending and unique (Sudoku
+ * givens in cell order are). Returns bytes written, or (size_t)-1 if base is
+ * unsuitable (it has decisions of its own). */
+size_t sa_dev_load_decisions(sa_dev *d, const sa_image *base, const int32_t *lits, uint32_t k);
+
 /* Program kernel arguments (host.cpp setArg) and start the seven kernels in
  * host.cpp's enqueue order. */
 void sa_dev_start(sa_dev *d, const sa_image *img);

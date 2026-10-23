@@ -23,8 +23,14 @@
  * (identical answers across runs are checked by the summary script), and
  * NVDLA's logits against the emulator's (nn_mismatch).
  *
+ * --handoff delta (ReasonLink mechanism iii as a CPU-only optimization, the
+ * proposal's ablation): each buffer set holds the base formula's image,
+ * loaded once outside the timed run; a puzzle's givens are written only as
+ * level-0 fixed decisions (sa_dev_load_decisions), with no image build.
+ *
  * Usage: rl_board --mode serial|double [--clear full|lean] [--xfer allocated|used]
- *          [--nn nvdla|trace] [--n N] [--data DIR] [--loadable FILE] [--csv FILE]
+ *          [--handoff full|delta] [--nn nvdla|trace] [--n N] [--data DIR]
+ *          [--loadable FILE] [--csv FILE]
  */
 #define _GNU_SOURCE
 #include <getopt.h>
@@ -107,7 +113,7 @@ static rl_nvdla *NV;
 static cells_t CELLS;
 static rl_cnf BASE;
 static rl_reference REF;
-static int USE_TRACE, LEAN_XFER;
+static int USE_TRACE, LEAN_XFER, DELTA;
 static rec_t *R;
 
 /* nn + conv + xfer for puzzle p into slot s */
@@ -139,13 +145,22 @@ static void prepare(slot_t *s, uint32_t p)
     int32_t units[RL_CELLS];
     uint32_t k = rl_argmax_units(&tr, 0, units);
     uint64_t t2 = rl_cycles();
-    if (rl_cnf_with_units(&s->inst, &BASE, units, k) ||
-        sa_build_image(&s->img, s->inst.num_vars, s->inst.num_clauses, s->inst.offsets, s->inst.lits)) {
-        fprintf(stderr, "rl_board: image build failed (puzzle %u)\n", p);
-        exit(1);
+    size_t bytes;
+    uint64_t t3;
+    if (DELTA) {
+        /* s->img is the base formula's image, already in this slot's buffers:
+         * the givens go in as fixed decisions (no image build) */
+        t3 = rl_cycles();
+        bytes = sa_dev_load_decisions(&s->dev, &s->img, units, k);
+    } else {
+        if (rl_cnf_with_units(&s->inst, &BASE, units, k) ||
+            sa_build_image(&s->img, s->inst.num_vars, s->inst.num_clauses, s->inst.offsets, s->inst.lits)) {
+            fprintf(stderr, "rl_board: image build failed (puzzle %u)\n", p);
+            exit(1);
+        }
+        t3 = rl_cycles();
+        bytes = sa_dev_load(&s->dev, &s->img, LEAN_XFER);
     }
-    uint64_t t3 = rl_cycles();
-    size_t bytes = sa_dev_load(&s->dev, &s->img, LEAN_XFER);
     uint64_t t4 = rl_cycles();
     if (bytes == (size_t)-1) {
         fprintf(stderr, "rl_board: over the hardware's variable limit\n");
@@ -185,7 +200,7 @@ static void finish(slot_t *s)
     uint64_t span = t1 - s->t_start;
     r->sync = span > r->sat ? span - r->sat : 0;             /* start + completion detection */
 
-    int8_t *model = calloc(s->inst.num_vars, 1);
+    int8_t *model = calloc(s->img.num_vars, 1);
     sa_dev_result res;
     r->sat_flag = sa_dev_result_read(&s->dev, model, &res);
     r->decisions = res.decisions;
@@ -210,7 +225,8 @@ int main(int argc, char **argv)
     uint32_t n_req = 0;
     static struct option opts[] = {
         {"mode", 1, 0, 'm'}, {"clear", 1, 0, 'c'}, {"xfer", 1, 0, 'x'}, {"nn", 1, 0, 'k'}, {"n", 1, 0, 'n'},
-        {"data", 1, 0, 'd'}, {"loadable", 1, 0, 'l'}, {"csv", 1, 0, 'o'}, {0, 0, 0, 0}};
+        {"data", 1, 0, 'd'}, {"loadable", 1, 0, 'l'}, {"csv", 1, 0, 'o'}, {"handoff", 1, 0, 'h'},
+        {0, 0, 0, 0}};
     int o;
     while ((o = getopt_long(argc, argv, "", opts, NULL)) != -1) {
         switch (o) {
@@ -222,6 +238,7 @@ int main(int argc, char **argv)
         case 'd': data = optarg; break;
         case 'l': loadable = optarg; break;
         case 'o': csv = optarg; break;
+        case 'h': DELTA = !strcmp(optarg, "delta"); break;
         default: die("bad option (see the header comment)");
         }
     }
@@ -257,6 +274,17 @@ int main(int argc, char **argv)
                 die("second buffer set");
         }
     }
+    /* Delta handoff: each buffer set holds the base formula's image (loaded
+     * once, outside the timed run); puzzles only write their decisions */
+    uint64_t base_load = 0;
+    if (DELTA)
+        for (int i = 0; i < (dbl ? 2 : 1); i++) {
+            uint64_t t0 = rl_cycles();
+            if (sa_build_image(&slot[i].img, BASE.num_vars, BASE.num_clauses, BASE.offsets, BASE.lits) ||
+                sa_dev_load(&slot[i].dev, &slot[i].img, LEAN_XFER) == (size_t)-1 || slot[i].img.decision_count)
+                die("base image");
+            base_load += rl_cycles() - t0;
+        }
     double cpu = rl_cycles_per_us();
 
     uint64_t t_begin = rl_cycles();
@@ -286,9 +314,10 @@ int main(int argc, char **argv)
     FILE *f = csv ? fopen(csv, "w") : NULL;
     if (csv && !f) die("cannot write csv");
     if (f) {
-        fprintf(f, "# mode=%s clear=%s xfer=%s solver=sataccel nn=%s timer=%s cycles_per_us=%.3f wall_cycles=%llu "
-                   "puzzles=%u warmup=0 poll_us=0\n",
-                mode, clear, xfer, USE_TRACE ? "trace" : "nvdla", RL_TIMER_NAME, cpu, (unsigned long long)wall, n);
+        fprintf(f, "# mode=%s clear=%s xfer=%s solver=sataccel nn=%s handoff=%s timer=%s cycles_per_us=%.3f "
+                   "wall_cycles=%llu puzzles=%u warmup=0 poll_us=0 base_load_cycles=%llu\n",
+                mode, clear, xfer, USE_TRACE ? "trace" : "nvdla", DELTA ? "delta" : "full", RL_TIMER_NAME, cpu,
+                (unsigned long long)wall, n, (unsigned long long)base_load);
         fprintf(f, "puzzle,givens,nn_cyc,argmax_cyc,image_cyc,xfer_cyc,xfer_bytes,sync_cyc,stall_cyc,sat_cyc,sat,"
                    "decisions,propagations,conflicts,grid,tile_busy,tile_mem_active,tile_mem_stall,nn_mismatch\n");
     }
@@ -311,9 +340,10 @@ int main(int argc, char **argv)
         }
     }
     if (f) fclose(f);
-    printf("%-6s clear=%-4s xfer=%-9s nn=%-5s puzzles=%u  wall %.1f ms (%.1f us/puzzle)  "
+    printf("%-6s clear=%-4s xfer=%-9s nn=%-5s handoff=%-5s puzzles=%u  wall %.1f ms (%.1f us/puzzle)  "
            "matches reference %u/%u  NVDLA cells != emulator: %u\n",
-           mode, clear, xfer, USE_TRACE ? "trace" : "nvdla", n, wall / cpu / 1e3, wall / cpu / n, correct, n, mism);
+           mode, clear, xfer, USE_TRACE ? "trace" : "nvdla", DELTA ? "delta" : "full", n, wall / cpu / 1e3,
+           wall / cpu / n, correct, n, mism);
     if (NV) rl_nvdla_close(NV);
     sa_linux_close(&S);
     return 0;

@@ -29,6 +29,11 @@ for mode in serial double; do
   ./rl_board --mode $mode --clear full --xfer allocated $ARGS --csv results/board_${mode}_faithful.csv
   ./rl_board --mode $mode --clear lean --xfer used      $ARGS --csv results/board_${mode}_lean.csv
 done
+# Delta transfers as a CPU-only optimization (ReasonLink mechanism iii, the
+# proposal's ablation): givens as fixed decisions on a resident base image
+for mode in serial double; do
+  ./rl_board --mode $mode --handoff delta $ARGS --csv results/board_${mode}_delta.csv
+done
 # NVDLA isolated: the same pipeline replaying the emulator's logits
 ./rl_board --mode serial --clear full --xfer allocated --nn trace $ARGS --csv results/board_serial_faithful_trace.csv
 ls -l results

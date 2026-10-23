@@ -122,6 +122,27 @@ size_t sa_dev_load(sa_dev *d, const sa_image *img, int used_only)
     return total;
 }
 
+size_t sa_dev_load_decisions(sa_dev *d, const sa_image *base, const int32_t *lits, uint32_t k)
+{
+    if (base->decision_count != 0 || k > base->num_vars) return (size_t)-1;
+    size_t ans_bytes = (size_t)base->num_vars * 4;
+    if (d->mem_virt) {
+        int32_t *ans = (int32_t *)(d->mem_virt + d->buf_off[SA_BUF_ANSWER_STACK]);
+        int32_t *misc = (int32_t *)(d->mem_virt + d->buf_off[SA_BUF_MISC]);
+        memset(ans, 0, ans_bytes);
+        memcpy(ans, lits, (size_t)k * 4);
+        memcpy(misc, base->misc, sizeof base->misc);
+        misc[3] = (int32_t)k;
+        if (d->hw.mem_written) {
+            d->hw.mem_written(d->hw.ctx, buf_addr(d, SA_BUF_ANSWER_STACK), ans, ans_bytes);
+            d->hw.mem_written(d->hw.ctx, buf_addr(d, SA_BUF_MISC), misc, sizeof base->misc);
+        }
+    }
+    d->num_vars = base->num_vars;
+    d->num_clauses = base->num_clauses;
+    return ans_bytes + sizeof base->misc;
+}
+
 void sa_dev_start(sa_dev *d, const sa_image *img)
 {
     const uint32_t M = SA_KERNEL_BASE_MESSAGE, C = SA_KERNEL_BASE_CLAUSE_STORE,
