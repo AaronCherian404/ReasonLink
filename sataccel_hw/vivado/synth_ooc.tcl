@@ -29,7 +29,7 @@ puts $f "create_clock -name clk -period $period \[get_ports clk\]"
 close $f
 if {[llength [get_files -quiet sataccel_ooc.xdc]] == 0} {
     add_files -fileset constrs_1 -norecurse $xdc
-    set_property USED_IN {synthesis out_of_context} [get_files sataccel_ooc.xdc]
+    set_property USED_IN {synthesis implementation} [get_files sataccel_ooc.xdc]
 }
 
 set_property -name {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} -value {-mode out_of_context} -objects [get_runs synth_1]

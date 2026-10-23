@@ -39,7 +39,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 | 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | **Done** (2026-10-16). RISC-V build verified locally (Ubuntu cross compiler + QEMU) and built on torino. | see `git log` |
 | P2-1 | SAT-Accel's kernels in functional simulation; cross-checked against Vitis HLS 2023.2 headers; `--solver sataccel` in the baselines | **Done** (2026-10-21) | branch `p2` |
 | P2-2 | SAT-Accel to RTL with Vitis HLS only (no v++): capacity patch, 7 kernels synthesized for xcvu9p | **Done** (2026-10-22) | branch `p2` |
-| P2-3 | Replace the v++ linker and XRT: block design, shell RTL, driver core, standalone RTL testbench | **In progress**: 16/16 RTL tests pass (11 Sudoku + 6 benchmarks); out-of-context synthesis pending | branch `p2` |
+| P2-3 | Replace the v++ linker and XRT: block design, shell RTL, driver core, standalone RTL testbench, out-of-context netlist | **Done** (2026-10-22): 16/16 RTL tests pass; synthesized netlist meets 10 ns | branch `p2` |
 
 ## Stage 1: workload and classifier
 
@@ -355,7 +355,7 @@ HLS estimates (`results/p2/hw/hls_summary_vcu118.md`; Vivado synthesis is author
 
 All kernels meet 10 ns (worst estimate 7.73 ns, solver).
 
-### P2-3: replacing v++ and XRT (in progress)
+### P2-3: replacing v++ and XRT
 ```
 make bd           # Vivado block design (build/vivado_bd), ~3 min
 make sim-setup    # xsim compile + elaborate, ~2 min
@@ -380,6 +380,16 @@ bash tools/run_rtl_tests.sh build/rtl_smoke sudoku:0      # ~5.5 min per puzzle
 - **Search traces.** Identical to the functional model on 15/16 tests. dubois20, the only test that restarts, takes a slightly different path. Likely cause (not yet verified): the RTL is built with `-DFPGA_HW`, and SAT-Accel's sources have separate code for that path (restart, discover, learn, clause store), while the functional model runs the sw_emu path.
 - **Where Sudoku's time goes.** About 81,450 read beats (650 KB) per puzzle, the copy-in of the image, and the memory master is stalled in 92% of cycles under this testbench's memory model (one burst at a time, 30-cycle latency). The search itself is short. The board will measure the real memory behaviour.
 - **Narrow writes.** Each run issues one narrow write (awsize < 3). ESP's AXI-to-NoC proxy (`rtl/sockets/proxy/axislv2noc.vhd`) handles byte/half-word/word/double-word sizes, so this is supported.
+
+**Out-of-context synthesis (`make synth`, 17 min; `results/p2/hw/synth_ooc.md`).** The whole subsystem (kernels, floating-point cores, SmartConnects, shell) synthesized for xcvu9p and written as a structural netlist, `build/vivado_bd/sataccel_top_funcsim.v` (121 MB, not committed; regenerate with `make hls bd synth`), which is what ESP's third-party flow will consume in P2-4.
+
+| | LUT | FF | BRAM36 | URAM | DSP |
+|---|---|---|---|---|---|
+| sataccel_top | 111,912 (9.5%) | 118,666 (5.0%) | 180.5 (8.4%) | 434 (45.2%) | 44 (0.6%) |
+
+- Per kernel (`results/p2/hw/synth_ooc_utilization_hier.rpt`): solver 68.3k LUT, memory SmartConnect 14.8k, clause_store_handler 11.2k, pqHandler 9.2k; the shell is 246 LUTs.
+- HLS overestimated LUTs by 2.5x (285k estimated).
+- **Timing.** WNS +2.02 ns at 10 ns post-synthesis (`vivado/timing_from_dcp.tcl`; the first run had no clock applied because the constraint file was scoped to out_of_context, now fixed). Critical path: pqHandler's double-precision adder (VSIDS decay). ESP runs the SoC at 78 MHz (12.8 ns).
 
 ## Environments
 
