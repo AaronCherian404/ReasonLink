@@ -225,6 +225,14 @@ extern "C" int rl_sataccel_solve_image(const sa_image *img, int8_t *model, doubl
     return out->status;
 }
 
+extern "C" void rl_sataccel_caps(sa_caps *caps)
+{
+    caps->max_vars = _FPGA_MAX_LITERALS;
+    caps->max_clauses = _FPGA_MAX_CLAUSES;
+    caps->max_literal_elements = _HOST_MAX_LITERAL_ELEMENTS;
+    caps->max_clause_elements = _HOST_MAX_CLAUSE_ELEMENTS;
+}
+
 extern "C" rl_solve_result rl_sataccel_solve(const sa_image *img, int8_t *model)
 {
     rl_sataccel_result r;

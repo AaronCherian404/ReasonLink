@@ -1,0 +1,3 @@
+# SAT-Accel RTL (Vitis HLS 2023.2 -> Vivado BD, xsim), torino 2026-10-22; axi_mem READ_LATENCY=30, one burst at a time; 100 MHz
+PASS /home/amc2535/ReasonLink/sataccel_hw/build/rtl_smoke/sudoku_0 result=SAT expect=SAT model_ok=1 grid==ref=yes iterations=1 decisions=1 conflicts=0 restarts=0 | cycles=203620 busy=202894 mem_active=88619 mem_stall=187002 rd_beats=81476 wr_beats=3103 sim_cycle=203696 | wall=328s
+axi_mem: narrow reads=0 narrow writes=1 non-INCR bursts=0

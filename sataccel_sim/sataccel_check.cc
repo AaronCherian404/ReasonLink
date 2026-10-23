@@ -33,7 +33,7 @@ static int build(sa_image &img, const rl_cnf &c)
 {
     sa_caps caps;
     sa_config cfg;
-    sa_default_caps(&caps);
+    rl_sataccel_caps(&caps);
     sa_default_config(&cfg);
     if (sa_image_init(&img, &caps, &cfg)) return -1;
     img.lean_clear = 1;
@@ -86,7 +86,7 @@ static int cmd_sudoku(const char *base_path, const char *trace_path, const char 
     sa_image img;
     sa_caps caps;
     sa_config cfg;
-    sa_default_caps(&caps);
+    rl_sataccel_caps(&caps);
     sa_default_config(&cfg);
     if (sa_image_init(&img, &caps, &cfg)) return 2;
     img.lean_clear = 1;

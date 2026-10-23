@@ -38,6 +38,8 @@ The proposal's P1 calls for three things. On the new platform they mean:
 | 2 | Standalone SAT-Accel image builder + byte-exact golden test; SAT solver on Sudoku (P1 stand-in: MiniSat reading the SAT-Accel image) | **Done** (2026-10-16) | see `git log` |
 | 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | **Done** (2026-10-16). RISC-V build verified locally (Ubuntu cross compiler + QEMU) and built on torino. | see `git log` |
 | P2-1 | SAT-Accel's kernels in functional simulation; cross-checked against Vitis HLS 2023.2 headers; `--solver sataccel` in the baselines | **Done** (2026-10-21) | branch `p2` |
+| P2-2 | SAT-Accel to RTL with Vitis HLS only (no v++): capacity patch, 7 kernels synthesized for xcvu9p | **Done** (2026-10-22) | branch `p2` |
+| P2-3 | Replace the v++ linker and XRT: block design, shell RTL, driver core, standalone RTL testbench | **In progress**: puzzle 0 passes in RTL simulation; batch tests and out-of-context synthesis pending | branch `p2` |
 
 ## Stage 1: workload and classifier
 
@@ -319,6 +321,58 @@ Times are simulation wall time on the laptop, not hardware cycles. `sim` exclude
 - **Unbounded streams.** As in sw_emu, streams have no depth limit. Vitis's csim reports a maximum occupancy of up to 8,055 entries (`4blocks`), far above hardware FIFO depths (`k2k.cfg` sets 16 for `messageStream`). In hardware, a full FIFO stalls the producer; that changes timing, not answers, unless the protocol deadlocks under backpressure. Only hw_emu/RTL can rule that out.
 - **No timing.** Simulation time says nothing about SAT-Accel's cycle count.
 
+## P2 hardware plan (2026-10-22): everything up to the board run, without Vitis
+
+**Scope (user, 2026-10-22).** Assume v++/XRT never become available; use Vitis HLS (and Vivado, ModelSim) only. Complete all work up to running on the VCU118. Long torino runs are launched by me over SSH, after asking.
+
+| Stage | Work |
+|---|---|
+| P2-2 | SAT-Accel to RTL with Vitis HLS only |
+| P2-3 | Replace `v++ -l` (block design: k2k.cfg streams, AXI interconnect) and XRT (driver core); standalone RTL testbench with real images; out-of-context netlist for ESP |
+| P2-4 | ESP third-party tile for SAT-Accel (wrapper, xml, `thirdparty.py`), Linux KMD + UMD, bare-metal test, VCU118 SoC (Ariane + NVDLA + SAT-Accel), full-SoC simulation |
+| P2-5 | Ariane software: NVDLA inference, then the serial and double-buffered baselines on real hardware, `rdcycle` timing |
+| P2-6 | ReasonLink RTL in the SAT-Accel tile (separate tiles: it reads NVDLA's output buffer from DRAM), mechanisms switchable for ablations |
+| P2-7 | VCU118 bitstream, Linux image, board run and analysis scripts |
+
+### P2-2: SAT-Accel to RTL with Vitis HLS only (`sataccel_hw/`)
+```
+# on torino (Vitis HLS / Vivado 2023.2 on PATH)
+cd sataccel_hw
+make hls        # build/src = SAT-Accel kernels + patches/; 7 kernels in parallel, ~5 min
+make regs       # HLS register headers -> drv/hls_regs (committed)
+```
+- **Flow.** `vitis_hls -flow_target vitis` per kernel, with SAT-Accel's own kernel/source grouping (`runCompile.sh`) and `-DFPGA_HW`: the same compile `v++ -c` does, exported as a Vivado IP instead of an `.xo`. Part xcvu9p-flga2104-2L-e (VCU118), 10 ns (ESP's VCU118 SoC runs at 78 MHz). Interfaces match what XRT drives: `ap_ctrl_chain` on AXI-Lite, AXI-Stream per `k2k.cfg`, m_axi masters.
+- **Vendor include path.** `ap_utils.h` is under `$XILINX_HLS/include/etc` in 2023.2.
+- **Capacity patch (`patches/0001-capacity-vcu118.patch`).** At default capacity HLS estimates 794/960 URAM (83%), too much next to Ariane + NVDLA. The patch halves `_FPGA_MAX_CLAUSES` (65,536) and `_FPGA_MAX_LITERAL_ELEMENTS` (512K). `_FPGA_MAX_LITERALS` stays 32,768, see below.
+- **Finding: pqHandler reads past its heap.** `swapLower` reads children at `2*pos+1`/`2*pos+2` before bounds-checking them, so the queue must hold `2*num_vars+2` entries: instances need `num_vars <= _FPGA_MAX_LITERALS/2`. Halving `_FPGA_MAX_LITERALS` made `bmc-ibm-5` (9,396 vars) crash in the C model. Our driver refuses instances above `max_vars/2`.
+- **Functional check with the patch** (`results/p2/vcu118_caps/`): 16/16 benchmarks and 1000/1000 Sudoku, decision/conflict counts identical to the unpatched runs.
+
+HLS estimates (`results/p2/hw/hls_summary_vcu118.md`; Vivado synthesis is authoritative):
+
+| | LUT | FF | BRAM_18K | URAM | DSP |
+|---|---|---|---|---|---|
+| 7 kernels, patched | 284,972 (24%) | 127,696 (5%) | 338 (8%) | 450 (47%) | 44 (1%) |
+
+All kernels meet 10 ns (worst estimate 7.73 ns, solver).
+
+### P2-3: replacing v++ and XRT (in progress)
+```
+make bd           # Vivado block design (build/vivado_bd), ~3 min
+make sim-setup    # xsim compile + elaborate, ~2 min
+make tb_tool
+bash tools/run_rtl_tests.sh build/rtl_smoke sudoku:0      # ~5.5 min per puzzle
+```
+- **Block design (`vivado/sataccel_bd.tcl`), in place of `v++ -l --config k2k.cfg`.** The 7 kernel IPs, the 12 `stream_connect` lines, `messageStream` through a depth-16 FIFO (`:16`), a SmartConnect merging the 7 m_axi masters into one 64-bit AXI4 master (32-bit addresses, no IDs), and a SmartConnect fanning one AXI-Lite slave out to the kernels' control ports at 64 KB windows.
+- **Shell RTL (`rtl/`).** `sataccel_top` = `sataccel_shell` (APB decode; `apb2axil` APB→AXI-Lite bridge; counters: cycles, busy = solver start to ap_done interrupt, memory active/stall cycles, read/write beats) + the block design. Interface = ESP's third-party socket: 32-bit APB, one 64-bit AXI4 master, one interrupt.
+- **Driver core (`drv/sataccel_drv.c`), in place of XRT.** Buffer layout, `setArg` (host.cpp 476-541), the 7 starts in enqueue order, wait with `ap_continue` (ap_ctrl_chain), read-back. Register offsets come from the HLS headers. Register access is a backend: a record backend for the testbench now; MMIO backends for Linux and bare metal in P2-4.
+- **Testbench.** `tools/tb_tool` builds the image (hardware capacities, `drv/sataccel_caps.h`) and runs the driver core with the record backend (ops + memory files); `tb/tb_sataccel.sv` replays the ops over APB against `tb/axi_mem.sv` (sparse memory, 30-cycle read latency, one burst at a time); `tb_tool check` decodes the dump through the same driver code.
+
+**RTL smoke test (`results/p2/hw/rtl_smoke.txt`).** Sudoku puzzle 0 **passes** in RTL: SAT, every clause satisfied, grid equal to the reference; 1 iteration, 1 decision, 0 conflicts, identical to the functional model. 203,620 cycles from counter clear to done (busy 202,894 = 2.03 ms at 100 MHz); memory stalled in 187,002 cycles under this memory model; 81,476 read beats (≈ the image's used bytes). xsim runs about 620 cycles/s.
+
+Open points for P2-3/P2-4:
+- One narrow write (awsize < 3) reached memory: check how ESP's socket handles narrow beats.
+- The cycle count depends on the testbench's memory model; the board measures the real one.
+
 ## Environments
 
 ### Local (WSL Ubuntu 24.04 on Windows)
@@ -426,6 +480,12 @@ All buffers are migrated to the device in full for every instance (`host.cpp` 49
   - `lean_clear` clears only the ranges written last time. It is there so the baseline is not a strawman.
 
 - **2026-10-21: SAT-Accel functional simulation (P2, option A).** Run SAT-Accel's unmodified kernels as threads with a header shim, since torino has no `v++`/XRT. Zero-initialising `ap_axiu` in the shim is a deliberate fidelity choice: it reproduces the hardware path's stop semantics (see P2 Stage 1).
+
+- **2026-10-22: P2 scope.** No Vitis (v++/XRT), Vitis HLS only; finish everything up to the board run; our own driver replaces XRT (user).
+- **2026-10-22: separate tiles (user).** NVDLA keeps ESP's stock tile; ReasonLink lives in the SAT-Accel tile and reads NVDLA's output buffer from DRAM. A combined NVDLA+ReasonLink+SAT-Accel tile would give a true on-chip stream but was judged too costly.
+- **2026-10-22: floating point stays.** SAT-Accel's double VSIDS math is kept; since ESP's third-party flow takes only Verilog/SV/VHDL file lists (no `.xci`), SAT-Accel goes to ESP as an out-of-context Vivado netlist (unisim primitives), which ESP's ModelSim flow simulates with its compiled Xilinx libraries.
+- **2026-10-22: capacity.** Clauses and literal elements halved; variables kept at 32,768 because of the pqHandler heap bound (see P2-2).
+- **2026-10-22: torino access.** I run torino jobs over SSH (key auth), asking before long runs.
 
 ## Open issues / blockers
 - **The baselines have not run on Ariane yet.** The binary is ready (`make riscv`), but there is no ESP SoC simulation or board yet. All P1 times are host x86.
