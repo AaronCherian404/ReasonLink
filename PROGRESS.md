@@ -39,7 +39,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 | 3 | Serial + double-buffered baselines end to end with cycle counters; RISC-V build | **Done** (2026-10-16). RISC-V build verified locally (Ubuntu cross compiler + QEMU) and built on torino. | see `git log` |
 | P2-1 | SAT-Accel's kernels in functional simulation; cross-checked against Vitis HLS 2023.2 headers; `--solver sataccel` in the baselines | **Done** (2026-10-21) | branch `p2` |
 | P2-2 | SAT-Accel to RTL with Vitis HLS only (no v++): capacity patch, 7 kernels synthesized for xcvu9p | **Done** (2026-10-22) | branch `p2` |
-| P2-3 | Replace the v++ linker and XRT: block design, shell RTL, driver core, standalone RTL testbench | **In progress**: puzzle 0 passes in RTL simulation; batch tests and out-of-context synthesis pending | branch `p2` |
+| P2-3 | Replace the v++ linker and XRT: block design, shell RTL, driver core, standalone RTL testbench | **In progress**: 16/16 RTL tests pass (11 Sudoku + 6 benchmarks); out-of-context synthesis pending | branch `p2` |
 
 ## Stage 1: workload and classifier
 
@@ -369,9 +369,17 @@ bash tools/run_rtl_tests.sh build/rtl_smoke sudoku:0      # ~5.5 min per puzzle
 
 **RTL smoke test (`results/p2/hw/rtl_smoke.txt`).** Sudoku puzzle 0 **passes** in RTL: SAT, every clause satisfied, grid equal to the reference; 1 iteration, 1 decision, 0 conflicts, identical to the functional model. 203,620 cycles from counter clear to done (busy 202,894 = 2.03 ms at 100 MHz); memory stalled in 187,002 cycles under this memory model; 81,476 read beats (≈ the image's used bytes). xsim runs about 620 cycles/s.
 
-Open points for P2-3/P2-4:
-- One narrow write (awsize < 3) reached memory: check how ESP's socket handles narrow beats.
-- The cycle count depends on the testbench's memory model; the board measures the real one.
+**RTL batch (`results/p2/hw/rtl_batch.txt`): all 16 pass** (Sudoku 1-10, quinn, aalto, aalto_2, aim50, nqueens_8, dubois20; SAT and UNSAT both).
+
+| Test | Result | Decisions / conflicts / restarts | Busy cycles (100 MHz) |
+|---|---|---|---|
+| Sudoku 0-10 (10 SAT, 1 UNSAT) | all correct, grids = reference | 1/0/0, except puzzle 3: 3/1/0 | 188,484 (UNSAT) to 207,411; typical 202,900 (2.03 ms) |
+| quinn, aalto, aalto_2, aim50, nqueens_8 | correct | identical to the functional model | 2,392 to 33,051 |
+| dubois20 (UNSAT) | correct | 352/175/1 (functional model: 370/177) | 165,704 |
+
+- **Search traces.** Identical to the functional model on 15/16 tests. dubois20, the only test that restarts, takes a slightly different path. Likely cause (not yet verified): the RTL is built with `-DFPGA_HW`, and SAT-Accel's sources have separate code for that path (restart, discover, learn, clause store), while the functional model runs the sw_emu path.
+- **Where Sudoku's time goes.** About 81,450 read beats (650 KB) per puzzle, the copy-in of the image, and the memory master is stalled in 92% of cycles under this testbench's memory model (one burst at a time, 30-cycle latency). The search itself is short. The board will measure the real memory behaviour.
+- **Narrow writes.** Each run issues one narrow write (awsize < 3). ESP's AXI-to-NoC proxy (`rtl/sockets/proxy/axislv2noc.vhd`) handles byte/half-word/word/double-word sizes, so this is supported.
 
 ## Environments
 
