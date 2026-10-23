@@ -6,6 +6,8 @@
 # Usage (from sataccel_hw/): bash tools/run_rtl_tests.sh <out_dir> <spec>...
 #   sudoku:<k>            puzzle k of ../data/sudoku (prediction trace + reference)
 #   cnf:<file>:<1|0>      a DIMACS file and its expected SAT/UNSAT
+# Env: TB_MEM=used FILL=<hex64> loads only the image's used ranges and makes
+#      every other word read as FILL (checks SAT-Accel reads nothing else)
 # Writes <out_dir>/<test>/{ops,mem,dump}.txt, sim.log, and <out_dir>/summary.txt
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -29,6 +31,7 @@ for spec in "$@"; do
   t0=$(date +%s)
   ( cd "$SIMDIR" && xsim tb_sataccel_behav -R \
       --testplusarg "ops=$dir/ops.txt" --testplusarg "mem=$dir/mem.txt" --testplusarg "dump=$dir/dump.txt" \
+      ${FILL:+--testplusarg "fill=$FILL"} \
       > "$dir/sim.log" 2>&1 )
   t1=$(date +%s)
   res=$(build/tb_tool check "$dir")

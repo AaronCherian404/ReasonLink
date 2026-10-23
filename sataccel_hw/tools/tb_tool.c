@@ -9,7 +9,10 @@
  * host.cpp's conversion, hardware capacities), then run the real driver core
  * (drv/sataccel_drv.c) with a record backend. Writes to out_dir:
  *   ops.txt   register accesses for the testbench to replay over APB
- *   mem.txt   device memory after the load ("addr data" 64-bit words, non-zero only)
+ *   mem.txt   device memory after the load ("addr data" 64-bit words): by default
+ *             the non-zero words of a faithful load; with TB_MEM=used, every
+ *             word of each region's used prefix (zeros included) and nothing
+ *             else, to run against a garbage-filled memory (+fill)
  *   inst.cnf  the instance (base formula + predicted givens)
  *   meta.txt  num_vars, expected SAT/UNSAT, reference grid (Sudoku)
  * check: read the testbench's dump.txt back through the same driver core
@@ -112,12 +115,31 @@ static int gen(const rl_cnf *inst, int expect, const int8_t *ref_grid, const cha
 
     FILE *m = open_in(out, "mem.txt", "w");
     size_t words = 0;
-    for (size_t a = 0; a + 8 <= size; a += 8) {
-        uint64_t w;
-        memcpy(&w, shadow + a, 8);
-        if (w) {
-            fprintf(m, "%08llx %016llx\n", (unsigned long long)(SA_HW_MEM_BASE + a), (unsigned long long)w);
-            words++;
+    const char *mode = getenv("TB_MEM");
+    if (mode && !strcmp(mode, "used")) {
+        /* Used prefix of each image region, in its device buffer (sa_dev_load's mapping) */
+        static const int dst[SA_NUM_REGIONS] = {
+            SA_BUF_CLAUSE_STORE, SA_BUF_TRACK_LBD, SA_BUF_CMD, SA_BUF_LIT_STORE,
+            SA_BUF_ANSWER_STACK, SA_BUF_LMD, SA_BUF_CLS_STATES, SA_BUF_MISC};
+        sa_region rows[SA_NUM_REGIONS];
+        sa_regions(&img, rows);
+        for (int r = 0; r < SA_NUM_REGIONS; r++) {
+            size_t end = d.buf_off[dst[r]] + ((rows[r].used + 7) & ~(size_t)7);
+            for (size_t a = d.buf_off[dst[r]]; a < end; a += 8) {
+                uint64_t w;
+                memcpy(&w, shadow + a, 8);
+                fprintf(m, "%08llx %016llx\n", (unsigned long long)(SA_HW_MEM_BASE + a), (unsigned long long)w);
+                words++;
+            }
+        }
+    } else {
+        for (size_t a = 0; a + 8 <= size; a += 8) {
+            uint64_t w;
+            memcpy(&w, shadow + a, 8);
+            if (w) {
+                fprintf(m, "%08llx %016llx\n", (unsigned long long)(SA_HW_MEM_BASE + a), (unsigned long long)w);
+                words++;
+            }
         }
     }
     fclose(m);
@@ -130,7 +152,7 @@ static int gen(const rl_cnf *inst, int expect, const int8_t *ref_grid, const cha
     if (ref_grid)
         for (int i = 0; i < RL_CELLS; i++) fprintf(meta, "%d%c", ref_grid[i], i + 1 == RL_CELLS ? '\n' : ' ');
     fclose(meta);
-    printf("%s: %u vars, %u clauses, %zu non-zero memory words\n", out, inst->num_vars, inst->num_clauses, words);
+    printf("%s: %u vars, %u clauses, %zu memory words\n", out, inst->num_vars, inst->num_clauses, words);
     return 0;
 }
 

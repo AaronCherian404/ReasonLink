@@ -45,9 +45,13 @@ module axi_mem #(
 );
     logic [63:0] mem [longint unsigned];   // key: byte address >> 3
     longint unsigned n_narrow_rd = 0, n_narrow_wr = 0, n_bad_burst = 0;
+    // Value of words never written (+fill=<hex>; default 0). A garbage fill
+    // checks that the accelerator reads only what was loaded or it wrote.
+    logic [63:0] fill = 64'd0;
+    initial if ($value$plusargs("fill=%h", fill)) $display("axi_mem: unwritten words read as %h", fill);
 
     function automatic logic [63:0] rd_word(input longint unsigned a);
-        return mem.exists(a >> 3) ? mem[a >> 3] : 64'd0;
+        return mem.exists(a >> 3) ? mem[a >> 3] : fill;
     endfunction
 
     task automatic load(input string path);

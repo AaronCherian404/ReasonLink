@@ -12,7 +12,7 @@
 //   C <label>                print the shell counters
 //   #...                     comment
 //
-// Plusargs: +ops=<file> +mem=<file> +dump=<file> [+max_poll_cycles=N]
+// Plusargs: +ops=<file> +mem=<file> +dump=<file> [+max_poll_cycles=N] [+fill=<hex64>]
 `timescale 1ns / 1ps
 module tb_sataccel;
     parameter int READ_LATENCY = 30;

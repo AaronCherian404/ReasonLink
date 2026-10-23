@@ -17,7 +17,9 @@
 #define SA_HW_MAX_LITERAL_ELEMENTS  524288u    /* _HOST_MAX_LITERAL_ELEMENTS */
 #define SA_HW_MAX_CLAUSE_ELEMENTS   524288u    /* _HOST_MAX_CLAUSE_ELEMENTS */
 
-/* ESP reserves 0xB0000000-0xBFFFFFFF for third-party accelerators. */
+/* Device-memory base for the testbench and the bare-metal test. On Linux the
+ * kernel driver allocates from ESP's reserved third-party pool instead (in
+ * the reasonlink-vcu118 SoC: 0xA0200000-0xBFFFFFFF, which contains this). */
 #define SA_HW_MEM_BASE              0xB0000000u
 
 static inline void sa_hw_caps(sa_caps *c)

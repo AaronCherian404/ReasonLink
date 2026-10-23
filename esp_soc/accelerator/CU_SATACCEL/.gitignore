@@ -1,0 +1,12 @@
+netlist/
+out
+sw/sataccel.ko
+sw/sataccel_run
+sw/libsataccel.a
+sw/umd/build/
+sw/kmd/*.o
+sw/kmd/*.ko
+sw/kmd/*.mod*
+sw/kmd/.*.cmd
+sw/kmd/Module.symvers
+sw/kmd/modules.order

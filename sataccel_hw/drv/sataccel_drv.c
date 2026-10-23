@@ -176,7 +176,11 @@ int sa_dev_wait(sa_dev *d)
         if (poll(d, order[i], SA_AP_DONE, SA_AP_DONE)) rc = -1;
         wr(d, order[i], SA_AP_CONTINUE);
     }
-    wr(d, SA_KERNEL_BASE_SOLVER + XSOLVER_CONTROL_ADDR_ISR, 1);   /* clear (toggle on write) */
+    /* Clear the solver's ap_done interrupt status. The register toggles on
+     * write, so only write if it is still set: on Linux the kernel's
+     * interrupt handler has usually cleared it already. */
+    if (rd(d, SA_KERNEL_BASE_SOLVER + XSOLVER_CONTROL_ADDR_ISR) & 1)
+        wr(d, SA_KERNEL_BASE_SOLVER + XSOLVER_CONTROL_ADDR_ISR, 1);
     /* migrate back: answerStack, miscCounters, trackLBD (host.cpp 575) */
     if (d->hw.mem_read_back) {
         static const int back[] = {SA_BUF_ANSWER_STACK, SA_BUF_MISC, SA_BUF_TRACK_LBD};
