@@ -1,0 +1,46 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date         : Thu Oct 22 21:43:57 2026
+| Host         : torino running 64-bit Red Hat Enterprise Linux release 8.10 (Ootpa)
+| Command      : report_utilization -hierarchical -hierarchical_depth 3 -file reports/utilization_hier.rpt
+| Design       : sataccel_top
+| Device       : xcvu9p-flga2104-2L-e
+| Speed File   : -2L
+| Design State : Synthesized
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++------------------------------+--------------------------------------+------------+------------+---------+------+--------+--------+--------+------+------------+
+|           Instance           |                Module                | Total LUTs | Logic LUTs | LUTRAMs | SRLs |   FFs  | RAMB36 | RAMB18 | URAM | DSP Blocks |
++------------------------------+--------------------------------------+------------+------------+---------+------+--------+--------+--------+------+------------+
+| sataccel_top                 |                                (top) |     111912 |     101205 |    6302 | 4405 | 118666 |    176 |      9 |  434 |         44 |
+|   (sataccel_top)             |                                (top) |          0 |          0 |       0 |    0 |      0 |      0 |      0 |    0 |          0 |
+|   bd                         |                  sataccel_bd_wrapper |     111666 |     100959 |    6302 | 4405 | 118135 |    176 |      9 |  434 |         44 |
+|     (bd)                     |                  sataccel_bd_wrapper |          7 |          7 |       0 |    0 |      0 |      0 |      0 |    0 |          0 |
+|     sataccel_bd_i            |                          sataccel_bd |     111659 |     100952 |    6302 | 4405 | 118135 |    176 |      9 |  434 |         44 |
+|       (sataccel_bd_i)        |                          sataccel_bd |          0 |          0 |       0 |    0 |      0 |      0 |      0 |    0 |          0 |
+|       clause_store_handler_1 | sataccel_bd_clause_store_handler_1_0 |      11245 |      10431 |     104 |  710 |  11213 |      8 |      0 |  128 |         11 |
+|       ctrl_sc                |                sataccel_bd_ctrl_sc_0 |        744 |        743 |       0 |    1 |    796 |      0 |      0 |    0 |          0 |
+|       location_handler_1     |     sataccel_bd_location_handler_1_0 |       3435 |       3403 |       0 |   32 |   1562 |      0 |      0 |  128 |          0 |
+|       mem_sc                 |                 sataccel_bd_mem_sc_0 |      14758 |       9966 |    4702 |   90 |  23496 |      0 |      0 |    0 |          0 |
+|       message_1              |              sataccel_bd_message_1_0 |       1745 |       1383 |       0 |  362 |   2677 |      0 |      2 |    0 |          0 |
+|       msg_fifo               |               sataccel_bd_msg_fifo_0 |         99 |         27 |      72 |    0 |    281 |      0 |      0 |    0 |          0 |
+|       pqHandler_1            |            sataccel_bd_pqHandler_1_0 |       9197 |       8898 |       0 |  299 |   5022 |      2 |      0 |   42 |         30 |
+|       restartCalculator_1    |    sataccel_bd_restartCalculator_1_0 |       1967 |       1904 |       0 |   63 |   2523 |      0 |      0 |    0 |          0 |
+|       solver_1               |               sataccel_bd_solver_1_0 |      68302 |      64030 |    1424 | 2848 |  70305 |    166 |      7 |  136 |          3 |
+|       timer_1                |                sataccel_bd_timer_1_0 |        167 |        167 |       0 |    0 |    260 |      0 |      0 |    0 |          0 |
+|   shell                      |                       sataccel_shell |        246 |        246 |       0 |    0 |    531 |      0 |      0 |    0 |          0 |
+|     (shell)                  |                       sataccel_shell |        169 |        169 |       0 |    0 |    418 |      0 |      0 |    0 |          0 |
+|     bridge                   |                             apb2axil |         77 |         77 |       0 |    0 |    113 |      0 |      0 |    0 |          0 |
++------------------------------+--------------------------------------+------------+------------+---------+------+--------+--------+--------+------+------------+
+
+

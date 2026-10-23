@@ -3,10 +3,11 @@
 #   sataccel_benchmarks.txt   SAT-Accel's own benchmark CNFs, expected SAT/UNSAT
 #   sataccel_sudoku.csv/.txt  all Sudoku puzzles vs the PySAT reference
 # Usage (from sataccel_sim/): bash run_check.sh [num_puzzles]
-# Env: BENCH_ONLY=1 skips the Sudoku run (no data/ needed); OUT=results dir.
+# Env: BENCH_ONLY=1 skips the Sudoku run (no data/ needed); OUT=results dir;
+#      BIN=checker binary (e.g. build_vcu118/sataccel_check).
 set -uo pipefail
 cd "$(dirname "$0")"
-BIN=build/sataccel_check
+BIN="${BIN:-build/sataccel_check}"
 TESTS=../third_party/FPGA25_SAT_Accel/SAT_test_cases
 DATA=../data/sudoku
 OUT="${OUT:-../results/p2}"

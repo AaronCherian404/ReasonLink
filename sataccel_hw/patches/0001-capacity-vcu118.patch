@@ -1,0 +1,25 @@
+# ReasonLink: halve SAT-Accel's clause and literal-element capacity so the 7
+# kernels fit the VCU118 (xcvu9p) next to Ariane + NVDLA (default capacity:
+# HLS estimates 794/960 URAM). _FPGA_MAX_LITERALS stays at 32768: pqHandler's
+# swapLower reads heap children at 2*pos+2 before bounds-checking them, so
+# the queue must hold 2 * num_vars + 2 entries (vars <= MAX_LITERALS/2).
+--- a/fpga_solver.h	2026-10-22 19:32:09.492914300 -0400
++++ b/fpga_solver.h	2026-10-22 19:32:09.534265300 -0400
+@@ -15,7 +15,7 @@
+
+ //REQUIRES FPGA BITSTREAM RECOMPILE
+ #define _FPGA_MAX_LITERALS (8192*4)
+-#define _FPGA_MAX_CLAUSES 131072
++#define _FPGA_MAX_CLAUSES 65536      /* ReasonLink VCU118: halved (was 131072) */
+ #define _FPGA_MAX_TREE_HEIGHT 32
+ #define _FPGA_MAX_LBD_BUCKETS 10
+ #define _FPGA_CLS_STATES_PARTITION 8
+@@ -29,7 +29,7 @@
+ 
+ //REQUIRES FPGA BITSTREAM RECOMPILE
+ //MUST BE MULTIPLE OF 16
+-#define _FPGA_MAX_LITERAL_ELEMENTS (256*4096)
++#define _FPGA_MAX_LITERAL_ELEMENTS (128*4096)   /* ReasonLink VCU118: halved (was 256*4096) */
+ #define _HOST_MAX_LITERAL_ELEMENTS _FPGA_MAX_LITERAL_ELEMENTS
+ #define _HOST_MAX_CLAUSE_ELEMENTS _HOST_MAX_LITERAL_ELEMENTS
+ 

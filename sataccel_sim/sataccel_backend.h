@@ -39,6 +39,11 @@ typedef struct {
 int rl_sataccel_solve_image(const sa_image *img, int8_t *model, double timeout_s,
                             rl_sataccel_result *out);
 
+/* Capacities the kernels were compiled with (fpga_solver.h). Images for
+ * this backend must be built with them: miscCounters[5] tells the solver
+ * its literal-store size. */
+void rl_sataccel_caps(sa_caps *caps);
+
 /* Same, in the generic backend form used by the baselines. */
 rl_solve_result rl_sataccel_solve(const sa_image *img, int8_t *model);
 

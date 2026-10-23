@@ -1,0 +1,9 @@
+SAT-Accel functional simulation, Sudoku
+puzzles                         1000
+errors                          0
+SAT/UNSAT == PySAT reference    1000/1000
+grid == reference               991
+valid alternative solution      9
+wrong                           0
+mean decisions / conflicts      1.442 / 0.144
+mean simulation time per puzzle 0.013 s

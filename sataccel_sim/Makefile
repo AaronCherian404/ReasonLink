@@ -10,8 +10,10 @@
 # compiles against the vendor headers instead of the shim.
 CXX      ?= g++
 CC       ?= gcc
-BUILD    := build
-SATACCEL := ../third_party/FPGA25_SAT_Accel/src
+# SATACCEL/BUILD: e.g. SATACCEL=../sataccel_hw/build/src BUILD=build_vcu118 for
+# the capacity-patched sources the hardware is built from (sataccel_hw/patches)
+BUILD    ?= build
+SATACCEL ?= ../third_party/FPGA25_SAT_Accel/src
 APINT    := ../third_party/HLS_arbitrary_Precision_Types/include
 HANDOFF  := ../handoff
 DATA     := ../data/sudoku

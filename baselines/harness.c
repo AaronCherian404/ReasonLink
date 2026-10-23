@@ -96,7 +96,11 @@ static void slot_init(slot_t *s, int lean_clear)
 {
     sa_caps caps;
     sa_config cfg;
+#ifdef RL_WITH_SATACCEL
+    rl_sataccel_caps(&caps);              /* match the kernels' compiled capacities */
+#else
     sa_default_caps(&caps);
+#endif
     sa_default_config(&cfg);
     memset(s, 0, sizeof(*s));
     if (sa_image_init(&s->host, &caps, &cfg)) die("out of memory (host image)");
