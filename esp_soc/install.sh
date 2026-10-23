@@ -5,7 +5,8 @@
 #   soft/common/apps/baremetal/sataccel   -> esp_soc/apps/baremetal/sataccel
 #   tools/socgen/thirdparty.py            + compatible string / IRQ type for CU_SATACCEL
 #   socs/reasonlink-vcu118                 copy of socs/xilinx-vcu118-xcvu9p whose
-#                                          Makefile uses esp_soc/socs/reasonlink-vcu118/esp_defconfig
+#                                          Makefile uses esp_soc/socs/reasonlink-vcu118/esp_defconfig,
+#                                          plus vsim.tcl (batch `make sim`)
 # Idempotent. Usage: bash esp_soc/install.sh [esp_root]
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -28,6 +29,7 @@ SOC="$ESP/socs/reasonlink-vcu118"
 if [ ! -d "$SOC" ]; then
   cp -r "$ESP/socs/xilinx-vcu118-xcvu9p" "$SOC"
 fi
+ln -sfn "$HERE/socs/reasonlink-vcu118/vsim.tcl" "$SOC/vsim.tcl"
 if ! grep -q '^ESP_DEFCONFIG' "$SOC/Makefile"; then
   sed -i "/^DESIGN   = esp-\$(BOARD)/a ESP_DEFCONFIG = $HERE/socs/reasonlink-vcu118/esp_defconfig" "$SOC/Makefile"
 fi

@@ -1,0 +1,4 @@
+# Garbage-fill RTL check (xsim), torino 2026-10-23: TB_MEM=used (only the image's used ranges loaded), +fill=deadbeefdeadbeef for every other word
+PASS quinn result=SAT expect=SAT model_ok=1 grid==ref=n/a iterations=6 decisions=5 conflicts=1 restarts=0 | cycles=3935 busy=3221 mem_active=877 mem_stall=1670 rd_beats=528 wr_beats=251 sim_cycle=4011 | wall=14s
+PASS sudoku_0 result=SAT expect=SAT model_ok=1 grid==ref=yes iterations=1 decisions=1 conflicts=0 restarts=0 | cycles=203607 busy=202894 mem_active=88619 mem_stall=187002 rd_beats=81476 wr_beats=3103 sim_cycle=203683 | wall=438s
+PASS dubois20 result=UNSAT expect=UNSAT model_ok=1 grid==ref=n/a iterations=698 decisions=352 conflicts=175 restarts=1 | cycles=166423 busy=165704 mem_active=3038 mem_stall=6021 rd_beats=2338 wr_beats=359 sim_cycle=166499 | wall=412s
