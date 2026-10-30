@@ -159,6 +159,12 @@ module tb_sataccel;
                 rc = $fscanf(fd, "%h %h", a, b);
                 mem.dump(dfd, a, b);
             end
+            "F": begin   // switch the dump file (one per puzzle in a sequence)
+                rc = $fscanf(fd, "%s", label);
+                $fclose(dfd);
+                dfd = $fopen(label, "w");
+                if (dfd == 0) $fatal(1, "cannot open %s", label);
+            end
             "R": begin
                 rc = $fscanf(fd, "%h", a);
                 apb_read(a, r);

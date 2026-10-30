@@ -133,6 +133,16 @@ int sa_rl_commit(sa_dev *d);
  * host.cpp's enqueue order. */
 void sa_dev_start(sa_dev *d, const sa_image *img);
 
+/* ReasonLink Milestone 2 (patches/0002-resident-base): the same, with
+ * resident = 1 when the base formula is still on chip from the previous run
+ * and only the fixed decisions changed (sa_dev_load_decisions or
+ * sa_rl_commit since): the solver then skips copying in the literal store
+ * and the clause store handler the clause store and clause metadata. The
+ * previous run must have used the same base image; any other sa_dev_load
+ * needs resident = 0. Hardware without the patch ignores the flag only if
+ * its register map has no residentBase (SA_HAS_RESIDENT 0). */
+void sa_dev_start_resident(sa_dev *d, const sa_image *img, int resident);
+
 /* Wait for the solver to finish, then for every kernel to return to idle.
  * 0 on success, -1 on timeout. */
 int sa_dev_wait(sa_dev *d);

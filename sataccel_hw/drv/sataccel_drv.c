@@ -11,6 +11,13 @@
 #include "xpqhandler_hw.h"
 #include "xsolver_hw.h"
 
+/* Register map with ReasonLink Milestone 2's residentBase (patches/0002) */
+#if defined(XSOLVER_CONTROL_ADDR_RESIDENTBASE_DATA) && defined(XCLAUSE_STORE_HANDLER_CONTROL_ADDR_RESIDENTBASE_DATA)
+#define SA_HAS_RESIDENT 1
+#else
+#define SA_HAS_RESIDENT 0
+#endif
+
 #define SA_AP_CONTINUE      0x10u
 #define SA_CLAUSE_PAGE_SIZE 4u        /* configuration.json _HOST_CLAUSE_PAGE_SIZE */
 #define SA_PRUNE_PERCENTAGE 0.1       /* configuration.json _HOST_PRUNE_PERCENTAGE */
@@ -186,6 +193,11 @@ int sa_rl_commit(sa_dev *d)
 
 void sa_dev_start(sa_dev *d, const sa_image *img)
 {
+    sa_dev_start_resident(d, img, 0);
+}
+
+void sa_dev_start_resident(sa_dev *d, const sa_image *img, int resident)
+{
     const uint32_t M = SA_KERNEL_BASE_MESSAGE, C = SA_KERNEL_BASE_CLAUSE_STORE,
                    P = SA_KERNEL_BASE_PQ, S = SA_KERNEL_BASE_SOLVER;
 
@@ -203,6 +215,9 @@ void sa_dev_start(sa_dev *d, const sa_image *img)
     wr(d, C + XCLAUSE_STORE_HANDLER_CONTROL_ADDR_INITIALCLAUSECOUNT_DATA, img->num_clauses);
     wr(d, C + XCLAUSE_STORE_HANDLER_CONTROL_ADDR_CLAUSEPAGESIZE_DATA, SA_CLAUSE_PAGE_SIZE);
     wr_double(d, C + XCLAUSE_STORE_HANDLER_CONTROL_ADDR_PRUNEPCTAGE_DATA, SA_PRUNE_PERCENTAGE);
+#if SA_HAS_RESIDENT
+    wr(d, C + XCLAUSE_STORE_HANDLER_CONTROL_ADDR_RESIDENTBASE_DATA, resident ? 1u : 0u);
+#endif
 
     /* pqHandler (531-532) */
     wr(d, P + XPQHANDLER_CONTROL_ADDR_NUM_LITERALS_DATA, img->num_vars);
@@ -214,6 +229,11 @@ void sa_dev_start(sa_dev *d, const sa_image *img)
     wr64(d, S + XSOLVER_CONTROL_ADDR_ANSWERSTACK_DATA, buf_addr(d, SA_BUF_ANSWER_STACK));
     wr64(d, S + XSOLVER_CONTROL_ADDR_LMD_DATA, buf_addr(d, SA_BUF_LMD));
     wr64(d, S + XSOLVER_CONTROL_ADDR_MISCCOUNTERS_DATA, buf_addr(d, SA_BUF_MISC));
+#if SA_HAS_RESIDENT
+    wr(d, S + XSOLVER_CONTROL_ADDR_RESIDENTBASE_DATA, resident ? 1u : 0u);
+#else
+    (void)resident;
+#endif
 
     /* Completion interrupt: solver ap_done */
     wr(d, S + XSOLVER_CONTROL_ADDR_IER, 1);

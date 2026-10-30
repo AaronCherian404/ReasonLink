@@ -26,7 +26,11 @@ void solver(clsStatePCIE *clsStates, ap_int<512> *litStore, lit *answerStack,
             hls::stream<ap_axiu<32, 0, 0, 0>> &locationOutputStream,
             hls::stream<ap_axiu<32, 0, 0, 0>> &restartValueStream, hls::stream<ap_axiu<1, 0, 0, 0>> &stopStream,
             hls::stream<ap_axiu<64, 0, 0, 0>> &timerValueStream, hls::stream<ap_axiu<1, 0, 0, 0>> &conditionStream,
-            hls::stream<ap_axiu<96, 0, 0, 0>> &messageStream);
+            hls::stream<ap_axiu<96, 0, 0, 0>> &messageStream
+#if RL_RESIDENT
+            , unsigned int residentBase
+#endif
+            );
 void clause_store_handler(ap_uint<128> *clauseStore, clauseMetaData *cmd, cls *usedClsIDBuckets,
                           unsigned int *trackLBD, const unsigned int initialClauseElements,
                           const unsigned int maxClauseElements, const unsigned int initialClauseCount,
@@ -35,7 +39,11 @@ void clause_store_handler(ap_uint<128> *clauseStore, clauseMetaData *cmd, cls *u
                           hls::stream<ap_axiu<96, 0, 0, 0>> &clauseStoreInputStream2,
                           hls::stream<ap_axiu<32, 0, 0, 0>> &clauseStoreOutputStream1,
                           hls::stream<ap_axiu<32, 0, 0, 0>> &clauseStoreOutputStream2,
-                          hls::stream<ap_axiu<64, 0, 0, 0>> &locationInputStream);
+                          hls::stream<ap_axiu<64, 0, 0, 0>> &locationInputStream
+#if RL_RESIDENT
+                          , unsigned int residentBase
+#endif
+                          );
 void location_handler(hls::stream<ap_axiu<64, 0, 0, 0>> &locationInputStream,
                       hls::stream<ap_axiu<32, 0, 0, 0>> &locationOutputStream);
 void restartCalculator(hls::stream<ap_axiu<32, 0, 0, 0>> &value, hls::stream<ap_axiu<1, 0, 0, 0>> &stop);
@@ -134,7 +142,19 @@ void *trampoline(void *arg)
 extern "C" int rl_sataccel_solve_image(const sa_image *img, int8_t *model, double timeout_s,
                                        rl_sataccel_result *out)
 {
+    return rl_sataccel_solve_image_ex(img, model, timeout_s, 0, out);
+}
+
+extern "C" int rl_sataccel_solve_image_ex(const sa_image *img, int8_t *model, double timeout_s,
+                                          unsigned resident, rl_sataccel_result *out)
+{
     std::memset(out, 0, sizeof(*out));
+#if !RL_RESIDENT
+    if (resident) {
+        out->status = -1;
+        return -1;   // kernels built without sataccel_hw/patches/0002-resident-base.patch
+    }
+#endif
     DeviceBuffers &d = buffers();
     load(d, img);
 
@@ -162,7 +182,11 @@ extern "C" int rl_sataccel_solve_image(const sa_image *img, int8_t *model, doubl
     spawn([&] {
         clause_store_handler(d.clauseStore.data(), d.cmd.data(), d.usedClsIDBuckets.data(), d.trackLBD.data(),
                              clauseElements, _HOST_MAX_CLAUSE_ELEMENTS, numClauses, kClausePageSize,
-                             kPrunePercentage, csIn1, csIn2, csOut1, csOut2, locIn);
+                             kPrunePercentage, csIn1, csIn2, csOut1, csOut2, locIn
+#if RL_RESIDENT
+                             , resident
+#endif
+                             );
     });
     spawn([&] { location_handler(locIn, locOut); });
     spawn([&] { timer(condition, timerValue); });
@@ -171,7 +195,11 @@ extern "C" int rl_sataccel_solve_image(const sa_image *img, int8_t *model, doubl
     spawn([&] {
         solver(d.clsStates.data(), d.litStore.data(), d.answerStack.data(), d.lmd.data(), d.misc.data(),
                pqValue, pqInput, csIn1, csIn2, csOut1, csOut2, locOut, restartValue, stop, timerValue,
-               condition, msg);
+               condition, msg
+#if RL_RESIDENT
+               , resident
+#endif
+               );
     });
 
     auto t0 = std::chrono::steady_clock::now();

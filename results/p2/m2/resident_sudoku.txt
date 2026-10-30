@@ -1,0 +1,12 @@
+# ReasonLink Milestone 2 (resident base), functional model: sataccel_sim/build_m2/resident_check (kernels = sataccel_hw/build/src, patches 0001+0002), WSL, 2026-10-30
+# resident_check sudoku ../data/sudoku   (all 1000 puzzles, predicted givens as fixed decisions)
+sudoku (predicted givens)    instances 1000  SAT  808 UNSAT  192  conflicts     144  resident == fresh 1000/1000  errors 0
+on-chip base after each resident copy-in, vs a fresh copy-in:
+  literal store    999 checked, 0 differ
+  clause store     999 checked, 0 differ
+  clause metadata  999 checked, 0 differ
+  literal store before its tails were cleared: differed in 33 of 999 resident runs (496 bytes)
+PASS: 1 workloads, 1000 instances (808 SAT, 192 UNSAT, 144 conflicts), resident == fresh 1000/1000, errors 0, model check failures 0
+real	3m6.461s
+user	3m13.820s
+sys	0m8.302s

@@ -39,6 +39,17 @@ typedef struct {
 int rl_sataccel_solve_image(const sa_image *img, int8_t *model, double timeout_s,
                             rl_sataccel_result *out);
 
+/*
+ * Same, with ReasonLink Milestone 2's resident base formula: resident = 1
+ * tells the kernels that the base formula (this image apart from its fixed
+ * decisions) is still on chip from the previous call, so they skip copying
+ * in the literal store and the clause store. Needs kernels built from
+ * sataccel_hw/build/src with patches/0002-resident-base.patch (RL_RESIDENT);
+ * otherwise resident = 1 returns -1.
+ */
+int rl_sataccel_solve_image_ex(const sa_image *img, int8_t *model, double timeout_s,
+                               unsigned resident, rl_sataccel_result *out);
+
 /* Capacities the kernels were compiled with (fpga_solver.h). Images for
  * this backend must be built with them: miscCounters[5] tells the solver
  * its literal-store size. */

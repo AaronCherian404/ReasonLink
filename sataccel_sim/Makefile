@@ -27,6 +27,9 @@ else
   HLS_FLAGS := -I$(HLS_INC) $(if $(wildcard $(HLS_INC)/etc/ap_utils.h),-I$(HLS_INC)/etc) -DHLS_STREAM_THREAD_SAFE
 endif
 CXXFLAGS ?= -O2 -std=c++14 -w -pthread
+# Kernels with ReasonLink Milestone 2's resident base (sataccel_hw patch 0002)
+RL_RESIDENT := $(if $(shell grep -l residentBase $(SATACCEL)/solver.cpp 2>/dev/null),1,0)
+CXXFLAGS += -DRL_RESIDENT=$(RL_RESIDENT)
 CFLAGS   ?= -O2 -std=c11 -Wall -Wextra
 
 KERNELS := backtrack color copy_in decide discover learn minimize manage solver \
@@ -53,6 +56,14 @@ $(BUILD)/sataccel_check.o: sataccel_check.cc sataccel_backend.h | $(BUILD)
 	$(CXX) $(CXXFLAGS) -I$(HANDOFF) -c -o $@ $<
 
 $(BUILD)/sataccel_check: $(BUILD)/sataccel_check.o $(BUILD)/sataccel_backend.o $(KOBJS) $(HOBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+# Milestone 1 / 2 checks (build with SATACCEL=../sataccel_hw/build/src, whose
+# patches include 0002-resident-base, for resident_check)
+$(BUILD)/%_check.o: %_check.cc sataccel_backend.h | $(BUILD)
+	$(CXX) $(CXXFLAGS) -I$(HANDOFF) -c -o $@ $<
+
+$(BUILD)/delta_check $(BUILD)/resident_check: $(BUILD)/%: $(BUILD)/%.o $(BUILD)/sataccel_backend.o $(KOBJS) $(HOBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 kernels: $(KOBJS)

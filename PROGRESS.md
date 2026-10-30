@@ -12,12 +12,12 @@ Running record of what is built, what was decided, and what is blocked. Update a
 | SAT-Accel as RTL without Vitis (P2-2, P2-3) | **Done.** 7 HLS kernels + block design + shell + driver core; 16/16 RTL tests pass; netlist 112k LUT / 434 URAM, meets 10 ns |
 | SAT-Accel in an ESP SoC (P2-4) | **Builds end to end**: tile, Linux driver, bare-metal test, 2x3 VCU118 SoC, Linux image with both accelerators. Full-SoC simulation found a **real bug**: the first kernel-register read hangs (ESP's APB reads have no setup phase; our APB→AXI-Lite bridge waited for one). **Fixed** (2026-10-30), unit-tested; rebuild running. **Bitstream:** black-box link fixed (opt_design DRC passes); next failure was ESP's SGMII pin properties (PORTPROP-6), worked around; rebuild running (P2-4 addendum) |
 | Board baselines (P2-5) | **Code done** (rl_board: full / delta / reasonlink handoffs, serial and double-buffered); tested on the host over a fake device; needs the board |
-| ReasonLink (P2-6) | **Phase B passes in RTL** (puzzles 0, 3, 5 end to end; unit test). Not yet in a netlist or bitstream. Phase A (resident on-chip base) not started |
+| ReasonLink (P2-6) | **Milestone 1 (phase B) passes in RTL** (puzzles 0, 3, 5 end to end; unit test); netlist built, bitstream in the rebuild. **Milestone 2 (phase A, resident base) passes in the functional model** (1000/1000 Sudoku, 192/192 benchmark instances, on-chip base byte-identical to a fresh copy-in); hardware build next |
 | Key measurements | Image delta per puzzle: 1.2 KB of 632 KB. Givens as fixed decisions: 1000/1000 match. RTL Sudoku solve: about 203k cycles, mostly copy-in memory stalls (testbench memory model). ReasonLink: about 67 cycles/cell conversion, 1,200 cycles delta write |
 
 Next steps:
 1. Rebuild chain running on torino (`~/rl_rebuild.sh`, tmux `rl_rebuild`, log `~/rb/chain.log`): RTL regression with ESP-timed APB reads and both OOC netlists, then both bitstreams (`top.bit`, `top_rl.bit`) and the full-SoC simulation (10 ms).
-2. ReasonLink phase A design (resident base, rollback in SAT-Accel's copy-in/reset).
+2. ReasonLink Milestone 2 in hardware: HLS with patch 0002, `make regs`, block designs, RTL sequence tests (`rlseq:`), OOC netlists.
 3. Board (when available): program, boot Linux, `run_baselines.sh`, `summarize_board.py`.
 
 ## P1 definition (adapted to ESP + NVDLA)
@@ -57,7 +57,7 @@ The proposal's P1 calls for three things. On the new platform they mean:
 | P2-3 | Replace the v++ linker and XRT: block design, shell RTL, driver core, standalone RTL testbench, out-of-context netlist | **Done** (2026-10-22): 16/16 RTL tests pass; synthesized netlist meets 10 ns | branch `p2` |
 | P2-4 | SAT-Accel as an ESP third-party tile; Linux driver + library; bare-metal test; VCU118 SoC (Ariane, NVDLA, SAT-Accel); Linux image; full-SoC simulation; bitstream | **In progress**: everything builds; full-SoC simulation found the APB read bug (fixed); bitstream link and SGMII DRC fixed; rebuild running | branch `p2` |
 | P2-5 | Board baselines (Ariane, real NVDLA + SAT-Accel): rl_board, run script, summary | **Code done**, tested on the host over a fake device; the run itself needs the board | branch `p2` |
-| P2-6 | ReasonLink: phase B (DRAM-level delta, hardware literal producer), then phase A (resident on-chip base) | **Phase B passes in RTL**; phase A not started | branch `p2` |
+| P2-6 | ReasonLink: Milestone 1 / phase B (DRAM-level delta, hardware literal producer), then Milestone 2 / phase A (resident on-chip base) | **Milestone 1 passes in RTL**; **Milestone 2 passes in the functional model**, hardware in progress | branch `p2` |
 
 ## Stage 1: workload and classifier
 
@@ -453,6 +453,7 @@ ESP issues found and worked around:
 - **Fix:** `apb2axil` starts a transfer on `psel` (setup phase or ESP's read).
 - **Tests:** `tb/tb_apb2axil.sv` (std and ESP-timed reads, back to back): the old bridge hangs on the first ESP-timed read, the fixed one passes. `tb_sataccel.sv` now drives reads with ESP's timing by default (`APB=std` for textbook APB), so the RTL regression covers it.
 - Both OOC netlists (the shell is inside them) must be rebuilt; the netlists before 2026-10-30 hang on the first kernel-register read on the board too.
+- **Rebuilt and retested 2026-10-30** (`~/rl_rebuild.sh` on torino): RTL **10/10 PASS** with ESP-timed reads: baseline build Sudoku 0 and 5, quinn, dubois20, plus Sudoku 0 and quinn with textbook APB; ReasonLink build rl:0, rl:3, rl:5 and Sudoku 0. Cycle counts are unchanged (Sudoku 0 busy 202,894). Both OOC netlists rebuilt and copied into the tile.
 
 ### P2-4 addendum: bitstream flow
 - **Encrypted IP.** Vivado refuses the funcsim netlist as a synthesis source (it holds encrypted Xilinx IP, written for simulation only). The tile's single Verilog entry `sataccel_top_sel.v` is a black-box stub under `` `SYNTHESIS `` and the funcsim netlist otherwise (ModelSim unchanged). The SoC's `make vivado-syn-rl` (added by `install.sh`) creates ESP's Vivado project, adds `sataccel_top.dcp` to fill the stub (`add_sataccel_dcp.tcl`), then runs ESP's synthesis on that project, answering "n" to ESP's "overwrite existing Vivado project?" prompt (appending to `srcs.tcl` does not work: ESP regenerates it).
@@ -460,6 +461,7 @@ ESP issues found and worked around:
 - **Fix (a), applied: `esp_soc/socs/reasonlink-vcu118/sataccel_impl.tcl`** (replaces `add_sataccel_dcp.tcl`). Each implementation run gets an `opt_design` pre-hook that runs `read_checkpoint -cell` on the black box. Synthesis does not depend on which SAT-Accel is linked, so one synthesized SoC serves two runs: `impl_1` (baseline, `top.bit`) and `impl_rl` (SAT-Accel + ReasonLink from `CU_SATACCEL/out/sataccel_top_rl.dcp`, `top_rl.bit`). Targets: `make vivado-syn-rl` (new project, ESP's synthesis + `impl_1`), `make vivado-impl-rl IMPL_RUNS="impl_1 impl_rl"` (implementation only, runs in parallel). `CU_SATACCEL/Makefile`: `hw-rl` copies the ReasonLink checkpoint; `sataccel_top_sel.v` is rewritten only when its contents change, so a new netlist does not invalidate ESP's synthesis.
 - **Verified 2026-10-23:** a standalone check (open the SoC's synthesized checkpoint, `read_checkpoint -cell`) leaves only ESP's own MIG and SGMII IP black boxes. In `impl_1` the hook links the checkpoint, the clock at the SAT-Accel pin is the SoC's `mmcm_clkout1` (the OOC `create_clock` is not applied), and `opt_design`'s DRC finishes with 0 errors.
 - **Next failure: `place_design` DRC `PORTPROP-6`** on the SGMII pins (`rxp` has ODT, `txp` has OUTPUT_IMPEDANCE, both LVDS). ESP's `xilinx-vcu118-xcvu9p-eth-pins.xdc` clears them with `set_property ODT {}`, which Vivado 2023.2 still counts as set, so stock ESP would fail the same way. The hook now also runs `reset_property` on them.
+- **Stub date:** Vivado's synthesis stub carries a `// Date` comment, so every new netlist rewrote `sataccel_top_sel.v` and flagged ESP's synthesis out of date (caught by `sataccel_impl.tcl`'s check). The tile Makefile now drops the stub's comment lines. For the 2026-10-30 rebuild, where only that comment changed (ports come from `rtl/sataccel_top.v`, unchanged since 2026-10-22), `SATACCEL_SYNTH_CURRENT=1 make vivado-impl-rl IMPL_RUNS="impl_1 impl_rl"` marks synth_1 up to date (Vivado's force-up-to-date) instead of a new 84 min synthesis.
 - torino is shared: never kill processes by name pattern (another user runs ESP builds too).
 
 ### P2-5: board baselines (`board/`)
@@ -486,6 +488,28 @@ make -C board host                       # x86 test build over a fake /dev/satac
 - End to end in RTL (`results/p2/hw/rtl_reasonlink.txt`): puzzles 0, 3, 5 PASS with search counts identical to the unit-clause runs; conversion about 67 cycles per cell, delta write about 1,200 cycles; the unmodified flow still passes in the same build.
 - Board path: `rl_board --handoff reasonlink`; `sataccel.ko` translates NVDLA's output buffer address (VA->PA ioctl, PFN mappings included) and puts NVDLA's tile in coherent-DMA mode too, so the core reads NVDLA's output coherently.
 - What phase B leaves: SAT-Accel still copies the whole base image in from DRAM each solve (about 150k of 203k cycles in RTL). Phase A (resident on-chip base, rollback of assignments and learned clauses) targets that.
+
+Naming: the P1 report calls phase B **ReasonLink Milestone 1** and phase A **Milestone 2**; both names are used below.
+
+**Milestone 2 / phase A: the base formula resident on chip (`sataccel_hw/patches/0002-resident-base.patch`).** This is the proposal's mechanism (iii) in full ("the base formula stays resident in SAT-Accel ... learned clauses are rolled back to the base formula between instances"); Milestone 1 did its DRAM half. It needs no new RTL: in hardware the kernels' on-chip arrays already keep their contents between calls; what the patch adds is a copy-in that only restores what a solve changes.
+
+*Where the state lives and what a solve changes* (from the kernel sources):
+
+| Kernel | On-chip state copied in | Changed by a solve? | Resident copy-in |
+|---|---|---|---|
+| clause_store_handler | clause store 203 KB, clause metadata 96 KB | **No** for base clauses: learned clauses get IDs from `ORIGINAL_CLS_CNT` and pages from `clauseElements` on (both allocators are rebuilt from those scalars each call); deletion takes IDs only from the learned-clause buckets | skipped |
+| solver | literal store 187 KB | Only after each list's base entries: learned clauses go into the free tail of a literal's last base page and into new pages linked from its last word; deletion moves learned entries only | skipped; tails cleared (below) |
+| solver | literal metadata 46 KB, clause states 96 KB | Yes (assignments, levels, phases, list ends, counters) | copied from the DRAM base image as before |
+| solver | answer stack 3 KB | Yes; holds the givens | copied (Milestone 1's delta) |
+| location_handler, pqHandler, restart, timer | learned-clause positions; VSIDS heap | Rebuilt or overwritten each call | unchanged |
+
+*The patch.* `residentBase` (new `s_axilite` scalar) on the solver and the clause store handler. With it set, `copy_litStore` and `copy_cls_data` get a trip count of 0 (the dataflow structure is unchanged), and after the metadata is copied in, `clean_litStore_tails` zeros every literal's last base page from its first free word to its end (zeros in the image), which restores the base literal store exactly; a variable with free space 0 has no page of its own and is skipped. The three persistent arrays (`mLitStore`, `mClsStore`, `mCmd`) are `static`, which gives the C model the persistence the hardware RAMs already have. Weak `rl_probe_*` hooks (C model only, `#ifndef __SYNTHESIS__`) expose the base regions to the checker. Copy-in per Sudoku puzzle: about 145 KB (clause states, metadata, answer stack) instead of 632 KB, 77% less; the tail clear is one line write per literal side (1,458 for Sudoku).
+
+*Driver.* `sa_dev_start_resident(d, img, resident)` writes `residentBase` when the register map has it (`SA_HAS_RESIDENT`, from the HLS headers); `sa_dev_start` = resident 0. The caller sets resident = 1 only when the previous run used the same base image.
+
+*Functional check (`sataccel_sim/resident_check.cc`, build `make BUILD=build_m2 SATACCEL=../sataccel_hw/build/src build_m2/resident_check`).* Every instance runs twice, fresh (full copy-in) and in a resident sequence (first fresh, the rest with `residentBase` = 1); results, models and all search counters must match, and after every resident copy-in the base regions of the literal store, clause store and clause metadata must equal a fresh copy-in byte for byte.
+- **Sudoku** (`results/p2/m2/resident_sudoku.txt`): 1000/1000 identical (808 SAT, 192 UNSAT, 144 conflicts); base regions identical in 999/999 resident runs; before the tails were cleared, the literal store differed in 33 runs (496 B): the clearing is needed.
+- **SAT-Accel's 16 benchmarks, 12 fixed-decision sets each** (`results/p2/m2/resident_benchmarks.txt`; none, then 1 to vars/8 random literals): 192/192 identical (53 SAT, 139 UNSAT, 20,405 conflicts, including 16,268 on hole7 with clause deletion); base regions identical in 176/176; tails dirty in 62 runs (39 KB).
 
 ## Environments
 

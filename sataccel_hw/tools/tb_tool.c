@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "cnf.h"
 #include "sataccel_caps.h"
@@ -167,11 +168,36 @@ static int gen(const rl_cnf *inst, int expect, const int8_t *ref_grid, const cha
  * have written them (group-32 layout, 64 B per cell); the recorded program
  * is ReasonLink's (setup, begin, one push per given cell, commit), then the
  * usual SAT-Accel start/wait. The checker sees the full instance (base +
- * givens), so the result is checked exactly as for gen-sudoku. */
+ * givens), so the result is checked exactly as for gen-sudoku.
+ *
+ * Sequences (gen-rl-seq): several puzzles back to back in one simulation, on
+ * the one base image. Puzzle i's logits sit at their own address; each
+ * puzzle clears the tile counters, commits its delta, starts SAT-Accel
+ * (resident = 1: every start after the first with the base formula resident
+ * on chip, ReasonLink Milestone 2) and dumps its result to <out>/p<i>/,
+ * which also holds its inst.cnf and meta.txt for tb_tool check. */
 #define RL_LOGIT_BASE (SA_HW_MEM_BASE + 0x2000000u)
+#define RL_LOGIT_PUZZLE_STRIDE (64u * RL_CELLS)
 
-static int gen_rl(const rl_cnf *base, const rl_trace *tr, uint32_t k, int expect, const int8_t *ref_grid,
-                  const char *out)
+static void write_rl_check(const rl_cnf *base, const rl_trace *tr, uint32_t k, int expect, const int8_t *ref_grid,
+                           const char *dir)
+{
+    int32_t units[RL_CELLS];
+    uint32_t u = rl_argmax_units(tr, k, units);
+    rl_cnf inst;
+    memset(&inst, 0, sizeof inst);
+    if (rl_cnf_with_units(&inst, base, units, u)) die("rl_cnf_with_units");
+    FILE *c = open_in(dir, "inst.cnf", "w");
+    write_cnf(c, &inst);
+    fclose(c);
+    FILE *meta = open_in(dir, "meta.txt", "w");
+    fprintf(meta, "%u %d %d\n", inst.num_vars, expect, 1);
+    for (int i = 0; i < RL_CELLS; i++) fprintf(meta, "%d%c", ref_grid[i], i + 1 == RL_CELLS ? '\n' : ' ');
+    fclose(meta);
+}
+
+static int gen_rl_seq(const rl_cnf *base, const rl_trace *tr, const rl_reference *ref, const uint32_t *ks,
+                      uint32_t np, int seq, int resident, const char *out)
 {
     sa_caps caps;
     sa_config cfg;
@@ -191,24 +217,37 @@ static int gen_rl(const rl_cnf *base, const rl_trace *tr, uint32_t k, int expect
     dev_setup(&d, &ops, &rc, &shadow, &size);
     if (sa_dev_load(&d, &img, 0) == (size_t)-1) die("base image too large");
 
-    const uint8_t *mask = rl_trace_mask(tr, k);
-    const int8_t *scores = rl_trace_scores(tr, k);
-    fprintf(rc.ops, "# ReasonLink: base image (%u vars, %u clauses) + puzzle %u\n", img.num_vars, img.num_clauses, k);
-    fprintf(rc.ops, "W %05x 00000001\n", SA_SHELL_BASE + SA_SHELL_CTRL);   /* clear counters */
-    if (sa_rl_setup(&d, &img, 32, 0)) die("sa_rl_setup");
-    sa_rl_begin(&d);
+    char outabs[4096];
+    if (!realpath(out, outabs)) die("realpath");
     uint32_t givens = 0;
-    for (uint32_t cell = 0; cell < RL_CELLS; cell++)
-        if (mask[cell]) {
-            sa_rl_push(&d, RL_LOGIT_BASE + 64 * cell, cell);
-            givens++;
+    for (uint32_t i = 0; i < np; i++) {
+        const uint32_t k = ks[i], logits = RL_LOGIT_BASE + i * RL_LOGIT_PUZZLE_STRIDE;
+        const uint8_t *mask = rl_trace_mask(tr, k);
+        char dir[4096 + 16];
+        snprintf(dir, sizeof dir, "%s/p%u", outabs, i);
+        if (seq) {
+            mkdir(dir, 0755);
+            write_rl_check(base, tr, k, rl_reference_sat(ref, k), rl_reference_solved(ref, k), dir);
         }
-    if (sa_rl_commit(&d)) die("sa_rl_commit");
-    fprintf(rc.ops, "R %05x\nR %05x\nR %05x\n", SA_RL_BASE + 0x24, SA_RL_BASE + 0x28, SA_RL_BASE + 0x2C);
-    fprintf(rc.ops, "C reasonlink\n");
-    sa_dev_start(&d, &img);
-    sa_dev_wait(&d);
-    fprintf(rc.ops, "C done\n");
+        fprintf(rc.ops, "# ReasonLink: base image (%u vars, %u clauses) + puzzle %u%s\n", img.num_vars,
+                img.num_clauses, k, seq && resident && i ? " (base resident)" : "");
+        fprintf(rc.ops, "W %05x 00000001\n", SA_SHELL_BASE + SA_SHELL_CTRL);   /* clear counters */
+        if (i == 0 && sa_rl_setup(&d, &img, 32, 0)) die("sa_rl_setup");
+        sa_rl_begin(&d);
+        for (uint32_t cell = 0; cell < RL_CELLS; cell++)
+            if (mask[cell]) {
+                sa_rl_push(&d, logits + 64 * cell, cell);
+                givens++;
+            }
+        if (sa_rl_commit(&d)) die("sa_rl_commit");
+        fprintf(rc.ops, "R %05x\nR %05x\nR %05x\n", SA_RL_BASE + 0x24, SA_RL_BASE + 0x28, SA_RL_BASE + 0x2C);
+        if (seq) fprintf(rc.ops, "C reasonlink_%u\nF %s/dump.txt\n", i, dir);
+        else fprintf(rc.ops, "C reasonlink\n");
+        sa_dev_start_resident(&d, &img, seq && resident && i > 0);
+        sa_dev_wait(&d);
+        if (seq) fprintf(rc.ops, "C done_%u\n", i);
+        else fprintf(rc.ops, "C done\n");
+    }
     fclose(rc.ops);
 
     FILE *m = open_in(out, "mem.txt", "w");
@@ -221,33 +260,28 @@ static int gen_rl(const rl_cnf *base, const rl_trace *tr, uint32_t k, int expect
             words++;
         }
     }
-    for (uint32_t cell = 0; cell < RL_CELLS; cell++)       /* NVDLA's output for each given cell */
-        if (mask[cell])
-            for (int h = 0; h < 2; h++) {
-                uint64_t w = 0;
-                for (int b = 0; b < 8; b++) {
-                    int c = 8 * h + b;
-                    if (c < 10) w |= (uint64_t)(uint8_t)scores[(size_t)cell * tr->stride + c] << (8 * b);
+    for (uint32_t i = 0; i < np; i++) {   /* NVDLA's output for each given cell */
+        const uint8_t *mask = rl_trace_mask(tr, ks[i]);
+        const int8_t *scores = rl_trace_scores(tr, ks[i]);
+        for (uint32_t cell = 0; cell < RL_CELLS; cell++)
+            if (mask[cell])
+                for (int h = 0; h < 2; h++) {
+                    uint64_t w = 0;
+                    for (int b = 0; b < 8; b++) {
+                        int c = 8 * h + b;
+                        if (c < 10) w |= (uint64_t)(uint8_t)scores[(size_t)cell * tr->stride + c] << (8 * b);
+                    }
+                    fprintf(m, "%08llx %016llx\n",
+                            (unsigned long long)(RL_LOGIT_BASE + i * RL_LOGIT_PUZZLE_STRIDE + 64 * cell + 8 * h),
+                            (unsigned long long)w);
                 }
-                fprintf(m, "%08llx %016llx\n", (unsigned long long)(RL_LOGIT_BASE + 64 * cell + 8 * h),
-                        (unsigned long long)w);
-            }
+    }
     fclose(m);
 
-    /* the full instance, for the checker */
-    int32_t units[RL_CELLS];
-    uint32_t u = rl_argmax_units(tr, k, units);
-    rl_cnf inst;
-    memset(&inst, 0, sizeof inst);
-    if (rl_cnf_with_units(&inst, base, units, u)) die("rl_cnf_with_units");
-    FILE *c = open_in(out, "inst.cnf", "w");
-    write_cnf(c, &inst);
-    fclose(c);
-    FILE *meta = open_in(out, "meta.txt", "w");
-    fprintf(meta, "%u %d %d\n", inst.num_vars, expect, 1);
-    for (int i = 0; i < RL_CELLS; i++) fprintf(meta, "%d%c", ref_grid[i], i + 1 == RL_CELLS ? '\n' : ' ');
-    fclose(meta);
-    printf("%s: ReasonLink, %u givens, %zu memory words\n", out, givens, words);
+    if (!seq)   /* the full instance, for the checker */
+        write_rl_check(base, tr, ks[0], rl_reference_sat(ref, ks[0]), rl_reference_solved(ref, ks[0]), out);
+    printf("%s: ReasonLink, %u puzzle(s), %u givens, %zu memory words%s\n", out, np, givens, words,
+           seq && resident ? ", base resident after the first" : "");
     return 0;
 }
 
@@ -342,7 +376,27 @@ int main(int argc, char **argv)
         if (rl_reference_read(&ref, p)) die("cannot read reference.bin");
         uint32_t k = (uint32_t)atoi(argv[3]);
         if (k >= tr.num_puzzles) die("puzzle out of range");
-        return gen_rl(&base, &tr, k, rl_reference_sat(&ref, k), rl_reference_solved(&ref, k), argv[4]);
+        return gen_rl_seq(&base, &tr, &ref, &k, 1, 0, 0, argv[4]);
+    }
+    if (argc == 6 && !strcmp(argv[1], "gen-rl-seq")) {
+        char p[4096];
+        rl_cnf base;
+        rl_trace tr;
+        rl_reference ref;
+        snprintf(p, sizeof p, "%s/base.cnf", argv[2]);
+        if (rl_cnf_read_dimacs(&base, p)) die("cannot read base.cnf");
+        snprintf(p, sizeof p, "%s/trace.bin", argv[2]);
+        if (rl_trace_read(&tr, p)) die("cannot read trace.bin");
+        snprintf(p, sizeof p, "%s/reference.bin", argv[2]);
+        if (rl_reference_read(&ref, p)) die("cannot read reference.bin");
+        uint32_t ks[64], np = 0;
+        for (char *t = strtok(argv[3], ","); t && np < 64; t = strtok(NULL, ",")) {
+            ks[np] = (uint32_t)atoi(t);
+            if (ks[np] >= tr.num_puzzles) die("puzzle out of range");
+            np++;
+        }
+        if (!np) die("no puzzles");
+        return gen_rl_seq(&base, &tr, &ref, ks, np, 1, atoi(argv[4]), argv[5]);
     }
     if (argc == 5 && !strcmp(argv[1], "gen-cnf")) {
         rl_cnf c;
@@ -352,6 +406,7 @@ int main(int argc, char **argv)
     if (argc == 3 && !strcmp(argv[1], "check")) return check(argv[2]);
     fprintf(stderr, "usage: tb_tool gen-sudoku <data_dir> <puzzle> <out_dir>\n"
                     "       tb_tool gen-rl-sudoku <data_dir> <puzzle> <out_dir>   (ReasonLink)\n"
+                    "       tb_tool gen-rl-seq <data_dir> <k1,k2,...> <resident 0|1> <out_dir>\n"
                     "       tb_tool gen-cnf <file.cnf> <1|0> <out_dir>\n"
                     "       tb_tool check <out_dir>\n");
     return 2;

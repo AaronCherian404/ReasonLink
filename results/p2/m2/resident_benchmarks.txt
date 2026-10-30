@@ -1,0 +1,27 @@
+# ReasonLink Milestone 2 (resident base), functional model, WSL, 2026-10-30
+# resident_check cnf 12 1 <SAT-Accel benchmarks, CR-stripped>: per formula 12 fixed-decision sets (none, then 1..vars/8 random literals), seed 1
+quinn.dimacs                 instances   12  SAT    8 UNSAT    4  conflicts       4  resident == fresh   12/12  errors 0
+aim50.dimacs                 instances   12  SAT    3 UNSAT    9  conflicts     174  resident == fresh   12/12  errors 0
+nqueens_4.dimacs             instances   12  SAT    7 UNSAT    5  conflicts      16  resident == fresh   12/12  errors 0
+nqueens_8.dimacs             instances   12  SAT    7 UNSAT    5  conflicts      31  resident == fresh   12/12  errors 0
+4blocks.dimacs               instances   12  SAT    1 UNSAT   11  conflicts    2102  resident == fresh   12/12  errors 0
+aalto.dimacs                 instances   12  SAT   11 UNSAT    1  conflicts       1  resident == fresh   12/12  errors 0
+sudoku_4_2_2.dimacs          instances   12  SAT    9 UNSAT    3  conflicts       0  resident == fresh   12/12  errors 0
+sudoku_6_2_3.dimacs          instances   12  SAT    5 UNSAT    7  conflicts       1  resident == fresh   12/12  errors 0
+bmc-ibm-2.dimacs             instances   12  SAT    1 UNSAT   11  conflicts      31  resident == fresh   12/12  errors 0
+bmc-ibm-5.dimacs             instances   12  SAT    1 UNSAT   11  conflicts     109  resident == fresh   12/12  errors 0
+aalto_2.dimacs               instances   12  SAT    0 UNSAT   12  conflicts      20  resident == fresh   12/12  errors 0
+nqueens_3.dimacs             instances   12  SAT    0 UNSAT   12  conflicts      14  resident == fresh   12/12  errors 0
+dubois20.dimacs              instances   12  SAT    0 UNSAT   12  conflicts    1048  resident == fresh   12/12  errors 0
+qg6-10.dimacs                instances   12  SAT    0 UNSAT   12  conflicts     367  resident == fresh   12/12  errors 0
+hole7_unsat.cnf              instances   12  SAT    0 UNSAT   12  conflicts   16268  resident == fresh   12/12  errors 0
+aim-200-1_6-no-1.cnf         instances   12  SAT    0 UNSAT   12  conflicts     219  resident == fresh   12/12  errors 0
+on-chip base after each resident copy-in, vs a fresh copy-in:
+  literal store    176 checked, 0 differ
+  clause store     176 checked, 0 differ
+  clause metadata  176 checked, 0 differ
+  literal store before its tails were cleared: differed in 62 of 176 resident runs (39223 bytes)
+PASS: 16 workloads, 192 instances (53 SAT, 139 UNSAT, 20405 conflicts), resident == fresh 192/192, errors 0, model check failures 0
+real	5m18.577s
+user	9m1.951s
+sys	1m2.616s

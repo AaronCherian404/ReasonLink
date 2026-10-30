@@ -1,0 +1,200 @@
+diff -ruN a/clause_store_handler.cpp b/clause_store_handler.cpp
+--- a/clause_store_handler.cpp	2026-10-30 11:02:24.906049900 -0400
++++ b/clause_store_handler.cpp	2026-10-30 11:03:54.097638000 -0400
+@@ -3,6 +3,12 @@
+ #include <ap_utils.h>
+ #include "data_structures.h"
+ 
++// ReasonLink Milestone 2: functional-model probe of the resident base
++// (sataccel_sim/resident_check.cc); not part of the hardware.
++#ifndef __SYNTHESIS__
++extern "C" void rl_probe_csh(const void* store, unsigned long bytes, unsigned int flags) __attribute__((weak));
++#endif
++
+ void copyCls(ap_uint<128> mClsStore[_FPGA_MAX_LITERAL_ELEMENTS/4], ap_uint<128>* clauseStore, const unsigned int clauseElements){
+     #pragma HLS inline off
+ 
+@@ -495,7 +501,7 @@
+     const double prunePctage,
+     hls::stream<ap_axiu<96,0,0,0>>& clauseStoreInputStream1, hls::stream<ap_axiu<96,0,0,0>>& clauseStoreInputStream2,
+     hls::stream<ap_axiu<32,0,0,0>>& clauseStoreOutputStream1, hls::stream<ap_axiu<32,0,0,0>>& clauseStoreOutputStream2,
+-    hls::stream<ap_axiu<64,0,0,0>>& locationInputStream){
++    hls::stream<ap_axiu<64,0,0,0>>& locationInputStream, const unsigned int residentBase){
+ 
+     #pragma HLS INTERFACE m_axi port=clauseStore offset=slave bundle=gmem13 latency=40
+     #pragma HLS INTERFACE m_axi port=cmd offset=slave bundle=gmem14 latency=40
+@@ -510,6 +516,7 @@
+     #pragma HLS INTERFACE axis port=clauseStoreInputStream2
+     #pragma HLS INTERFACE axis port=clauseStoreOutputStream1
+     #pragma HLS INTERFACE axis port=clauseStoreOutputStream2
++	#pragma HLS INTERFACE s_axilite port=residentBase
+ 	#pragma HLS INTERFACE s_axilite port=return
+ 
+     const unsigned int MAX_CLAUSE_ELEMENTS = maxClauseElements;
+@@ -526,10 +533,14 @@
+     mmuStream<cls, _FPGA_MAX_CLAUSES> freeClsID(ORIGINAL_CLS_CNT,_FPGA_MAX_CLAUSES,1);
+     #pragma HLS bind_storage variable=freeClsID.array type=RAM_S2P impl=URAM latency=2
+ 
+-    ap_uint<128> mClsStore[_FPGA_MAX_LITERAL_ELEMENTS/4];
++    // ReasonLink Milestone 2: static, so the base formula's clauses persist
++    // between calls. Solving never writes them: learned clauses get IDs from
++    // ORIGINAL_CLS_CNT and pages from clauseElements on (both allocators
++    // restart from those values each call), and only learned IDs are deleted.
++    static ap_uint<128> mClsStore[_FPGA_MAX_LITERAL_ELEMENTS/4];
+     #pragma HLS bind_storage variable=mClsStore type=RAM_T2P impl=URAM latency=2
+ 
+-    clauseMetaData mCmd[_FPGA_MAX_CLAUSES];
++    static clauseMetaData mCmd[_FPGA_MAX_CLAUSES];
+     #pragma HLS aggregate variable=mCmd compact=auto
+     #pragma HLS bind_storage variable=mCmd type=RAM_T2P impl=URAM latency=2
+ 
+@@ -545,7 +556,14 @@
+ 
+     copy_cls_data(mClsStore, mCmd,
+         clauseStore, cmd,
+-        clauseElements, ORIGINAL_CLS_CNT);
++        residentBase ? 0u : clauseElements, residentBase ? 0u : ORIGINAL_CLS_CNT);
++#ifndef __SYNTHESIS__
++    if(rl_probe_csh){
++        // flags: bit 0 residentBase, bit 1 mCmd (else mClsStore)
++        rl_probe_csh(mClsStore, ((clauseElements+3)/4)*sizeof(mClsStore[0]), residentBase);
++        rl_probe_csh(mCmd, ORIGINAL_CLS_CNT*sizeof(mCmd[0]), residentBase | 2);
++    }
++#endif
+ 
+     cls freeID;
+     cls lastInsertedID;
+diff -ruN a/copy_in.cpp b/copy_in.cpp
+--- a/copy_in.cpp	2026-10-30 11:02:24.934808700 -0400
++++ b/copy_in.cpp	2026-10-30 11:03:22.022430200 -0400
+@@ -71,4 +71,41 @@
+     copy_lmd(mlmd, mlmmd, lmd, NUM_LITERALS);
+     copy_answerStack(mAnswerStack, answerStack, NUM_LITERALS);
+     
+-}
+\ No newline at end of file
++}
++
++// ReasonLink Milestone 2: restore the base literal store in place. A solve's
++// learned clauses only add entries after the base entries of an occurrence
++// list: into the free tail of the list's last base page, and into new pages
++// linked from that page's last word. With the base metadata copied back in,
++// every list ends where the base image ends it again; clearing each last
++// page from its first free word to its end (zeros in the image) makes the
++// base literal store identical to the image. A variable with no occurrences
++// has no page (free space 0: allocated last pages keep at least one free
++// word) and is skipped.
++void clean_litStore_tails(ap_uint<512> mLitStore[_FPGA_MAX_LITERAL_ELEMENTS/16],
++    const literalMetaData mlmd[_FPGA_MAX_LITERALS], const unsigned int NUM_LITERALS, const unsigned int LITERAL_PAGE_SIZE){
++    #pragma HLS inline off
++    CLEAN_TAILS: for(unsigned int i = 0; i < 2*NUM_LITERALS; i++){
++        #pragma HLS loop_tripcount min=1024 max=1024
++        literalMetaData getLmd = mlmd[i/2];
++        ap_uint<1> side = i%2;
++        unsigned int freeSpace = LMD_FREE_SPACE(getLmd.compactlmd, side);
++        unsigned int page = LMD_LATEST_PAGE(getLmd.compactlmd, side);
++        if(freeSpace != 0){
++            unsigned int firstFree = page + LITERAL_PAGE_SIZE - 2 - freeSpace;
++            CLEAN_LINES: for(unsigned int l = firstFree/16; l < (page + LITERAL_PAGE_SIZE)/16; l++){
++                #pragma HLS loop_tripcount min=1 max=1
++                #pragma HLS pipeline
++                unsigned int lo = (l == firstFree/16) ? firstFree%16 : 0;
++                ap_uint<512> line = mLitStore[l];
++                for(unsigned int j = 0; j < 16; j++){
++                    #pragma HLS unroll
++                    if(j >= lo){
++                        line.range(32*j+31,32*j) = 0;
++                    }
++                }
++                mLitStore[l] = line;
++            }
++        }
++    }
++}
+diff -ruN a/copy_in.h b/copy_in.h
+--- a/copy_in.h	2026-10-30 11:02:24.922972600 -0400
++++ b/copy_in.h	2026-10-30 11:03:22.022430200 -0400
+@@ -16,4 +16,8 @@
+     lit mAnswerStack[_FPGA_MAX_LITERALS], 
+     clsStatePCIE* clsStates, ap_int<512>* litStore1, literalMetaDataPCIE* lmd, lit* answerStack,
+     const unsigned int literalElements, const unsigned int numClauses, const unsigned int NUM_LITERALS, volatile uint64_t store[2]);
++
++// ReasonLink Milestone 2 (resident base formula)
++void clean_litStore_tails(ap_uint<512> mLitStore[_FPGA_MAX_LITERAL_ELEMENTS/16],
++    const literalMetaData mlmd[_FPGA_MAX_LITERALS], const unsigned int NUM_LITERALS, const unsigned int LITERAL_PAGE_SIZE);
+ #endif
+\ No newline at end of file
+diff -ruN a/solver.cpp b/solver.cpp
+--- a/solver.cpp	2026-10-30 11:02:24.930535400 -0400
++++ b/solver.cpp	2026-10-30 11:03:54.097638000 -0400
+@@ -4,6 +4,12 @@
+ #include "backtrack.h"
+ #include "copy_in.h"
+ 
++// ReasonLink Milestone 2: functional-model probe of the resident base
++// (sataccel_sim/resident_check.cc); not part of the hardware.
++#ifndef __SYNTHESIS__
++extern "C" void rl_probe_solver(const void* store, unsigned long bytes, unsigned int flags) __attribute__((weak));
++#endif
++
+ void sendTime(hls::stream<ap_axiu<64,0,0,0>>& timerValueStream, hls::stream<ap_axiu<1,0,0,0>>& conditionStream, 
+     const unsigned int code, volatile uint64_t* store){
+     #pragma HLS inline off
+@@ -94,7 +100,7 @@
+      hls::stream<ap_axiu<32,0,0,0>>& locationOutputStream,
+     hls::stream<ap_axiu<32,0,0,0>>& restartValueStream, hls::stream<ap_axiu<1,0,0,0>>& stopStream,
+     hls::stream<ap_axiu<64,0,0,0>>& timerValueStream, hls::stream<ap_axiu<1,0,0,0>>& conditionStream,
+-    hls::stream<ap_axiu<96,0,0,0>>& messageStream){
++    hls::stream<ap_axiu<96,0,0,0>>& messageStream, const unsigned int residentBase){
+ 
+     #pragma HLS INTERFACE m_axi port=clsStates offset=slave bundle=gmem5 latency=40
+     #pragma HLS INTERFACE m_axi port=litStore offset=slave bundle=gmemLitStore1 latency=40
+@@ -116,6 +122,7 @@
+ 	#pragma HLS INTERFACE s_axilite port=lmd
+ 	#pragma HLS INTERFACE s_axilite port=miscCounters
+ 
++	#pragma HLS INTERFACE s_axilite port=residentBase
+ 	#pragma HLS INTERFACE s_axilite port=return
+ 
+     unsigned int literalElements = miscCounters[0];
+@@ -130,7 +137,9 @@
+     lit mAnswerStack[_FPGA_MAX_LITERALS];
+     #pragma HLS bind_storage variable=mAnswerStack type=RAM_S2P impl=BRAM latency=1
+ 
+-    ap_uint<512> mLitStore[_FPGA_MAX_LITERAL_ELEMENTS/16];
++    // ReasonLink Milestone 2: static, so the base formula's literal store
++    // persists between calls (the RAM does in hardware anyway)
++    static ap_uint<512> mLitStore[_FPGA_MAX_LITERAL_ELEMENTS/16];
+     #pragma HLS bind_storage variable=mLitStore type=RAM_S2P impl=URAM latency=1
+ 
+     literalMetaData mlmd[_FPGA_MAX_LITERALS];
+@@ -162,7 +171,28 @@
+     copy_in_dataflow_wrapper(mClsStates, mLitStore, mlmd, mlmmd, 
+         mAnswerStack,
+         clsStates, litStore, lmd, answerStack,
+-        literalElements, numClauses, NUM_LITERALS, store);
++        residentBase ? 0u : literalElements, numClauses, NUM_LITERALS, store);
++
++    // ReasonLink Milestone 2: residentBase = the base formula (this image's,
++    // apart from its fixed decisions) is still on chip from an earlier call.
++    // The literal store is then not copied in; the metadata copied above
++    // points each occurrence list back at its base end, and the tails that
++    // learned clauses wrote into are cleared.
++#ifndef __SYNTHESIS__
++    // flags: bit 0 residentBase, bit 1 before the tails are cleared
++    const unsigned long probeBytes = ((literalElements+15)/16)*sizeof(mLitStore[0]);
++    if(rl_probe_solver && residentBase){
++        rl_probe_solver(mLitStore, probeBytes, 3);
++    }
++#endif
++    if(residentBase){
++        clean_litStore_tails(mLitStore, mlmd, NUM_LITERALS, LITERAL_PAGE_SIZE);
++    }
++#ifndef __SYNTHESIS__
++    if(rl_probe_solver){
++        rl_probe_solver(mLitStore, probeBytes, residentBase);
++    }
++#endif
+ 
+     sendTime(timerValueStream, conditionStream, 1, &store[1]);
+     cycleCounter[0] += store[1]-store[0];

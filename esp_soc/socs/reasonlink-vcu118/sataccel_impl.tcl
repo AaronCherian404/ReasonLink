@@ -72,6 +72,14 @@ if {[file exists $rl]} {
 }
 
 if {$mode eq "run"} {
+    # SATACCEL_SYNTH_CURRENT=1: the caller knows the synthesis inputs did not
+    # change in substance (e.g. only the stub's comment header), so mark
+    # synth_1 up to date (Vivado's "force up-to-date") instead of resynthesizing
+    if {[info exists ::env(SATACCEL_SYNTH_CURRENT)] && $::env(SATACCEL_SYNTH_CURRENT) eq "1" &&
+        [get_property PROGRESS [get_runs synth_1]] eq "100%" && [get_property NEEDS_REFRESH [get_runs synth_1]]} {
+        puts "ReasonLink: SATACCEL_SYNTH_CURRENT=1, forcing synth_1 up to date"
+        set_property NEEDS_REFRESH false [get_runs synth_1]
+    }
     if {[get_property PROGRESS [get_runs synth_1]] ne "100%" || [get_property NEEDS_REFRESH [get_runs synth_1]]} {
         error "synth_1 is not complete and up to date: use make vivado-syn-rl"
     }
