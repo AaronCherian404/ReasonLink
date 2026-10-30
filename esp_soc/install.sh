@@ -7,7 +7,8 @@
 #   socs/reasonlink-vcu118                 copy of socs/xilinx-vcu118-xcvu9p whose
 #                                          Makefile uses esp_soc/socs/reasonlink-vcu118/esp_defconfig,
 #                                          plus vsim.tcl (batch `make sim`) and a
-#                                          vivado-syn-rl target (adds SAT-Accel's .dcp)
+#                                          vivado-syn-rl / vivado-impl-rl targets
+#                                          (link SAT-Accel's .dcp in implementation)
 # Idempotent. Usage: bash esp_soc/install.sh [esp_root]
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd -P)"
@@ -34,23 +35,35 @@ ln -sfn "$HERE/socs/reasonlink-vcu118/vsim.tcl" "$SOC/vsim.tcl"
 if ! grep -q '^ESP_DEFCONFIG' "$SOC/Makefile"; then
   sed -i "/^DESIGN   = esp-\$(BOARD)/a ESP_DEFCONFIG = $HERE/socs/reasonlink-vcu118/esp_defconfig" "$SOC/Makefile"
 fi
-ln -sfn "$HERE/socs/reasonlink-vcu118/add_sataccel_dcp.tcl" "$SOC/add_sataccel_dcp.tcl"
+rm -f "$SOC/add_sataccel_dcp.tcl"                         # older flow
+ln -sfn "$HERE/socs/reasonlink-vcu118/sataccel_impl.tcl" "$SOC/sataccel_impl.tcl"
 sed -i '/^### ReasonLink: SAT-Accel/,$d' "$SOC/Makefile"     # replace an older version
 cat >> "$SOC/Makefile" <<'MK'
-### ReasonLink: SAT-Accel's synthesized checkpoint ###
+### ReasonLink: SAT-Accel's synthesized checkpoints ###
 # The SAT-Accel tile's simulation netlist holds encrypted Xilinx IP, which
-# Vivado will not re-synthesize. ESP's Vivado flow reads a black-box stub
-# instead (CU_SATACCEL/out/sataccel_top_sel.v); this target creates ESP's
-# project, adds the out-of-context checkpoint that fills the stub, then runs
-# ESP's synthesis and implementation on that project (answering "n" to ESP's
-# "overwrite existing Vivado project?"). Use instead of vivado-syn.
-SATACCEL_DCP = $(ESP_ROOT)/accelerators/third-party/CU_SATACCEL/out/sataccel_top.dcp
+# Vivado will not re-synthesize. ESP's Vivado flow synthesizes a black-box
+# stub instead (CU_SATACCEL/out/sataccel_top_sel.v), and sataccel_impl.tcl
+# gives each implementation run an opt_design pre-hook that fills it with a
+# checkpoint: impl_1 the baseline SAT-Accel (top.bit), impl_rl SAT-Accel +
+# ReasonLink (top_rl.bit, if CU_SATACCEL/out/sataccel_top_rl.dcp exists).
+#   vivado-syn-rl    new project, ESP's synthesis + impl_1 (use instead of vivado-syn)
+#   vivado-impl-rl   implement IMPL_RUNS on the existing synthesis
+SATACCEL_OUT = $(ESP_ROOT)/accelerators/third-party/CU_SATACCEL/out
+SATACCEL_IMPL = cd vivado && vivado -mode batch -nojournal -log sataccel_impl.log \
+	-source $(DESIGN_PATH)/sataccel_impl.tcl -tclargs $(DESIGN).xpr \
+	$(SATACCEL_OUT)/sataccel_top.dcp $(SATACCEL_OUT)/sataccel_top_rl.dcp
+IMPL_RUNS ?= impl_1 impl_rl
 vivado-syn-rl:
 	rm -rf vivado
 	$(MAKE) vivado-setup
-	cd vivado && vivado -mode batch -nojournal -nolog -source $(DESIGN_PATH)/add_sataccel_dcp.tcl 	  -tclargs $(DESIGN).xpr $(SATACCEL_DCP)
+	$(SATACCEL_IMPL) setup
 	yes n | $(MAKE) vivado-syn
-.PHONY: vivado-syn-rl
+vivado-impl-rl:
+	$(SATACCEL_IMPL) run $(IMPL_RUNS)
+	@for r in $(IMPL_RUNS); do b=vivado/$(DESIGN).runs/$$r/$(TOP).bit; \
+	  n=$(TOP).bit; [ $$r = impl_rl ] && n=$(TOP)_rl.bit; \
+	  if test -r $$b; then ln -sfn $$b $$n; echo "$$n -> $$b"; fi; done
+.PHONY: vivado-syn-rl vivado-impl-rl
 MK
 echo "installed into $ESP:"
 ls -l "$ESP/accelerators/third-party/CU_SATACCEL" "$ESP/soft/common/apps/baremetal/sataccel" | sed 's/^/  /'

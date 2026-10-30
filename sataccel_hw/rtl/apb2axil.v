@@ -1,6 +1,9 @@
 // APB (32-bit) slave -> AXI4-Lite (32-bit) master.
 // One transfer at a time: an APB access waits (pready low) until the AXI-Lite
 // write response or read data returns. pslverr reports a non-OKAY response.
+// A transfer starts on psel alone, not only on a setup phase: ESP's noc2apb
+// drives reads with psel and penable together from the first cycle (writes
+// do get a setup cycle).
 module apb2axil #(
     parameter ADDR_WIDTH = 20
 ) (
@@ -57,7 +60,7 @@ module apb2axil #(
             pready <= 1'b0;
             case (state)
             IDLE:
-                if (psel && !penable) begin          // APB setup phase
+                if (psel) begin                      // setup phase, or ESP's read
                     if (pwrite) begin
                         m_awaddr <= paddr;
                         m_wdata <= pwdata;

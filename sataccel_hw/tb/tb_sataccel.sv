@@ -63,7 +63,7 @@ module tb_sataccel;
         .arvalid(arvalid), .arready(arready),
         .rid(rid), .rdata(rdata), .rresp(rresp), .rlast(rlast), .rvalid(rvalid), .rready(rready));
 
-    // APB master tasks (setup phase, then access phase until pready)
+    // APB master tasks: writes as setup phase, then access phase until pready
     task automatic apb_write(input logic [31:0] a, input logic [31:0] d);
         @(posedge clk);
         psel <= 1; penable <= 0; pwrite <= 1; paddr <= a; pwdata <= d;
@@ -74,11 +74,18 @@ module tb_sataccel;
         psel <= 0; penable <= 0;
     endtask
 
+    // Reads as ESP's noc2apb drives them (default): psel and penable together
+    // from the first cycle, no setup phase. +apb=std: setup phase first.
+    bit apb_std;
+    initial apb_std = $test$plusargs("apb=std");
+
     task automatic apb_read(input logic [31:0] a, output logic [31:0] d);
         @(posedge clk);
-        psel <= 1; penable <= 0; pwrite <= 0; paddr <= a;
-        @(posedge clk);
-        penable <= 1;
+        psel <= 1; penable <= apb_std ? 0 : 1; pwrite <= 0; paddr <= a;
+        if (apb_std) begin
+            @(posedge clk);
+            penable <= 1;
+        end
         do @(posedge clk); while (!pready);
         d = prdata;
         if (pslverr) $error("APB read error at %h", a);

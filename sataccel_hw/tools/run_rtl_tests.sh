@@ -11,6 +11,8 @@
 #                         -> delta writer -> SAT-Accel
 # Env: TB_MEM=used FILL=<hex64> loads only the image's used ranges and makes
 #      every other word read as FILL (checks SAT-Accel reads nothing else)
+#      APB=std drives textbook APB reads (setup phase first); the default is
+#      ESP's noc2apb timing (psel and penable together)
 # Writes <out_dir>/<test>/{ops,mem,dump}.txt, sim.log, and <out_dir>/summary.txt
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -36,7 +38,7 @@ for spec in "$@"; do
   t0=$(date +%s)
   ( cd "$SIMDIR" && xsim tb_sataccel_behav -R \
       --testplusarg "ops=$dir/ops.txt" --testplusarg "mem=$dir/mem.txt" --testplusarg "dump=$dir/dump.txt" \
-      ${FILL:+--testplusarg "fill=$FILL"} \
+      ${FILL:+--testplusarg "fill=$FILL"} ${APB:+--testplusarg "apb=$APB"} \
       > "$dir/sim.log" 2>&1 )
   t1=$(date +%s)
   res=$(build/tb_tool check "$dir")
