@@ -1,0 +1,43 @@
+% Vector chart. Data: python3 generate-baseline-walltime.py
+% Times are mean wall time per puzzle, not sums of phase medians.
+\providecommand{\baselineDataFile}{baseline-walltime.tsv}
+\begin{tikzpicture}
+\begin{axis}[
+  width=\linewidth,
+  height=38mm,
+  ybar=7pt,
+  bar width=14pt,
+  xmin=0.55, xmax=2.45,
+  ymin=0, ymax=3.45,
+  xtick={1,2},
+  xticklabels={Faithful,Lean},
+  ytick={0,1,2,3},
+  ylabel={Wall time (ms/puzzle)},
+  tick label style={font=\fontsize{8}{9}\selectfont},
+  label style={font=\fontsize{8}{9}\selectfont},
+  axis line style={black!55},
+  axis x line*=bottom,
+  axis y line*=left,
+  ymajorgrids=true,
+  grid style={black!12},
+  tick align=outside,
+  major tick length=2pt,
+  legend style={at={(0.5,1.04)}, anchor=south,
+    legend columns=2, draw=none, fill=none,
+    font=\fontsize{8}{9}\selectfont,
+    /tikz/every even column/.append style={column sep=5pt}},
+  nodes near coords,
+  every node near coord/.append style={
+    font=\fontsize{7.5}{8.5}\selectfont,
+    /pgf/number format/fixed,
+    /pgf/number format/precision=3,
+    /pgf/number format/fixed zerofill},
+  clip=false,
+]
+\addplot[fill=blue!55!black,draw=blue!70!black]
+  table[x=group,y=serial] {\baselineDataFile};
+\addplot[fill=orange!70,draw=orange!80!black]
+  table[x=group,y=double] {\baselineDataFile};
+\legend{Serial,Double-buffered}
+\end{axis}
+\end{tikzpicture}
