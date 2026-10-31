@@ -79,6 +79,7 @@ def main():
         nn_mism = int(sum(int(r["nn_mismatch"]) for r in rows))
         summary[path.stem] = {
             "mode": meta["mode"], "clear": meta["clear"], "xfer": meta["xfer"], "nn": meta.get("nn", "?"),
+            "handoff": meta.get("handoff", "full"), "resident": meta.get("resident", "0") == "1",
             "puzzles": n, "cycles_per_us": cpu,
             "median_us": {"T_nn": float(np.median(nn)), "T_conv": float(np.median(conv)),
                           "T_xfer": float(np.median(xfer)), "T_sync": float(np.median(sync)),
@@ -86,6 +87,8 @@ def main():
             "wall_us_per_puzzle": wall / n, "handoff_share": share,
             "bytes_moved": int(rows[0]["xfer_bytes"]),
             "tile_mem_stall_share": float(np.median(col("tile_mem_stall") / np.maximum(col("tile_busy"), 1e-9))),
+            # SAT-Accel's DRAM reads per solve (median; 8 B beats), what Milestone 2 reduces
+            "tile_read_bytes": float(np.median(col("tile_rd_beats"))) * 8 if "tile_rd_beats" in rows[0] else None,
             "check": {"identical_across_runs": (grids, sats) == first, "match_reference": exact,
                       "valid_alternative": alt, "wrong": bad, "nvdla_cells_differing": nn_mism},
         }

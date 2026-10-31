@@ -51,6 +51,9 @@
 // 0x44 : Data signal of miscCounters
 //        bit 31~0 - miscCounters[63:32] (Read/Write)
 // 0x48 : reserved
+// 0x4c : Data signal of residentBase
+//        bit 31~0 - residentBase[31:0] (Read/Write)
+// 0x50 : reserved
 // (SC = Self Clear, COR = Clear on Read, TOW = Toggle on Write, COH = Clear on Handshake)
 
 #define XSOLVER_CONTROL_ADDR_AP_CTRL           0x00
@@ -67,4 +70,6 @@
 #define XSOLVER_CONTROL_BITS_LMD_DATA          64
 #define XSOLVER_CONTROL_ADDR_MISCCOUNTERS_DATA 0x40
 #define XSOLVER_CONTROL_BITS_MISCCOUNTERS_DATA 64
+#define XSOLVER_CONTROL_ADDR_RESIDENTBASE_DATA 0x4c
+#define XSOLVER_CONTROL_BITS_RESIDENTBASE_DATA 32
 

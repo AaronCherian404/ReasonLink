@@ -1,0 +1,32 @@
+# ReasonLink Milestone 2 (resident base) in RTL: SAT-Accel kernels with patches 0001+0002 (Vitis HLS 2023.2), block designs
+# vivado_bd (SAT-Accel) and vivado_bd_rl (+ ReasonLink Milestone 1 core); xsim, axi_mem READ_LATENCY=30, one burst at a time; 100 MHz;
+# APB reads with ESP's noc2apb timing. torino 2026-10-30/31 (wall times of the first runs include a heavily loaded machine).
+# rlseq_0_3_5_r1: puzzles 0, 3, 5 back to back in one simulation, 0 fresh, 3 and 5 with residentBase=1
+# rlseq_0_3_5_r0: the same sequence with the full copy-in every time (comparison); counters cleared per puzzle
+
+PASS rtl_m2/dubois20 result=UNSAT expect=UNSAT model_ok=1 grid==ref=n/a iterations=698 decisions=352 conflicts=175 restarts=1 | cycles=166448 busy=165708 mem_active=3038 mem_stall=6021 rd_beats=2338 wr_beats=359 sim_cycle=166513 | wall=456s
+PASS rtl_m2/quinn result=SAT expect=SAT model_ok=1 grid==ref=n/a iterations=6 decisions=5 conflicts=1 restarts=0 | cycles=3962 busy=3225 mem_active=877 mem_stall=1670 rd_beats=528 wr_beats=251 sim_cycle=4027 | wall=24533s
+PASS rtl_m2/sudoku_0 result=SAT expect=SAT model_ok=1 grid==ref=yes iterations=1 decisions=1 conflicts=0 restarts=0 | cycles=203632 busy=202894 mem_active=88619 mem_stall=187002 rd_beats=81476 wr_beats=3103 sim_cycle=203697 | wall=675s
+PASS rtl_m2_rl/rl_0 result=SAT expect=SAT model_ok=1 grid==ref=yes iterations=1 decisions=1 conflicts=0 restarts=0 | cycles=207190 busy=202558 mem_active=88970 mem_stall=186680 rd_beats=81404 wr_beats=3472 sim_cycle=207255 | wall=185s
+PASS rtl_m2_rl/rlseq_0_3_5_r0/p0 result=SAT expect=SAT model_ok=1 grid==ref=yes iterations=1 decisions=1 conflicts=0 restarts=0 | cycles=207190 busy=202558 mem_active=88970 mem_stall=186680 rd_beats=81404 wr_beats=3472 sim_cycle=207255 | wall=931s
+PASS rtl_m2_rl/rlseq_0_3_5_r0/p1 result=SAT expect=SAT model_ok=1 grid==ref=yes iterations=4 decisions=3 conflicts=1 restarts=0 | cycles=211020 busy=207383 mem_active=88943 mem_stall=186680 rd_beats=81386 wr_beats=3472 sim_cycle=418301 | wall=931s
+PASS rtl_m2_rl/rlseq_0_3_5_r0/p2 result=UNSAT expect=UNSAT model_ok=1 grid==ref=yes iterations=1 decisions=1 conflicts=0 restarts=0 | cycles=192156 busy=188379 mem_active=85304 mem_stall=182311 rd_beats=81390 wr_beats=556 sim_cycle=610483 | wall=931s
+PASS rtl_m2_rl/rlseq_0_3_5_r1/p0 result=SAT expect=SAT model_ok=1 grid==ref=yes iterations=1 decisions=1 conflicts=0 restarts=0 | cycles=207190 busy=202558 mem_active=88970 mem_stall=186680 rd_beats=81404 wr_beats=3472 sim_cycle=207255 | wall=25151s
+PASS rtl_m2_rl/rlseq_0_3_5_r1/p1 result=SAT expect=SAT model_ok=1 grid==ref=yes iterations=4 decisions=3 conflicts=1 restarts=0 | cycles=104190 busy=100553 mem_active=26632 mem_stall=72658 rd_beats=20798 wr_beats=3472 sim_cycle=311471 | wall=25151s
+PASS rtl_m2_rl/rlseq_0_3_5_r1/p2 result=UNSAT expect=UNSAT model_ok=1 grid==ref=yes iterations=1 decisions=1 conflicts=0 restarts=0 | cycles=85326 busy=81549 mem_active=22993 mem_stall=68289 rd_beats=20802 wr_beats=556 sim_cycle=396823 | wall=25151s
+
+# OOC synthesis (make synth, xcvu9p, 10 ns): timing summary (WNS TNS ...) and utilization
+## vivado_bd
+    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
+    -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
+      2.019        0.000                      0               397002        0.045        0.000                      0               397002        4.300        0.000                       0                137030  
+| CLB LUTs*                  | 113062 |     0 |          0 |   1182240 |  9.56 |
+| Block RAM Tile    | 180.5 |     0 |          0 |      2160 |  8.36 |
+| URAM              |   434 |     0 |          0 |       960 | 45.21 |
+## vivado_bd_rl
+    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
+    -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
+      2.019        0.000                      0               421781        0.045        0.000                      0               421781        4.300        0.000                       0                144145  
+| CLB LUTs*                  | 117698 |     0 |          0 |   1182240 |  9.96 |
+| Block RAM Tile    | 180.5 |     0 |          0 |      2160 |  8.36 |
+| URAM              |   434 |     0 |          0 |       960 | 45.21 |

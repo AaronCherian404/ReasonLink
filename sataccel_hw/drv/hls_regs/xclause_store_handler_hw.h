@@ -63,6 +63,9 @@
 // 0x64 : Data signal of prunePctage
 //        bit 31~0 - prunePctage[63:32] (Read/Write)
 // 0x68 : reserved
+// 0x6c : Data signal of residentBase
+//        bit 31~0 - residentBase[31:0] (Read/Write)
+// 0x70 : reserved
 // (SC = Self Clear, COR = Clear on Read, TOW = Toggle on Write, COH = Clear on Handshake)
 
 #define XCLAUSE_STORE_HANDLER_CONTROL_ADDR_AP_CTRL                    0x00
@@ -87,4 +90,6 @@
 #define XCLAUSE_STORE_HANDLER_CONTROL_BITS_CLAUSEPAGESIZE_DATA        32
 #define XCLAUSE_STORE_HANDLER_CONTROL_ADDR_PRUNEPCTAGE_DATA           0x60
 #define XCLAUSE_STORE_HANDLER_CONTROL_BITS_PRUNEPCTAGE_DATA           64
+#define XCLAUSE_STORE_HANDLER_CONTROL_ADDR_RESIDENTBASE_DATA          0x6c
+#define XCLAUSE_STORE_HANDLER_CONTROL_BITS_RESIDENTBASE_DATA          32
 

@@ -29,9 +29,14 @@
  * proposal's ablation): each buffer set holds the base formula's image,
  * loaded once outside the timed run; a puzzle's givens are written only as
  * level-0 fixed decisions (sa_dev_load_decisions), with no image build.
+ * --resident (with delta or reasonlink; ReasonLink Milestone 2, bitstreams
+ * built with sataccel_hw/patches/0002): every solve after the first starts
+ * with the base formula resident on chip, so SAT-Accel copies in only the
+ * clause states, literal metadata and answer stack (sa_dev_start_resident).
+ * Both buffer sets hold the same base image, so this holds across them.
  *
  * Usage: rl_board --mode serial|double [--clear full|lean] [--xfer allocated|used]
- *          [--handoff full|delta|reasonlink] [--nn nvdla|trace] [--n N] [--data DIR]
+ *          [--handoff full|delta|reasonlink] [--resident] [--nn nvdla|trace] [--n N] [--data DIR]
  *          [--loadable FILE] [--csv FILE]
  */
 #define _GNU_SOURCE
@@ -93,7 +98,7 @@ static const int8_t *cell_ip2(const cells_t *c, uint32_t p, int cell)
 
 typedef struct {
     uint64_t nn, argmax, image, xfer, sync, stall, sat;
-    uint64_t tile_busy, tile_active, tile_stall;
+    uint64_t tile_busy, tile_active, tile_stall, tile_rd_beats;
     size_t xfer_bytes;
     uint32_t givens, nn_mismatch;
     int sat_flag;
@@ -115,7 +120,7 @@ static rl_nvdla *NV;
 static cells_t CELLS;
 static rl_cnf BASE;
 static rl_reference REF;
-static int USE_TRACE, LEAN_XFER, DELTA, RL;
+static int USE_TRACE, LEAN_XFER, DELTA, RL, RESIDENT, STARTED;
 static rec_t *R;
 static uint32_t RL_LOGIT_PA, RL_GROUP, RL_SURF;   /* NVDLA's output tensor, for ReasonLink */
 
@@ -227,7 +232,9 @@ static void start(slot_t *s)
     S.regs[(SA_SHELL_BASE + SA_SHELL_CTRL) / 4] = 1;   /* clear tile counters */
     ioctl(S.fd, SATACCEL_IOC_ARM);
     s->t_start = rl_cycles();
-    sa_dev_start(&s->dev, &s->img);
+    /* Milestone 2: after the first solve the base formula is on chip */
+    sa_dev_start_resident(&s->dev, &s->img, RESIDENT && STARTED);
+    STARTED = 1;
 }
 
 /* Wait for the tile, then read and check the result */
@@ -243,6 +250,7 @@ static void finish(slot_t *s)
     r->tile_busy = sa_dev_counter(&s->dev, SA_SHELL_BUSY);
     r->tile_active = sa_dev_counter(&s->dev, SA_SHELL_MEM_ACTIVE);
     r->tile_stall = sa_dev_counter(&s->dev, SA_SHELL_MEM_STALL);
+    r->tile_rd_beats = sa_dev_counter(&s->dev, SA_SHELL_RD_BEATS);   /* 8 B each */
     r->sat = r->tile_busy;
     r->stall = t1 - t0;                                      /* CPU blocked on the tile */
     uint64_t span = t1 - s->t_start;
@@ -274,6 +282,7 @@ int main(int argc, char **argv)
     static struct option opts[] = {
         {"mode", 1, 0, 'm'}, {"clear", 1, 0, 'c'}, {"xfer", 1, 0, 'x'}, {"nn", 1, 0, 'k'}, {"n", 1, 0, 'n'},
         {"data", 1, 0, 'd'}, {"loadable", 1, 0, 'l'}, {"csv", 1, 0, 'o'}, {"handoff", 1, 0, 'h'},
+        {"resident", 0, 0, 'r'},
         {0, 0, 0, 0}};
     int o;
     while ((o = getopt_long(argc, argv, "", opts, NULL)) != -1) {
@@ -286,6 +295,7 @@ int main(int argc, char **argv)
         case 'd': data = optarg; break;
         case 'l': loadable = optarg; break;
         case 'o': csv = optarg; break;
+        case 'r': RESIDENT = 1; break;
         case 'h':
             RL = !strcmp(optarg, "reasonlink");
             DELTA = RL || !strcmp(optarg, "delta");
@@ -304,6 +314,7 @@ int main(int argc, char **argv)
     R = calloc(n, sizeof(rec_t));
 
     if (RL && USE_TRACE) die("--handoff reasonlink reads NVDLA's real output; not with --nn trace");
+    if (RESIDENT && !DELTA) die("--resident needs --handoff delta or reasonlink (one base image for all puzzles)");
     if (!USE_TRACE && !(NV = rl_nvdla_open(loadable, 0))) die("NVDLA setup failed");
 
     sa_caps caps;
@@ -374,11 +385,12 @@ int main(int argc, char **argv)
     if (csv && !f) die("cannot write csv");
     if (f) {
         fprintf(f, "# mode=%s clear=%s xfer=%s solver=sataccel nn=%s handoff=%s timer=%s cycles_per_us=%.3f "
-                   "wall_cycles=%llu puzzles=%u warmup=0 poll_us=0 base_load_cycles=%llu\n",
+                   "wall_cycles=%llu puzzles=%u warmup=0 poll_us=0 base_load_cycles=%llu resident=%d\n",
                 mode, clear, xfer, USE_TRACE ? "trace" : "nvdla", RL ? "reasonlink" : DELTA ? "delta" : "full", RL_TIMER_NAME, cpu,
-                (unsigned long long)wall, n, (unsigned long long)base_load);
+                (unsigned long long)wall, n, (unsigned long long)base_load, RESIDENT);
         fprintf(f, "puzzle,givens,nn_cyc,argmax_cyc,image_cyc,xfer_cyc,xfer_bytes,sync_cyc,stall_cyc,sat_cyc,sat,"
-                   "decisions,propagations,conflicts,grid,tile_busy,tile_mem_active,tile_mem_stall,nn_mismatch\n");
+                   "decisions,propagations,conflicts,grid,tile_busy,tile_mem_active,tile_mem_stall,nn_mismatch,"
+                   "tile_rd_beats\n");
     }
     for (uint32_t k = 0; k < n; k++) {
         rec_t *r = &R[k];
@@ -390,18 +402,19 @@ int main(int argc, char **argv)
             char g[RL_CELLS + 1];
             for (int i = 0; i < RL_CELLS; i++) g[i] = (char)('0' + r->grid[i]);
             g[RL_CELLS] = 0;
-            fprintf(f, "%u,%u,%llu,%llu,%llu,%llu,%zu,%llu,%llu,%llu,%d,%u,0,%u,%s,%llu,%llu,%llu,%u\n", k, r->givens,
+            fprintf(f, "%u,%u,%llu,%llu,%llu,%llu,%zu,%llu,%llu,%llu,%d,%u,0,%u,%s,%llu,%llu,%llu,%u,%llu\n", k, r->givens,
                     (unsigned long long)r->nn, (unsigned long long)r->argmax, (unsigned long long)r->image,
                     (unsigned long long)r->xfer, r->xfer_bytes, (unsigned long long)r->sync,
                     (unsigned long long)r->stall, (unsigned long long)r->sat, r->sat_flag, r->decisions,
                     r->conflicts, g, (unsigned long long)r->tile_busy, (unsigned long long)r->tile_active,
-                    (unsigned long long)r->tile_stall, r->nn_mismatch);
+                    (unsigned long long)r->tile_stall, r->nn_mismatch, (unsigned long long)r->tile_rd_beats);
         }
     }
     if (f) fclose(f);
-    printf("%-6s clear=%-4s xfer=%-9s nn=%-5s handoff=%-5s puzzles=%u  wall %.1f ms (%.1f us/puzzle)  "
+    printf("%-6s clear=%-4s xfer=%-9s nn=%-5s handoff=%-5s%s puzzles=%u  wall %.1f ms (%.1f us/puzzle)  "
            "matches reference %u/%u  NVDLA cells != emulator: %u\n",
-           mode, clear, xfer, USE_TRACE ? "trace" : "nvdla", RL ? "reasonlink" : DELTA ? "delta" : "full", n, wall / cpu / 1e3,
+           mode, clear, xfer, USE_TRACE ? "trace" : "nvdla", RL ? "reasonlink" : DELTA ? "delta" : "full",
+           RESIDENT ? "+resident" : "", n, wall / cpu / 1e3,
            wall / cpu / n, correct, n, mism);
     if (NV) rl_nvdla_close(NV);
     sa_linux_close(&S);

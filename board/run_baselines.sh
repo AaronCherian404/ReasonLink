@@ -39,6 +39,17 @@ for mode in serial double; do
   ./rl_board --mode $mode --handoff reasonlink $ARGS --csv results/board_${mode}_reasonlink.csv \
     || { echo "(no ReasonLink in this bitstream: skipped)"; rm -f results/board_${mode}_reasonlink.csv; break; }
 done
+# ReasonLink Milestone 2 (bitstreams built with patches/0002): the base
+# formula resident on chip after the first solve, for the CPU delta and for
+# ReasonLink. On a bitstream without patch 0002 the flag writes an unused
+# register: SAT-Accel copies everything in, as in the delta runs
+for mode in serial double; do
+  ./rl_board --mode $mode --handoff delta --resident $ARGS --csv results/board_${mode}_delta_resident.csv
+done
+for mode in serial double; do
+  ./rl_board --mode $mode --handoff reasonlink --resident $ARGS --csv results/board_${mode}_reasonlink_resident.csv \
+    || { echo "(no ReasonLink in this bitstream: skipped)"; rm -f results/board_${mode}_reasonlink_resident.csv; break; }
+done
 # NVDLA isolated: the same pipeline replaying the emulator's logits
 ./rl_board --mode serial --clear full --xfer allocated --nn trace $ARGS --csv results/board_serial_faithful_trace.csv
 ls -l results

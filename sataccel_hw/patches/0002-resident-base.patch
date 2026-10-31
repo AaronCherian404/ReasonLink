@@ -1,6 +1,6 @@
 diff -ruN a/clause_store_handler.cpp b/clause_store_handler.cpp
 --- a/clause_store_handler.cpp	2026-10-30 11:02:24.906049900 -0400
-+++ b/clause_store_handler.cpp	2026-10-30 11:03:54.097638000 -0400
++++ b/clause_store_handler.cpp	2026-10-30 11:39:00.668090000 -0400
 @@ -3,6 +3,12 @@
  #include <ap_utils.h>
  #include "data_structures.h"
@@ -36,15 +36,15 @@ diff -ruN a/clause_store_handler.cpp b/clause_store_handler.cpp
      #pragma HLS bind_storage variable=freeClsID.array type=RAM_S2P impl=URAM latency=2
  
 -    ap_uint<128> mClsStore[_FPGA_MAX_LITERAL_ELEMENTS/4];
-+    // ReasonLink Milestone 2: static, so the base formula's clauses persist
-+    // between calls. Solving never writes them: learned clauses get IDs from
++    // ReasonLink Milestone 2: the base formula's clauses persist between
++    // calls (RL_PERSIST below). Solving never writes them: learned clauses get IDs from
 +    // ORIGINAL_CLS_CNT and pages from clauseElements on (both allocators
 +    // restart from those values each call), and only learned IDs are deleted.
-+    static ap_uint<128> mClsStore[_FPGA_MAX_LITERAL_ELEMENTS/4];
++    RL_PERSIST ap_uint<128> mClsStore[_FPGA_MAX_LITERAL_ELEMENTS/4];
      #pragma HLS bind_storage variable=mClsStore type=RAM_T2P impl=URAM latency=2
  
 -    clauseMetaData mCmd[_FPGA_MAX_CLAUSES];
-+    static clauseMetaData mCmd[_FPGA_MAX_CLAUSES];
++    RL_PERSIST clauseMetaData mCmd[_FPGA_MAX_CLAUSES];
      #pragma HLS aggregate variable=mCmd compact=auto
      #pragma HLS bind_storage variable=mCmd type=RAM_T2P impl=URAM latency=2
  
@@ -113,7 +113,7 @@ diff -ruN a/copy_in.cpp b/copy_in.cpp
 +}
 diff -ruN a/copy_in.h b/copy_in.h
 --- a/copy_in.h	2026-10-30 11:02:24.922972600 -0400
-+++ b/copy_in.h	2026-10-30 11:03:22.022430200 -0400
++++ b/copy_in.h	2026-10-30 11:39:00.665292500 -0400
 @@ -16,4 +16,8 @@
      lit mAnswerStack[_FPGA_MAX_LITERALS], 
      clsStatePCIE* clsStates, ap_int<512>* litStore1, literalMetaDataPCIE* lmd, lit* answerStack,
@@ -124,9 +124,30 @@ diff -ruN a/copy_in.h b/copy_in.h
 +    const literalMetaData mlmd[_FPGA_MAX_LITERALS], const unsigned int NUM_LITERALS, const unsigned int LITERAL_PAGE_SIZE);
  #endif
 \ No newline at end of file
+diff -ruN a/data_structures.h b/data_structures.h
+--- a/data_structures.h	2026-10-30 11:02:24.955536100 -0400
++++ b/data_structures.h	2026-10-30 11:39:00.668090000 -0400
+@@ -4,6 +4,17 @@
+ #include "ap_int.h"
+ #include "fpga_solver.h"
+ 
++// ReasonLink Milestone 2: arrays that hold the resident base formula. In
++// hardware they are RAMs, which keep their contents between calls; the C
++// model makes them static for the same effect. (Vitis HLS treats static
++// arrays as internal globals, which its dataflow checks reject for arrays
++// read by several processes, so synthesis keeps them local.)
++#ifdef __SYNTHESIS__
++#define RL_PERSIST
++#else
++#define RL_PERSIST static
++#endif
++
+ typedef int lit;
+ typedef int cls;
+ 
 diff -ruN a/solver.cpp b/solver.cpp
 --- a/solver.cpp	2026-10-30 11:02:24.930535400 -0400
-+++ b/solver.cpp	2026-10-30 11:03:54.097638000 -0400
++++ b/solver.cpp	2026-10-30 11:38:47.839611800 -0400
 @@ -4,6 +4,12 @@
  #include "backtrack.h"
  #include "copy_in.h"
@@ -157,18 +178,17 @@ diff -ruN a/solver.cpp b/solver.cpp
  	#pragma HLS INTERFACE s_axilite port=return
  
      unsigned int literalElements = miscCounters[0];
-@@ -130,7 +137,9 @@
+@@ -130,7 +137,8 @@
      lit mAnswerStack[_FPGA_MAX_LITERALS];
      #pragma HLS bind_storage variable=mAnswerStack type=RAM_S2P impl=BRAM latency=1
  
 -    ap_uint<512> mLitStore[_FPGA_MAX_LITERAL_ELEMENTS/16];
-+    // ReasonLink Milestone 2: static, so the base formula's literal store
-+    // persists between calls (the RAM does in hardware anyway)
-+    static ap_uint<512> mLitStore[_FPGA_MAX_LITERAL_ELEMENTS/16];
++    // ReasonLink Milestone 2: persists between calls (RL_PERSIST, copy_in.h)
++    RL_PERSIST ap_uint<512> mLitStore[_FPGA_MAX_LITERAL_ELEMENTS/16];
      #pragma HLS bind_storage variable=mLitStore type=RAM_S2P impl=URAM latency=1
  
      literalMetaData mlmd[_FPGA_MAX_LITERALS];
-@@ -162,7 +171,28 @@
+@@ -162,7 +170,28 @@
      copy_in_dataflow_wrapper(mClsStates, mLitStore, mlmd, mlmmd, 
          mAnswerStack,
          clsStates, litStore, lmd, answerStack,

@@ -7,7 +7,9 @@
  * Writing ap_start to the solver runs SAT-Accel's functional simulation
  * (sataccel_sim, P2-1) on the image found at the addresses the driver
  * programmed, writes miscCounters and answerStack back to that memory as the
- * kernels do, and sets ap_done/ap_idle on every kernel.
+ * kernels do, and sets ap_done/ap_idle on every kernel. residentBase is
+ * passed on (ReasonLink Milestone 2: the simulated on-chip state persists
+ * between solves, as on the board).
  */
 #include <stdlib.h>
 #include <string.h>
@@ -52,7 +54,12 @@ static void run_solver(sa_linux *s)
 
     int8_t *model = calloc(img.num_vars, 1);
     rl_sataccel_result r;
-    int st = rl_sataccel_solve_image(&img, model, 600.0, &r);
+#ifdef XSOLVER_CONTROL_ADDR_RESIDENTBASE_DATA   /* Milestone 2 register map */
+    unsigned resident = s->regs[(S + XSOLVER_CONTROL_ADDR_RESIDENTBASE_DATA) / 4] & 1;
+#else
+    unsigned resident = 0;
+#endif
+    int st = rl_sataccel_solve_image_ex(&img, model, 600.0, resident, &r);
     /* What solver() writes back (solver.cpp): counters, status, answer stack */
     misc[0] = (int32_t)r.iterations;
     misc[1] = (int32_t)r.decisions;
