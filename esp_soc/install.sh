@@ -37,6 +37,7 @@ if ! grep -q '^ESP_DEFCONFIG' "$SOC/Makefile"; then
 fi
 rm -f "$SOC/add_sataccel_dcp.tcl"                         # older flow
 ln -sfn "$HERE/socs/reasonlink-vcu118/sataccel_impl.tcl" "$SOC/sataccel_impl.tcl"
+ln -sfn "$HERE/socs/reasonlink-vcu118/sataccel_bit.tcl" "$SOC/sataccel_bit.tcl"
 sed -i '/^### ReasonLink: SAT-Accel/,$d' "$SOC/Makefile"     # replace an older version
 cat >> "$SOC/Makefile" <<'MK'
 ### ReasonLink: SAT-Accel's synthesized checkpoints ###
@@ -48,10 +49,18 @@ cat >> "$SOC/Makefile" <<'MK'
 # ReasonLink (top_rl.bit, if CU_SATACCEL/out/sataccel_top_rl.dcp exists).
 #   vivado-syn-rl    new project, ESP's synthesis + impl_1 (use instead of vivado-syn)
 #   vivado-impl-rl   implement IMPL_RUNS on the existing synthesis
+#   vivado-bit-rl    write the bitstreams of routed IMPL_RUNS again (sataccel_bit.tcl,
+#                    one run at a time: runs routed before the clock fix)
+# Before each bitstream SAT-Accel's clock is fixed and the bitstream stops
+# unless setup slack >= -SATACCEL_MAX_VIOLATION ns (default 0; report: the
+# run's sataccel_timing.rpt).
 SATACCEL_OUT = $(ESP_ROOT)/accelerators/third-party/CU_SATACCEL/out
 SATACCEL_IMPL = cd vivado && vivado -mode batch -nojournal -log sataccel_impl.log \
 	-source $(DESIGN_PATH)/sataccel_impl.tcl -tclargs $(DESIGN).xpr \
 	$(SATACCEL_OUT)/sataccel_top.dcp $(SATACCEL_OUT)/sataccel_top_rl.dcp
+SATACCEL_BITS = for r in $(IMPL_RUNS); do b=vivado/$(DESIGN).runs/$$r/$(TOP).bit; \
+	  n=$(TOP).bit; [ $$r = impl_rl ] && n=$(TOP)_rl.bit; \
+	  if test -r $$b; then ln -sfn $$b $$n; echo "$$n -> $$b"; fi; done
 IMPL_RUNS ?= impl_1 impl_rl
 vivado-syn-rl:
 	rm -rf vivado
@@ -60,10 +69,12 @@ vivado-syn-rl:
 	yes n | $(MAKE) vivado-syn
 vivado-impl-rl:
 	$(SATACCEL_IMPL) run $(IMPL_RUNS)
-	@for r in $(IMPL_RUNS); do b=vivado/$(DESIGN).runs/$$r/$(TOP).bit; \
-	  n=$(TOP).bit; [ $$r = impl_rl ] && n=$(TOP)_rl.bit; \
-	  if test -r $$b; then ln -sfn $$b $$n; echo "$$n -> $$b"; fi; done
-.PHONY: vivado-syn-rl vivado-impl-rl
+	@$(SATACCEL_BITS)
+vivado-bit-rl:
+	for r in $(IMPL_RUNS); do (cd vivado/$(DESIGN).runs/$$r && vivado -mode batch -nojournal \
+	  -log sataccel_bit.log -source $(DESIGN_PATH)/sataccel_bit.tcl) || exit 1; done
+	@$(SATACCEL_BITS)
+.PHONY: vivado-syn-rl vivado-impl-rl vivado-bit-rl
 MK
 echo "installed into $ESP:"
 ls -l "$ESP/accelerators/third-party/CU_SATACCEL" "$ESP/soft/common/apps/baremetal/sataccel" | sed 's/^/  /'
