@@ -6,8 +6,10 @@
  * instance (sataccel_test.h, from sataccel_hw/tools/gen_baremetal_header.py)
  * after copying that instance's SAT-Accel memory image to the same physical
  * addresses, then checks the answer: SAT/UNSAT as expected, and for SAT
- * every clause satisfied. The tile runs in coherent-DMA mode
- * (ACC_COH_RECALL), set through its CSRs as in ESP's nv_nvdla_coh example.
+ * every clause satisfied. It runs the instance twice: in coherent-DMA mode
+ * (ACC_COH_RECALL) and in non-coherent DMA with the caches flushed before and
+ * after (ACC_COH_NONE), the mode set through the tile's CSRs as in ESP's
+ * nv_nvdla_coh example, and prints the raw result words of each run.
  */
 #include <stdio.h>
 #ifndef __riscv
@@ -38,31 +40,10 @@ static uint64_t counter(struct esp_device *dev, unsigned off)
     return ((uint64_t)hi << 32) | lo;
 }
 
-int main(int argc, char *argv[])
+/* Load the image, replay the register program, check the answer */
+static int run(struct esp_device *dev, volatile unsigned int *coh, int mode, const char *label)
 {
-    struct esp_device *espdevs;
-    struct esp_device *dev;
-    int ndev;
-
-    printf("SAT-Accel bare-metal test: %s\n", SA_TEST_NAME);
-    ndev = probe(&espdevs, VENDOR_SLD, SLD_CU_SATACCEL, DEV_NAME);
-    if (ndev < 1) {
-        printf("  SAT-Accel tile not found\n");
-        return 1;
-    }
-    dev = &espdevs[0];
-
-    uint32_t id = ioread32(dev, SHELL_BASE);
-    printf("  shell ID 0x%08x\n", (unsigned)id);
-    if (id != 0x5A7A0001) {
-        printf("FAIL: unexpected shell ID\n");
-        return 1;
-    }
-
-    /* Coherence mode: coherent DMA */
-    unsigned int *coh = ((unsigned int *)CSR_BASE_ADDR) + (CSR_TILE_SIZE / sizeof(unsigned int)) * SATACCEL_TILE +
-                        COH_REG_INDEX;
-    *coh = ACC_COH_RECALL;
+    *coh = mode;
 
     /* Device memory: the recorded image at its recorded physical addresses */
     unsigned k = 0;
@@ -70,8 +51,9 @@ int main(int argc, char *argv[])
         volatile uint64_t *p = (volatile uint64_t *)(uintptr_t)sa_test_runs[r][0];
         for (unsigned i = 0; i < sa_test_runs[r][1]; i++) p[i] = sa_test_data[k++];
     }
-    esp_flush(ACC_COH_RECALL);
-    printf("  image loaded: %u words\n", k);
+    esp_flush(mode);
+    printf("  %s: image loaded: %u words
+", label, k);
 
     /* Replay the driver core's register program */
     for (unsigned i = 0; i < sizeof(sa_test_ops) / sizeof(sa_test_ops[0]); i++) {
@@ -82,20 +64,30 @@ int main(int argc, char *argv[])
             unsigned n = 0;
             while ((ioread32(dev, op[1]) & op[2]) != op[3])
                 if (++n == POLL_LIMIT) {
-                    printf("FAIL: timeout polling 0x%05x\n", (unsigned)op[1]);
-                    return 1;
+                    printf("FAIL %s: timeout polling 0x%05x
+", label, (unsigned)op[1]);
+                    return 0;
                 }
         } else {
-            printf("  tile counters: busy=%llu mem_active=%llu mem_stall=%llu rd_beats=%llu wr_beats=%llu\n",
-                   (unsigned long long)counter(dev, 0x18), (unsigned long long)counter(dev, 0x20),
+            printf("  %s: tile counters: busy=%llu mem_active=%llu mem_stall=%llu rd_beats=%llu wr_beats=%llu
+",
+                   label, (unsigned long long)counter(dev, 0x18), (unsigned long long)counter(dev, 0x20),
                    (unsigned long long)counter(dev, 0x28), (unsigned long long)counter(dev, 0x30),
                    (unsigned long long)counter(dev, 0x38));
         }
     }
+    /* non-coherent DMA wrote DRAM behind the caches */
+    if (mode == ACC_COH_NONE) esp_flush(ACC_COH_NONE);
 
     /* Result: miscCounters[6] 1 SAT / 0 UNSAT; answerStack holds the model */
     volatile int32_t *misc = (volatile int32_t *)(uintptr_t)SA_TEST_MISC_ADDR;
     volatile int32_t *ans = (volatile int32_t *)(uintptr_t)SA_TEST_ANSWER_ADDR;
+    printf("  %s: misc", label);
+    for (int i = 0; i < 8; i++) printf(" %d", (int)misc[i]);
+    printf("; answer");
+    for (int i = 0; i < 8; i++) printf(" %d", (int)ans[i]);
+    printf("
+");
     int st = misc[6] == 1 ? 1 : misc[6] == 0 ? 0 : -1;
     static int8_t model[SA_TEST_NUM_VARS];
     int ok = st == SA_TEST_EXPECT;
@@ -118,8 +110,45 @@ int main(int argc, char *argv[])
             }
         }
     }
-    printf("%s %s: result=%s expect=%s decisions=%d conflicts=%d restarts=%d\n", ok ? "PASS" : "FAIL",
-           SA_TEST_NAME, st == 1 ? "SAT" : st == 0 ? "UNSAT" : "ERROR", SA_TEST_EXPECT ? "SAT" : "UNSAT",
+    printf("%s %s (%s): result=%s expect=%s decisions=%d conflicts=%d restarts=%d
+", ok ? "PASS" : "FAIL",
+           SA_TEST_NAME, label, st == 1 ? "SAT" : st == 0 ? "UNSAT" : "ERROR", SA_TEST_EXPECT ? "SAT" : "UNSAT",
            (int)misc[1], (int)misc[3], (int)misc[4]);
-    return ok ? 0 : 1;
+    return ok;
+}
+
+int main(int argc, char *argv[])
+{
+    struct esp_device *espdevs;
+    struct esp_device *dev;
+    int ndev;
+
+    printf("SAT-Accel bare-metal test: %s
+", SA_TEST_NAME);
+    ndev = probe(&espdevs, VENDOR_SLD, SLD_CU_SATACCEL, DEV_NAME);
+    if (ndev < 1) {
+        printf("  SAT-Accel tile not found
+");
+        return 1;
+    }
+    dev = &espdevs[0];
+
+    uint32_t id = ioread32(dev, SHELL_BASE);
+    printf("  shell ID 0x%08x
+", (unsigned)id);
+    if (id != 0x5A7A0001) {
+        printf("FAIL: unexpected shell ID
+");
+        return 1;
+    }
+
+    /* Coherence mode register of the tile */
+    volatile unsigned int *coh = ((volatile unsigned int *)CSR_BASE_ADDR) +
+                                 (CSR_TILE_SIZE / sizeof(unsigned int)) * SATACCEL_TILE + COH_REG_INDEX;
+    int ok_recall = run(dev, coh, ACC_COH_RECALL, "coh-dma");
+    int ok_none = run(dev, coh, ACC_COH_NONE, "non-coh");
+    printf("%s %s: coh-dma %s, non-coh %s
+", ok_recall && ok_none ? "PASS" : "FAIL", SA_TEST_NAME,
+           ok_recall ? "pass" : "fail", ok_none ? "pass" : "fail");
+    return ok_recall && ok_none ? 0 : 1;
 }
