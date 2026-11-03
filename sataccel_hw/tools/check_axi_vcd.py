@@ -103,7 +103,8 @@ def main():
         if last is None or t - last > gap:
             mem = dict(image)
             st = {"start": t, "ar": 0, "r": 0, "aw": 0, "w": 0, "b": 0, "bad": [], "outside": [],
-                  "xdata": 0, "rresp": 0, "bresp": 0, "rd_bytes": 0, "mem": mem, "writes": {}}
+                  "xdata": 0, "rresp": 0, "bresp": 0, "mem": mem, "writes": {},
+                  "partial": 0, "nostrb": dict(image), "result_beats": []}
             runs.append(st)
             rq, wq, wbeats = [], [], []
         last = t
@@ -154,6 +155,11 @@ def main():
                         old = (old & ~(0xFF << 8 * b)) | (d & (0xFF << 8 * b))
                 mem[w] = old
                 st["writes"][w] = old
+                st["nostrb"][w] = d          # the same beat if the strobes were ignored
+                if sb != 0xFF:
+                    st["partial"] += 1
+                if any(lo <= ba < lo + 64 for lo in (misc_addr, ans_addr)):
+                    st["result_beats"].append((ba, sz, sb, d))
             wq[0][3] += 1
             if wl == 1 or wq[0][3] > ln:
                 wq.pop(0)
@@ -183,6 +189,11 @@ def main():
             print("    %.6f ms  %08x  (outside image)  got %016x" % (t / 1e12, ba, got))
         print("  written words: %d; misc %s; answer %s" % (
             len(st["writes"]), [i32(m, misc_addr, i) for i in range(8)], [i32(m, ans_addr, i) for i in range(8)]))
+        ns = st["nostrb"]
+        print("  write beats with partial strobes: %d; if the strobes were ignored: misc %s; answer %s" % (
+            st["partial"], [i32(ns, misc_addr, i) for i in range(8)], [i32(ns, ans_addr, i) for i in range(8)]))
+        for ba, sz, sb, d in st["result_beats"]:
+            print("    result write %08x size %d strb %02x data %016x" % (ba, 1 << sz, sb, d))
         if a.dump_prefix:
             with open("%s%d.txt" % (a.dump_prefix, n), "w") as f:
                 for w in sorted(m):

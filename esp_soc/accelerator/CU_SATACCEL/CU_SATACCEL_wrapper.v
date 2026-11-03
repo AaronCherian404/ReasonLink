@@ -1,8 +1,9 @@
 // ESP third-party wrapper for the SAT-Accel subsystem (sataccel_hw).
 // Maps sataccel_top's ports onto the names ESP's socketgen derives from
 // CU_SATACCEL.xml (axi_prefix "sataccel_", no APB prefix, clock "clk",
-// active-low reset "rstn", interrupt "sataccel_irq"). No logic besides tying
-// the AXI fields SAT-Accel does not drive (IDs, atop, region).
+// active-low reset "rstn", interrupt "sataccel_irq"). SAT-Accel's writes go
+// through axi_wstrb_split, since ESP's socket ignores write strobes; the AXI
+// fields SAT-Accel does not drive (IDs, atop, region) are tied off.
 //
 // Register window: ESP gives each third-party tile 1 MB and passes
 // paddr & 0x0FFFFFFF; sataccel_shell decodes paddr[19:0] (map in
@@ -64,18 +65,24 @@ module CU_SATACCEL_wrapper (
     output wire        sataccel_irq
 );
     wire [3:0] awid_unused, arid_unused;
+    wire [31:0] a_awaddr;
+    wire [7:0]  a_awlen, a_wstrb;
+    wire [2:0]  a_awsize;
+    wire [1:0]  a_awburst, a_bresp;
+    wire [63:0] a_wdata;
+    wire        a_awvalid, a_awready, a_wlast, a_wvalid, a_wready, a_bvalid, a_bready;
 
     sataccel_top acc (
         .clk(clk), .rstn(rstn),
         .psel(psel), .penable(penable), .pwrite(pwrite), .paddr(paddr), .pwdata(pwdata),
         .prdata(prdata), .pready(pready), .pslverr(pslverr),
-        .m_awid(awid_unused), .m_awaddr(sataccel_awaddr), .m_awlen(sataccel_awlen),
-        .m_awsize(sataccel_awsize), .m_awburst(sataccel_awburst), .m_awlock(sataccel_awlock),
+        .m_awid(awid_unused), .m_awaddr(a_awaddr), .m_awlen(a_awlen),
+        .m_awsize(a_awsize), .m_awburst(a_awburst), .m_awlock(sataccel_awlock),
         .m_awcache(sataccel_awcache), .m_awprot(sataccel_awprot), .m_awqos(sataccel_awqos),
-        .m_awvalid(sataccel_awvalid), .m_awready(sataccel_awready),
-        .m_wdata(sataccel_wdata), .m_wstrb(sataccel_wstrb), .m_wlast(sataccel_wlast),
-        .m_wvalid(sataccel_wvalid), .m_wready(sataccel_wready),
-        .m_bid(4'd0), .m_bresp(sataccel_bresp), .m_bvalid(sataccel_bvalid), .m_bready(sataccel_bready),
+        .m_awvalid(a_awvalid), .m_awready(a_awready),
+        .m_wdata(a_wdata), .m_wstrb(a_wstrb), .m_wlast(a_wlast),
+        .m_wvalid(a_wvalid), .m_wready(a_wready),
+        .m_bid(4'd0), .m_bresp(a_bresp), .m_bvalid(a_bvalid), .m_bready(a_bready),
         .m_arid(arid_unused), .m_araddr(sataccel_araddr), .m_arlen(sataccel_arlen),
         .m_arsize(sataccel_arsize), .m_arburst(sataccel_arburst), .m_arlock(sataccel_arlock),
         .m_arcache(sataccel_arcache), .m_arprot(sataccel_arprot), .m_arqos(sataccel_arqos),
@@ -83,6 +90,18 @@ module CU_SATACCEL_wrapper (
         .m_rid(4'd0), .m_rdata(sataccel_rdata), .m_rresp(sataccel_rresp), .m_rlast(sataccel_rlast),
         .m_rvalid(sataccel_rvalid), .m_rready(sataccel_rready),
         .irq(sataccel_irq));
+
+    axi_wstrb_split wsplit (
+        .clk(clk), .rstn(rstn),
+        .s_awaddr(a_awaddr), .s_awlen(a_awlen), .s_awsize(a_awsize), .s_awburst(a_awburst),
+        .s_awvalid(a_awvalid), .s_awready(a_awready),
+        .s_wdata(a_wdata), .s_wstrb(a_wstrb), .s_wlast(a_wlast), .s_wvalid(a_wvalid), .s_wready(a_wready),
+        .s_bresp(a_bresp), .s_bvalid(a_bvalid), .s_bready(a_bready),
+        .m_awaddr(sataccel_awaddr), .m_awlen(sataccel_awlen), .m_awsize(sataccel_awsize),
+        .m_awburst(sataccel_awburst), .m_awvalid(sataccel_awvalid), .m_awready(sataccel_awready),
+        .m_wdata(sataccel_wdata), .m_wstrb(sataccel_wstrb), .m_wlast(sataccel_wlast),
+        .m_wvalid(sataccel_wvalid), .m_wready(sataccel_wready),
+        .m_bresp(sataccel_bresp), .m_bvalid(sataccel_bvalid), .m_bready(sataccel_bready));
 
     assign sataccel_awid = 8'd0;
     assign sataccel_arid = 8'd0;

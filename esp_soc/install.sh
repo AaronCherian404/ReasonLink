@@ -35,6 +35,13 @@ ln -sfn "$HERE/socs/reasonlink-vcu118/vsim.tcl" "$SOC/vsim.tcl"
 if ! grep -q '^ESP_DEFCONFIG' "$SOC/Makefile"; then
   sed -i "/^DESIGN   = esp-\$(BOARD)/a ESP_DEFCONFIG = $HERE/socs/reasonlink-vcu118/esp_defconfig" "$SOC/Makefile"
 fi
+# The lab's VCU118 (2026-11-02): hw_server, UART and ESPLink through the
+# gateways; the SoC's own Ethernet address is CONFIG_DSU_IP/ETH in esp_defconfig.
+# Each stays overridable from the environment (?=).
+for kv in FPGA_HOST=espdev XIL_HW_SERVER_PORT=3132 UART_IP=espdev UART_PORT=4331 SSH_IP=espgate \
+          SSH_PORT=5508 ESPLINK_IP=128.59.22.75 ESPLINK_PORT=46314 LINUX_MAC=000A350746D0; do
+  sed -i -E "s|^#? ?${kv%%=*} \?=.*|${kv%%=*} ?= ${kv#*=}|" "$SOC/Makefile"
+done
 rm -f "$SOC/add_sataccel_dcp.tcl"                         # older flow
 ln -sfn "$HERE/socs/reasonlink-vcu118/sataccel_impl.tcl" "$SOC/sataccel_impl.tcl"
 ln -sfn "$HERE/socs/reasonlink-vcu118/sataccel_bit.tcl" "$SOC/sataccel_bit.tcl"
@@ -79,4 +86,4 @@ MK
 echo "installed into $ESP:"
 ls -l "$ESP/accelerators/third-party/CU_SATACCEL" "$ESP/soft/common/apps/baremetal/sataccel" | sed 's/^/  /'
 grep -n "cu_sataccel" "$TP" | sed 's/^/  /'
-grep -n "^ESP_DEFCONFIG" "$SOC/Makefile" | sed 's/^/  /'
+grep -n "^ESP_DEFCONFIG\|^FPGA_HOST\|^XIL_HW\|^UART_\|^SSH_\|^ESPLINK_\|^LINUX_MAC" "$SOC/Makefile" | sed 's/^/  /'

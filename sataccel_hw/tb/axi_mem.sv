@@ -7,6 +7,9 @@
 // - Bursts: INCR (ESP's third-party socket supports only INCR; others are
 //   counted as errors). Narrow beats (size < 8 bytes) are served correctly
 //   and counted, since the ESP socket's handling of them must be checked.
+// - +esp_wr: write as ESP's AXI socket does (rtl/sockets/proxy/axislv2noc.vhd):
+//   WSTRB is ignored, a beat writes the bytes its size and address select.
+//   Beats whose strobes differ from those bytes are counted either way.
 module axi_mem #(
     parameter ID_W = 4,
     parameter READ_LATENCY = 30
@@ -44,7 +47,9 @@ module axi_mem #(
     input  logic            rready
 );
     logic [63:0] mem [longint unsigned];   // key: byte address >> 3
-    longint unsigned n_narrow_rd = 0, n_narrow_wr = 0, n_bad_burst = 0;
+    longint unsigned n_narrow_rd = 0, n_narrow_wr = 0, n_bad_burst = 0, n_strb_dep = 0;
+    bit esp_wr;
+    initial esp_wr = $test$plusargs("esp_wr");
     // Value of words never written (+fill=<hex>; default 0). A garbage fill
     // checks that the accelerator reads only what was loaded or it wrote.
     logic [63:0] fill = 64'd0;
@@ -129,9 +134,12 @@ module axi_mem #(
                 w_busy <= 1; w_addr <= awaddr; w_size <= awsize; w_id <= awid;
             end else if (w_busy && wvalid) begin
                 logic [63:0] word;
+                logic [7:0] lanes;
+                lanes = 8'((9'd1 << (1 << w_size)) - 1) << (w_addr[2:0] & ~3'((1 << w_size) - 1));
+                if (wstrb != lanes) n_strb_dep++;
                 word = rd_word(w_addr);
                 for (int b = 0; b < 8; b++)
-                    if (wstrb[b]) word[8*b +: 8] = wdata[8*b +: 8];
+                    if (esp_wr ? lanes[b] : wstrb[b]) word[8*b +: 8] = wdata[8*b +: 8];
                 mem[w_addr >> 3] = word;
                 w_addr <= w_addr + (32'd1 << w_size);
                 if (wlast) begin

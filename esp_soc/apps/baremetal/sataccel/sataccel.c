@@ -52,8 +52,7 @@ static int run(struct esp_device *dev, volatile unsigned int *coh, int mode, con
         for (unsigned i = 0; i < sa_test_runs[r][1]; i++) p[i] = sa_test_data[k++];
     }
     esp_flush(mode);
-    printf("  %s: image loaded: %u words
-", label, k);
+    printf("  %s: image loaded: %u words\n", label, k);
 
     /* Replay the driver core's register program */
     for (unsigned i = 0; i < sizeof(sa_test_ops) / sizeof(sa_test_ops[0]); i++) {
@@ -64,13 +63,11 @@ static int run(struct esp_device *dev, volatile unsigned int *coh, int mode, con
             unsigned n = 0;
             while ((ioread32(dev, op[1]) & op[2]) != op[3])
                 if (++n == POLL_LIMIT) {
-                    printf("FAIL %s: timeout polling 0x%05x
-", label, (unsigned)op[1]);
+                    printf("FAIL %s: timeout polling 0x%05x\n", label, (unsigned)op[1]);
                     return 0;
                 }
         } else {
-            printf("  %s: tile counters: busy=%llu mem_active=%llu mem_stall=%llu rd_beats=%llu wr_beats=%llu
-",
+            printf("  %s: tile counters: busy=%llu mem_active=%llu mem_stall=%llu rd_beats=%llu wr_beats=%llu\n",
                    label, (unsigned long long)counter(dev, 0x18), (unsigned long long)counter(dev, 0x20),
                    (unsigned long long)counter(dev, 0x28), (unsigned long long)counter(dev, 0x30),
                    (unsigned long long)counter(dev, 0x38));
@@ -86,8 +83,7 @@ static int run(struct esp_device *dev, volatile unsigned int *coh, int mode, con
     for (int i = 0; i < 8; i++) printf(" %d", (int)misc[i]);
     printf("; answer");
     for (int i = 0; i < 8; i++) printf(" %d", (int)ans[i]);
-    printf("
-");
+    printf("\n");
     int st = misc[6] == 1 ? 1 : misc[6] == 0 ? 0 : -1;
     static int8_t model[SA_TEST_NUM_VARS];
     int ok = st == SA_TEST_EXPECT;
@@ -110,8 +106,7 @@ static int run(struct esp_device *dev, volatile unsigned int *coh, int mode, con
             }
         }
     }
-    printf("%s %s (%s): result=%s expect=%s decisions=%d conflicts=%d restarts=%d
-", ok ? "PASS" : "FAIL",
+    printf("%s %s (%s): result=%s expect=%s decisions=%d conflicts=%d restarts=%d\n", ok ? "PASS" : "FAIL",
            SA_TEST_NAME, label, st == 1 ? "SAT" : st == 0 ? "UNSAT" : "ERROR", SA_TEST_EXPECT ? "SAT" : "UNSAT",
            (int)misc[1], (int)misc[3], (int)misc[4]);
     return ok;
@@ -123,22 +118,18 @@ int main(int argc, char *argv[])
     struct esp_device *dev;
     int ndev;
 
-    printf("SAT-Accel bare-metal test: %s
-", SA_TEST_NAME);
+    printf("SAT-Accel bare-metal test: %s\n", SA_TEST_NAME);
     ndev = probe(&espdevs, VENDOR_SLD, SLD_CU_SATACCEL, DEV_NAME);
     if (ndev < 1) {
-        printf("  SAT-Accel tile not found
-");
+        printf("  SAT-Accel tile not found\n");
         return 1;
     }
     dev = &espdevs[0];
 
     uint32_t id = ioread32(dev, SHELL_BASE);
-    printf("  shell ID 0x%08x
-", (unsigned)id);
+    printf("  shell ID 0x%08x\n", (unsigned)id);
     if (id != 0x5A7A0001) {
-        printf("FAIL: unexpected shell ID
-");
+        printf("FAIL: unexpected shell ID\n");
         return 1;
     }
 
@@ -147,8 +138,7 @@ int main(int argc, char *argv[])
                                  (CSR_TILE_SIZE / sizeof(unsigned int)) * SATACCEL_TILE + COH_REG_INDEX;
     int ok_recall = run(dev, coh, ACC_COH_RECALL, "coh-dma");
     int ok_none = run(dev, coh, ACC_COH_NONE, "non-coh");
-    printf("%s %s: coh-dma %s, non-coh %s
-", ok_recall && ok_none ? "PASS" : "FAIL", SA_TEST_NAME,
+    printf("%s %s: coh-dma %s, non-coh %s\n", ok_recall && ok_none ? "PASS" : "FAIL", SA_TEST_NAME,
            ok_recall ? "pass" : "fail", ok_none ? "pass" : "fail");
     return ok_recall && ok_none ? 0 : 1;
 }

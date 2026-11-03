@@ -9,6 +9,9 @@ foreach f [glob $root/rtl/*.v] {
     if {[llength [get_files -quiet [file tail $f]]] == 0} { add_files -norecurse $f }
 }
 add_files -fileset sim_1 -norecurse [glob $root/tb/*.sv]
+# the ESP tile's write adapter (tb_sataccel +split)
+set split [file normalize $root/../esp_soc/accelerator/CU_SATACCEL/axi_wstrb_split.v]
+if {[llength [get_files -quiet axi_wstrb_split.v]] == 0} { add_files -fileset sim_1 -norecurse $split }
 set_property top sataccel_top [current_fileset]
 set_property top tb_sataccel [get_filesets sim_1]
 set_property top_lib xil_defaultlib [get_filesets sim_1]

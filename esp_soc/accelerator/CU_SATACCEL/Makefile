@@ -8,7 +8,8 @@
 #        holds encrypted Xilinx IP (the floating-point cores), written for
 #        simulation only. So sataccel_top_sel.v gives Vivado (`SYNTHESIS) a
 #        black-box stub, and the SoC's implementation fills it with
-#        sataccel_top.dcp (socs/reasonlink-vcu118/sataccel_impl.tcl). out -> netlist
+#        sataccel_top.dcp (socs/reasonlink-vcu118/sataccel_impl.tcl). Also
+#        axi_wstrb_split.v, the wrapper's write adapter. out -> netlist
 #   hw-rl  netlist/sataccel_top_rl.dcp: the same, with ReasonLink (sataccel_hw
 #        `make bd synth REASONLINK=1`); the SoC's impl_rl run links it
 #   sw   sw/sataccel.ko (KSRC), sw/sataccel_run (static, Linux) and sw/rl/
@@ -22,8 +23,12 @@ NETLIST := $(OOC)/sataccel_top_funcsim.v
 
 all: hw sw
 
-hw: netlist/sataccel_top_funcsim.v netlist/sataccel_top.dcp netlist/sataccel_top_sel.v
+hw: netlist/sataccel_top_funcsim.v netlist/sataccel_top.dcp netlist/sataccel_top_sel.v     netlist/axi_wstrb_split.v
 	ln -sfn netlist out
+
+netlist/axi_wstrb_split.v: axi_wstrb_split.v
+	mkdir -p netlist
+	cp $< $@
 
 netlist/sataccel_top.dcp: $(OOC)/sataccel_top.dcp
 	mkdir -p netlist

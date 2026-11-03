@@ -17,6 +17,8 @@
 #      every other word read as FILL (checks SAT-Accel reads nothing else)
 #      APB=std drives textbook APB reads (setup phase first); the default is
 #      ESP's noc2apb timing (psel and penable together)
+#      ESP_WR=1 memory ignores write strobes like ESP's AXI socket; SPLIT=1 puts
+#      the tile's write adapter (CU_SATACCEL/axi_wstrb_split.v) in the path
 # Writes <out_dir>/<test>/{ops,mem,dump}.txt, sim.log, and <out_dir>/summary.txt
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -46,6 +48,7 @@ for spec in "$@"; do
   ( cd "$SIMDIR" && xsim tb_sataccel_behav -R \
       --testplusarg "ops=$dir/ops.txt" --testplusarg "mem=$dir/mem.txt" --testplusarg "dump=$dir/dump.txt" \
       ${FILL:+--testplusarg "fill=$FILL"} ${APB:+--testplusarg "apb=$APB"} \
+      ${ESP_WR:+--testplusarg esp_wr} ${SPLIT:+--testplusarg split} \
       > "$dir/sim.log" 2>&1 )
   t1=$(date +%s)
   if [ -d "$dir/p0" ]; then           # sequence: one result per puzzle

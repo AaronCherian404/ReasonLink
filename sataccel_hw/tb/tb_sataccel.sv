@@ -14,6 +14,9 @@
 //   #...                     comment
 //
 // Plusargs: +ops=<file> +mem=<file> +dump=<file> [+max_poll_cycles=N] [+fill=<hex64>]
+//           [+esp_wr] axi_mem ignores write strobes, as ESP's AXI socket does
+//           [+split]  SAT-Accel's writes go through the tile's axi_wstrb_split
+//                     (esp_soc/accelerator/CU_SATACCEL), as in the ESP SoC
 `timescale 1ns / 1ps
 module tb_sataccel;
     parameter int READ_LATENCY = 30;
@@ -40,14 +43,23 @@ module tb_sataccel;
     logic [7:0] wstrb;
     logic irq;
 
+    // SAT-Accel's write channels, before the optional write adapter
+    logic [ID_W-1:0] d_awid, d_bid;
+    logic [31:0] d_awaddr;
+    logic [7:0] d_awlen, d_wstrb;
+    logic [2:0] d_awsize;
+    logic [1:0] d_awburst, d_bresp;
+    logic [63:0] d_wdata;
+    logic d_awvalid, d_awready, d_wlast, d_wvalid, d_wready, d_bvalid, d_bready;
+
     sataccel_top #(.ID_W(ID_W)) dut (
         .clk(clk), .rstn(rstn),
         .psel(psel), .penable(penable), .pwrite(pwrite), .paddr(paddr), .pwdata(pwdata),
         .prdata(prdata), .pready(pready), .pslverr(pslverr),
-        .m_awid(awid), .m_awaddr(awaddr), .m_awlen(awlen), .m_awsize(awsize), .m_awburst(awburst),
-        .m_awlock(), .m_awcache(), .m_awprot(), .m_awqos(), .m_awvalid(awvalid), .m_awready(awready),
-        .m_wdata(wdata), .m_wstrb(wstrb), .m_wlast(wlast), .m_wvalid(wvalid), .m_wready(wready),
-        .m_bid(bid), .m_bresp(bresp), .m_bvalid(bvalid), .m_bready(bready),
+        .m_awid(d_awid), .m_awaddr(d_awaddr), .m_awlen(d_awlen), .m_awsize(d_awsize), .m_awburst(d_awburst),
+        .m_awlock(), .m_awcache(), .m_awprot(), .m_awqos(), .m_awvalid(d_awvalid), .m_awready(d_awready),
+        .m_wdata(d_wdata), .m_wstrb(d_wstrb), .m_wlast(d_wlast), .m_wvalid(d_wvalid), .m_wready(d_wready),
+        .m_bid(d_bid), .m_bresp(d_bresp), .m_bvalid(d_bvalid), .m_bready(d_bready),
         .m_arid(arid), .m_araddr(araddr), .m_arlen(arlen), .m_arsize(arsize), .m_arburst(arburst),
         .m_arlock(), .m_arcache(), .m_arprot(), .m_arqos(), .m_arvalid(arvalid), .m_arready(arready),
         .m_rid(rid), .m_rdata(rdata), .m_rresp(rresp), .m_rlast(rlast), .m_rvalid(rvalid), .m_rready(rready),
@@ -62,6 +74,41 @@ module tb_sataccel;
         .arid(arid), .araddr(araddr), .arlen(arlen), .arsize(arsize), .arburst(arburst),
         .arvalid(arvalid), .arready(arready),
         .rid(rid), .rdata(rdata), .rresp(rresp), .rlast(rlast), .rvalid(rvalid), .rready(rready));
+
+    bit use_split;
+    initial use_split = $test$plusargs("split");
+    logic [31:0] sp_awaddr;
+    logic [7:0] sp_awlen, sp_wstrb;
+    logic [2:0] sp_awsize;
+    logic [1:0] sp_awburst, sp_bresp;
+    logic [63:0] sp_wdata;
+    logic sp_awvalid, sp_awready, sp_wlast, sp_wvalid, sp_wready, sp_bvalid, sp_bready;
+    axi_wstrb_split split (
+        .clk(clk), .rstn(rstn),
+        .s_awaddr(d_awaddr), .s_awlen(d_awlen), .s_awsize(d_awsize), .s_awburst(d_awburst),
+        .s_awvalid(d_awvalid && use_split), .s_awready(sp_awready),
+        .s_wdata(d_wdata), .s_wstrb(d_wstrb), .s_wlast(d_wlast), .s_wvalid(d_wvalid && use_split),
+        .s_wready(sp_wready), .s_bresp(sp_bresp), .s_bvalid(sp_bvalid), .s_bready(d_bready),
+        .m_awaddr(sp_awaddr), .m_awlen(sp_awlen), .m_awsize(sp_awsize), .m_awburst(sp_awburst),
+        .m_awvalid(sp_awvalid), .m_awready(awready),
+        .m_wdata(sp_wdata), .m_wstrb(sp_wstrb), .m_wlast(sp_wlast), .m_wvalid(sp_wvalid), .m_wready(wready),
+        .m_bresp(bresp), .m_bvalid(bvalid), .m_bready(sp_bready));
+    assign awid    = use_split ? '0 : d_awid;
+    assign awaddr  = use_split ? sp_awaddr : d_awaddr;
+    assign awlen   = use_split ? sp_awlen : d_awlen;
+    assign awsize  = use_split ? sp_awsize : d_awsize;
+    assign awburst = use_split ? sp_awburst : d_awburst;
+    assign awvalid = use_split ? sp_awvalid : d_awvalid;
+    assign wdata   = use_split ? sp_wdata : d_wdata;
+    assign wstrb   = use_split ? sp_wstrb : d_wstrb;
+    assign wlast   = use_split ? sp_wlast : d_wlast;
+    assign wvalid  = use_split ? sp_wvalid : d_wvalid;
+    assign bready  = use_split ? sp_bready : d_bready;
+    assign d_awready = use_split ? sp_awready : awready;
+    assign d_wready  = use_split ? sp_wready : wready;
+    assign d_bid     = use_split ? '0 : bid;
+    assign d_bresp   = use_split ? sp_bresp : bresp;
+    assign d_bvalid  = use_split ? sp_bvalid : bvalid;
 
     // APB master tasks: writes as setup phase, then access phase until pready
     task automatic apb_write(input logic [31:0] a, input logic [31:0] d);
@@ -181,8 +228,9 @@ module tb_sataccel;
         end
         $fclose(fd);
         $fclose(dfd);
-        $display("axi_mem: narrow reads=%0d narrow writes=%0d non-INCR bursts=%0d",
-                 mem.n_narrow_rd, mem.n_narrow_wr, mem.n_bad_burst);
+        $display("axi_mem: narrow reads=%0d narrow writes=%0d non-INCR bursts=%0d strobe-dependent beats=%0d%s%s",
+                 mem.n_narrow_rd, mem.n_narrow_wr, mem.n_bad_burst, mem.n_strb_dep,
+                 mem.esp_wr ? " (strobes ignored)" : "", use_split ? " (write adapter)" : "");
         $display("DONE sim_cycle=%0d", now_cycles());
         $finish;
     end
