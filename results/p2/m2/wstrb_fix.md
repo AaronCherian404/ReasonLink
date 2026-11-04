@@ -59,6 +59,20 @@ result equals what the CPU read. The non-coherent repeat was stopped in
 coherent DMA (`ACC_COH_RECALL`) throughout. Logs: torino `~/m2/fix_sim_cohdma.log`,
 `~/m2/fix_chain.log`.
 
+## Bitstreams with the fix (2026-11-04)
+
+New Vivado project (`vivado-syn-rl`, then `vivado-impl-rl IMPL_RUNS=impl_rl`;
+script `~/m2_rebuild.sh`), with the new board's address (IP C0A80111, MAC
+A6A7A0F80444). Design-wide timing, all endpoints met:
+
+| Bitstream | WNS | WHS | md5 |
+|---|---|---|---|
+| `top.bit` (SAT-Accel) | +0.774 ns | +0.009 ns | 9b3197f0ec0e06eff5d25f354900ba7e |
+| `top_rl.bit` (+ ReasonLink) | +0.369 ns | +0.009 ns | 192946a19dbca44683fa6ecf6228f958 |
+
+These replace the 2026-10-31 bitstreams (`bitstreams.md`), which had the strobe
+bug and the old address.
+
 Reproduce (torino, `sataccel_hw/`): `make sim-setup`, then
 `ESP_WR=1 [SPLIT=1] bash tools/run_rtl_tests.sh <out> cnf:<file>:<1|0> sudoku:1`
 (script: `~/m2_split.sh`).
