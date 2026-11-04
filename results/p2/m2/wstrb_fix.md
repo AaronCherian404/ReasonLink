@@ -46,6 +46,19 @@ Searches are identical to the strobe-honouring runs; no strobe-dependent beat
 reaches memory with the adapter (`strobe-dependent beats=0`). The cost is in
 the testbench's memory model; ESP's per-write NoC latency is larger.
 
+## Full-SoC check with the fix (2026-11-03, coherent DMA)
+
+The bare-metal quinn test in the SoC (gate-level SAT-Accel plus the adapter):
+**PASS**, SAT, 5 decisions, 1 conflict, 0 restarts. The CPU read misc =
+[6, 5, 0, 1, 0, 16, 1, 2] and a model that satisfies every clause, matching RTL
+(tile counters: 528 read beats, 251 write beats). AXI trace at the tile port
+(after the adapter), 3.115-3.246 ms: 0 read mismatches, 0 error responses,
+74 single-beat writes (each sized to its enabled bytes); the memory model's
+result equals what the CPU read. The non-coherent repeat was stopped in
+`esp_flush` (LLC flush, slow in simulation). It is not needed: the design uses
+coherent DMA (`ACC_COH_RECALL`) throughout. Logs: torino `~/m2/fix_sim_cohdma.log`,
+`~/m2/fix_chain.log`.
+
 Reproduce (torino, `sataccel_hw/`): `make sim-setup`, then
 `ESP_WR=1 [SPLIT=1] bash tools/run_rtl_tests.sh <out> cnf:<file>:<1|0> sudoku:1`
 (script: `~/m2_split.sh`).
