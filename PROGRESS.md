@@ -17,9 +17,9 @@ Running record of what is built, what was decided, and what is blocked. Update a
 
 Next steps:
 1. **Write-strobe fix, end to end.** (a) Done 2026-11-03: the full-SoC simulation with the fix **passes quinn in coherent DMA** (SAT, 5 decisions, 1 conflict, as in RTL; AXI trace clean, `results/p2/m2/wstrb_fix.md`). The non-coherent repeat was stopped in a slow LLC flush and skipped (not a requirement: we use coherent DMA). (b) Done 2026-11-04 01:37 (`~/m2_rebuild.sh`, 6 h 28 min): `top.bit` (md5 9b3197f0ec0e06eff5d25f354900ba7e, WNS +0.774 ns) and `top_rl.bit` (md5 192946a19dbca44683fa6ecf6228f958, WNS +0.369 ns), all endpoints met; rebuilt both bitstreams with the fix and the new board's Ethernet address (`esp_defconfig`: IP C0A80111, MAC A6A7A0F80444; `install.sh` writes the lab's hw_server/UART/ESPLink settings into the SoC Makefile): SoC synthesis plus impl_1 and impl_rl, SAT-Accel's netlists unchanged.
-2. Linux image with the updated drivers and `rl_board --resident` (`make CU_SATACCEL && make linux` in the SoC folder).
-3. Board (available since 2026-11-02; new FPGA, see 1b): `make fpga-run` with the bare-metal test, then Linux, `run_baselines.sh`, `summarize_board.py`.
-4. Milestone 2 refinements (optional): restore clause states and literal metadata on chip as well (the remaining 145 KB of copy-in); a harder workload for H3.
+2. **Linux image: done 2026-11-04** (`~/m2_linux.sh`: `make CU_SATACCEL && make -j8 linux`): `linux.bin` md5 07947174f77eb8824db2917d3b5f1810, the new MAC in the device tree, the initramfs's `rl_board` (with `--resident`) byte-identical to the new build. Bare-metal test rebuilt for coherent DMA only.
+3. Board (new FPGA, see 1b), with `top_rl.bit` only (it also runs the unmodified SAT-Accel flow, so it covers every comparison): program it (`vivado/program.tcl` with impl_rl's bit; ESP's `fpga-program` always takes impl_1's), `TEST_PROGRAM=.../sataccel.exe make fpga-run` (bare-metal quinn), then `make fpga-run-linux`, `run_baselines.sh`, `summarize_board.py`. **Blocked 2026-11-04:** none of the lab ports (hw_server espdev:3132, UART espdev:4331, SSH espgate:5508, ESPLink 128.59.22.75:46314) answer from torino or the laptop, and the bare names `espdev`/`espgate` do not resolve on torino (only `*.cs.columbia.edu`).
+4. Optional, not planned: restore clause states and literal metadata on chip as well (the remaining 145 KB of copy-in). No H3.
 
 ## P1 definition (adapted to ESP + NVDLA)
 
