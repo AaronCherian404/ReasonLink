@@ -6,10 +6,11 @@
  * instance (sataccel_test.h, from sataccel_hw/tools/gen_baremetal_header.py)
  * after copying that instance's SAT-Accel memory image to the same physical
  * addresses, then checks the answer: SAT/UNSAT as expected, and for SAT
- * every clause satisfied. It runs the instance twice: in coherent-DMA mode
- * (ACC_COH_RECALL) and in non-coherent DMA with the caches flushed before and
- * after (ACC_COH_NONE), the mode set through the tile's CSRs as in ESP's
- * nv_nvdla_coh example, and prints the raw result words of each run.
+ * every clause satisfied. It runs in coherent-DMA mode (ACC_COH_RECALL, as
+ * the Linux driver does), set through the tile's CSRs as in ESP's
+ * nv_nvdla_coh example, and prints the raw result words. run() also handles
+ * ACC_COH_NONE (caches flushed before and after), which simulates slowly
+ * (the LLC flush) and is not used.
  */
 #include <stdio.h>
 #ifndef __riscv
@@ -136,9 +137,7 @@ int main(int argc, char *argv[])
     /* Coherence mode register of the tile */
     volatile unsigned int *coh = ((volatile unsigned int *)CSR_BASE_ADDR) +
                                  (CSR_TILE_SIZE / sizeof(unsigned int)) * SATACCEL_TILE + COH_REG_INDEX;
-    int ok_recall = run(dev, coh, ACC_COH_RECALL, "coh-dma");
-    int ok_none = run(dev, coh, ACC_COH_NONE, "non-coh");
-    printf("%s %s: coh-dma %s, non-coh %s\n", ok_recall && ok_none ? "PASS" : "FAIL", SA_TEST_NAME,
-           ok_recall ? "pass" : "fail", ok_none ? "pass" : "fail");
-    return ok_recall && ok_none ? 0 : 1;
+    int ok = run(dev, coh, ACC_COH_RECALL, "coh-dma");
+    printf("%s %s\n", ok ? "PASS" : "FAIL", SA_TEST_NAME);
+    return ok ? 0 : 1;
 }
