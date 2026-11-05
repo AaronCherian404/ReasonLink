@@ -1,0 +1,18 @@
+[   64.453744] sataccel 60500000.cu_sataccel: tile 4: coherence mode 2 (coherent DMA)
+[   64.478388] sataccel 60500000.cu_sataccel: tile 2: coherence mode 2 (coherent DMA)
+[   64.519925] sataccel 60500000.cu_sataccel: SAT-Accel at 0x0000000060500000 (irq 5), 64 MB DMA buffer at 0xb0200000
+PASS  /root/CU_SATACCEL/rl/data/base.cnf result=SAT expect=SAT grid==ref=n/a decisions=127 conflicts=0 restarts=0 build_cyc=66079432 load_cyc=47464285 solve_cyc=953867 bytes=5293556 tile_busy=866493 tile_mem_active=88469 tile_mem_stall=840991
+1/1 correct
+SAT-Accel completion interrupt OK (0 -> 1)
+0 2 0 0 0 0 0 124 0 0 (ESP's published NVDLA output for seven.pgm: 0 2 0 0 0 0 0 124 0 0)
+Emulator starting
+serial clear=full xfer=allocated nn=nvdla handoff=full  puzzles=100  wall 397766.4 ms (3977663.8 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 925
+Shutdown signal received, exiting
+Emulator starting
+serial clear=lean xfer=used      nn=nvdla handoff=full  puzzles=100  wall 303717.9 ms (3037178.9 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 925
+Shutdown signal received, exiting
+Emulator starting
+double clear=full xfer=allocated nn=nvdla handoff=full  puzzles=100  wall 394404.5 ms (3944044.9 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 925
+Shutdown signal received, exiting
+
+PID:239

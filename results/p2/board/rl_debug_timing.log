@@ -1,0 +1,360 @@
+RLDBG group=8 surf_stride=8 logit_va=0x15560be000 logit_pa=0xa0212000
+RLDBG out tensor: n=1 c=10 h=1 w=1 fmt=37 bufferSize=16 stride=[1 8 8 0] offset(c=0)=0 offset(c=8)=8
+RLDBG puzzle 0 layout_reg=0x00000020 logit_pa=0xa0212000
+RLDBG p0 cell  1 d=4 emu_d=4 cls_cyc=6693991 wait_cyc=1474 logits  -60  -21  -24  -56   85  -22  -38  -22  -14  -25 raw@0 c4ebe8c855eadaea f2e7000000000000 raw@surf f2e7000000000000
+RLDBG p0 cell  2 d=1 emu_d=1 cls_cyc=6153265 wait_cyc=1479 logits  -29   45  -18  -51   -9  -26  -38  -17  -15  -53 raw@0 e32deecdf7e6daef f1cb000000000000 raw@surf f1cb000000000000
+RLDBG p0 cell  3 d=2 emu_d=2 cls_cyc=6165580 wait_cyc=1294 logits  -55    0   99   -6  -70  -75  -50    4   -5  -66 raw@0 c90063fabab5ce04 fbbe000000000000 raw@surf fbbe000000000000
+RLDBG p0 cell  4 d=7 emu_d=7 cls_cyc=6186337 wait_cyc=1331 logits  -21   -5   -9    5  -22  -25  -67   41  -29   10 raw@0 ebfbf705eae7bd29 e30a000000000000 raw@surf e30a000000000000
+RLDBG p0 cell  6 d=5 emu_d=5 cls_cyc=6150785 wait_cyc=1469 logits  -17  -52  -48  -15  -52   44  -45  -37  -38  -19 raw@0 efccd0f1cc2cd3db daed000000000000 raw@surf daed000000000000
+RLDBG p0 cell  9 d=8 emu_d=8 cls_cyc=6241694 wait_cyc=1316 logits  -40  -24  -30   22  -32  -15  -38  -28   59   -7 raw@0 d8e8e216e0f1dae4 3bf9000000000000 raw@surf 3bf9000000000000
+RLDBG p0 cell 14 d=3 emu_d=3 cls_cyc=6180700 wait_cyc=1352 logits  -48  -22   -5   17  -15  -10  -52    4    4   10 raw@0 d0eafb11f1f6cc04 040a000000000000 raw@surf 040a000000000000
+RLDBG p0 cell 16 d=9 emu_d=9 cls_cyc=6173750 wait_cyc=1475 logits  -48  -52  -28  -16   -1    0  -51   -9  -16   57 raw@0 d0cce4f0ff00cdf7 f039000000000000 raw@surf f039000000000000
+RLDBG p0 cell 17 d=7 emu_d=7 cls_cyc=6116189 wait_cyc=1361 logits  -27  -20  -20   -8   -4  -35  -65   53  -28    1 raw@0 e5ececf8fcddbf35 e401000000000000 raw@surf e401000000000000
+RLDBG p0 cell 22 d=6 emu_d=6 cls_cyc=6161317 wait_cyc=1345 logits  -15  -43  -19  -25   -5    9   81  -81   -7  -53 raw@0 f1d5ede7fb0951af f9cb000000000000 raw@surf f9cb000000000000
+RLDBG p0 cell 23 d=5 emu_d=5 cls_cyc=6297217 wait_cyc=1317 logits  -31  -43  -51    4  -31   63  -34  -40  -16   11 raw@0 e1d5cd04e13fded8 f00b000000000000 raw@surf f00b000000000000
+RLDBG p0 cell 25 d=3 emu_d=3 cls_cyc=6268116 wait_cyc=1480 logits  -69  -45  -17   77  -54  -13  -88  -35   -4   -4 raw@0 bbd3ef4dcaf3a8dd fcfc000000000000 raw@surf fcfc000000000000
+RLDBG p0 cell 26 d=1 emu_d=1 cls_cyc=6197969 wait_cyc=1371 logits  -34   50  -32  -66  -11  -35  -49  -15   -9  -48 raw@0 de32e0bef5ddcff1 f7d0000000000000 raw@surf f7d0000000000000
+RLDBG p0 cell 27 d=7 emu_d=7 cls_cyc=6157797 wait_cyc=1335 logits  -22  -34  -22  -16  -23  -28  -71   73  -34   16 raw@0 eadeeaf0e9e4b949 de10000000000000 raw@surf de10000000000000
+RLDBG p0 cell 29 d=9 emu_d=9 cls_cyc=6195887 wait_cyc=1328 logits  -39  -52  -22    2    5  -27  -63  -16   -9   63 raw@0 d9ccea0205e5c1f0 f73f000000000000 raw@surf f73f000000000000
+RLDBG p0 cell 32 d=2 emu_d=2 cls_cyc=6154949 wait_cyc=1459 logits  -36  -22   64  -13   -6  -39  -31  -27    2  -53 raw@0 dcea40f3fad9e1e5 02cb000000000000 raw@surf 02cb000000000000
+RLDBG p0 cell 33 d=1 emu_d=1 cls_cyc=6217494 wait_cyc=1328 logits  -25   42  -24  -56  -23  -35  -27  -26   -7  -64 raw@0 e72ae8c8e9dde5e6 f9c0000000000000 raw@surf f9c0000000000000
+RLDBG p0 cell 43 d=6 emu_d=6 cls_cyc=6242006 wait_cyc=1312 logits    9  -46  -37  -54   12  -28   53  -39  -38  -20 raw@0 09d2dbca0ce435d9 daec000000000000 raw@surf daec000000000000
+RLDBG p0 cell 44 d=8 emu_d=8 cls_cyc=6185668 wait_cyc=1376 logits  -54  -11  -42  -47   12  -30  -21  -25   46  -18 raw@0 caf5d6d10ce2ebe7 2eee000000000000 raw@surf 2eee000000000000
+RLDBG p0 cell 46 d=8 emu_d=8 cls_cyc=6153463 wait_cyc=1483 logits  -44  -35  -10   -7  -38  -36  -41  -34   77   -6 raw@0 d4ddf6f9dadcd7de 4dfa000000000000 raw@surf 4dfa000000000000
+RLDBG p0 cell 47 d=6 emu_d=6 cls_cyc=6157767 wait_cyc=1302 logits  -14  -47  -26  -22   -7    4   77  -96   -4  -30 raw@0 f2d1e6eaf9044da0 fce2000000000000 raw@surf fce2000000000000
+RLDBG p0 cell 49 d=1 emu_d=1 cls_cyc=6193041 wait_cyc=1338 logits  -29   31  -39  -30  -14  -22  -28   -9  -10  -20 raw@0 e31fd9e2f2eae4f7 f6ec000000000000 raw@surf f6ec000000000000
+RLDBG p0 cell 50 d=7 emu_d=7 cls_cyc=6321012 wait_cyc=1365 logits  -31    7  -18   -4  -14  -34  -58   53  -18   -9 raw@0 e107eefcf2dec635 eef7000000000000 raw@surf eef7000000000000
+RLDBG p0 cell 53 d=5 emu_d=5 cls_cyc=6176681 wait_cyc=1386 logits  -38  -36  -51  -14  -24   47  -39    4   -2   12 raw@0 dadccdf2e82fd904 fe0c000000000000 raw@surf fe0c000000000000
+RLDBG p0 cell 54 d=6 emu_d=6 cls_cyc=6210665 wait_cyc=1487 logits    2  -41  -31  -35   21  -32   78  -70  -16  -35 raw@0 02d7e1dd15e04eba f0dd000000000000 raw@surf f0dd000000000000
+RLDBG p0 cell 56 d=4 emu_d=4 cls_cyc=6168359 wait_cyc=1318 logits  -58  -36  -62  -29   62  -13  -32  -22  -11   -6 raw@0 c6dcc2e33ef3e0ea f5fa000000000000 raw@surf f5fa000000000000
+RLDBG p0 cell 58 d=5 emu_d=5 cls_cyc=6193472 wait_cyc=1416 logits  -89  -52  -70   -2  -80  104  -33  -71  -25   -2 raw@0 a7ccbafeb068dfb9 e7fe000000000000 raw@surf e7fe000000000000
+RLDBG p0 cell 59 d=1 emu_d=1 cls_cyc=6173068 wait_cyc=1504 logits  -41   41  -29  -33   -8  -27  -37  -12  -16  -22 raw@0 d729e3dff8e5dbf4 f0ea000000000000 raw@surf f0ea000000000000
+RLDBG p0 cell 64 d=7 emu_d=7 cls_cyc=6127277 wait_cyc=1364 logits  -12   -2  -13  -26  -45  -37  -48   40    8    0 raw@0 f4fef3e6d3dbd028 0800000000000000 raw@surf 0800000000000000
+RLDBG p0 cell 65 d=2 emu_d=2 cls_cyc=6159694 wait_cyc=1353 logits  -22  -65   51   -1  -13  -21   -5  -25  -28  -44 raw@0 eabf33fff3ebfbe7 e4d4000000000000 raw@surf e4d4000000000000
+RLDBG p0 cell 66 d=4 emu_d=4 cls_cyc=6175210 wait_cyc=1523 logits  -24   -9  -11  -35   45  -44  -18  -11  -27    5 raw@0 e8f7f5dd2dd4eef5 e505000000000000 raw@surf e505000000000000
+RLDBG p0 cell 73 d=1 emu_d=1 cls_cyc=6225940 wait_cyc=1479 logits   -7   23  -24  -52  -15  -30  -39  -30  -11  -27 raw@0 f917e8ccf1e2d9e2 f5e5000000000000 raw@surf f5e5000000000000
+RLDBG p0 cell 74 d=8 emu_d=8 cls_cyc=6200878 wait_cyc=1309 logits  -43  -14   12   -9  -37  -43  -41  -32   63  -33 raw@0 d5f20cf7dbd5d7e0 3fdf000000000000 raw@surf 3fdf000000000000
+RLDBG p0 cell 75 d=7 emu_d=7 cls_cyc=6157894 wait_cyc=1385 logits  -21  -18  -10   -3  -22  -29  -76   68  -41   10 raw@0 ebeef6fdeae3b444 d70a000000000000 raw@surf d70a000000000000
+RLDBG p0 cell 76 d=2 emu_d=2 cls_cyc=6376511 wait_cyc=1342 logits  -51    5   49   23  -38  -16  -68   24   -9  -48 raw@0 cd053117daf0bc18 f7d0000000000000 raw@surf f7d0000000000000
+RLDBG p0 cell 79 d=5 emu_d=5 cls_cyc=6183170 wait_cyc=1452 logits  -33  -56  -40  -31  -43   42   25  -52   -9   -3 raw@0 dfc8d8e1d52a19cc f7fd000000000000 raw@surf f7fd000000000000
+RLDBG p0 timing: setup_cyc=15755 classify_cyc=223494813 push_wait_cyc=50008 loop_cyc=246544443 tile CYC_CONV=3054
+RLDBG p0 status=0x00002402 nlit=36 expected=36 commit_cyc=31756 tile CYC_COMMIT=4193 misc=[46656 11988 729 36 0 524288 16 100]
+RLDBG p0 literal mismatches: 0
+RLDBG puzzle 1 layout_reg=0x00000020 logit_pa=0xa0212000
+RLDBG p1 cell  1 d=4 emu_d=4 cls_cyc=6202867 wait_cyc=1370 logits  -30  -18  -30  -39   70  -19  -22  -17  -24   -8 raw@0 e2eee2d946edeaef e8f8000000000000 raw@surf e8f8000000000000
+RLDBG p1 cell  4 d=2 emu_d=2 cls_cyc=6170630 wait_cyc=1395 logits  -29   11   52  -29    1  -20    6  -40  -48  -97 raw@0 e30b34e301ec06d8 d09f000000000000 raw@surf d09f000000000000
+RLDBG p1 cell  6 d=6 emu_d=6 cls_cyc=6099135 wait_cyc=1301 logits   -5  -42  -41  -11    4   -4   70  -84  -24  -32 raw@0 fbd6d7f504fc46ac e8e0000000000000 raw@surf e8e0000000000000
+RLDBG p1 cell 13 d=8 emu_d=8 cls_cyc=6178683 wait_cyc=1326 logits  -19  -50   -3   -8  -38  -46  -16  -26   57   -9 raw@0 edcefdf8dad2f0e6 39f7000000000000 raw@surf 39f7000000000000
+RLDBG p1 cell 14 d=5 emu_d=5 cls_cyc=6252053 wait_cyc=1332 logits  -65  -49  -87  -48  -13   74  -20  -41   11    8 raw@0 bfcfa9d0f34aecd7 0b08000000000000 raw@surf 0b08000000000000
+RLDBG p1 cell 16 d=2 emu_d=2 cls_cyc=6184322 wait_cyc=1365 logits  -31   23   71   -8  -54  -77  -64   21  -16  -51 raw@0 e11747f8cab3c015 f0cd000000000000 raw@surf f0cd000000000000
+RLDBG p1 cell 18 d=6 emu_d=6 cls_cyc=6159354 wait_cyc=1458 logits    2  -58  -32  -17   -6   -9   93  -96  -17  -50 raw@0 02c6e0effaf75da0 efce000000000000 raw@surf efce000000000000
+RLDBG p1 cell 23 d=1 emu_d=1 cls_cyc=6162616 wait_cyc=1343 logits  -32   49  -28  -66  -15  -21  -38  -16  -11  -54 raw@0 e031e4bef1ebdaf0 f5ca000000000000 raw@surf f5ca000000000000
+RLDBG p1 cell 27 d=9 emu_d=9 cls_cyc=6185936 wait_cyc=1345 logits  -38  -22  -37  -12    8  -32  -44   -4    2   29 raw@0 daeadbf408e0d4fc 021d000000000000 raw@surf 021d000000000000
+RLDBG p1 cell 36 d=2 emu_d=2 cls_cyc=6236683 wait_cyc=1342 logits  -25  -25   45  -26  -10  -23   -9  -21    6  -34 raw@0 e7e72de6f6e9f7eb 06de000000000000 raw@surf 06de000000000000
+RLDBG p1 cell 37 d=7 emu_d=7 cls_cyc=6121741 wait_cyc=1368 logits  -32   -3   -7    3  -24  -56  -78   68  -29   -7 raw@0 e0fdf903e8c8b244 e3f9000000000000 raw@surf e3f9000000000000
+RLDBG p1 cell 40 d=6 emu_d=6 cls_cyc=6170474 wait_cyc=1341 logits    3  -32  -18  -32    1   -5   70  -73  -25  -56 raw@0 03e0eee001fb46b7 e7c8000000000000 raw@surf e7c8000000000000
+RLDBG p1 cell 44 d=9 emu_d=9 cls_cyc=6179722 wait_cyc=1411 logits  -28  -48   -9   -2   22  -36  -59  -17  -19   61 raw@0 e4d0f7fe16dcc5ef ed3d000000000000 raw@surf ed3d000000000000
+RLDBG p1 cell 46 d=1 emu_d=1 cls_cyc=6163604 wait_cyc=1476 logits  -20   36  -12  -42  -21  -47  -73   -2   -9  -36 raw@0 ec24f4d6ebd1b7fe f7dc000000000000 raw@surf f7dc000000000000
+RLDBG p1 cell 47 d=3 emu_d=3 cls_cyc=6169631 wait_cyc=1370 logits  -60  -21  -27   75  -53    0  -66  -30  -12  -20 raw@0 c4ebe54bcb00bee2 f4ec000000000000 raw@surf f4ec000000000000
+RLDBG p1 cell 48 d=4 emu_d=4 cls_cyc=6253407 wait_cyc=1287 logits  -47   -3   -8  -44   88  -46  -20   -7  -27  -43 raw@0 d1fdf8d458d2ecf9 e5d5000000000000 raw@surf e5d5000000000000
+RLDBG p1 cell 51 d=7 emu_d=7 cls_cyc=6180097 wait_cyc=1474 logits  -45    3  -11   -5  -18  -39  -85   40  -27    6 raw@0 d303f5fbeed9ab28 e506000000000000 raw@surf e506000000000000
+RLDBG p1 cell 53 d=6 emu_d=6 cls_cyc=6145450 wait_cyc=1329 logits  -37  -38  -21  -56    7   13   68  -53  -27  -50 raw@0 dbdaebc8070d44cb e5ce000000000000 raw@surf e5ce000000000000
+RLDBG p1 cell 54 d=5 emu_d=5 cls_cyc=6163032 wait_cyc=1323 logits  -84  -42  -49   -8  -28   53  -47  -23    9    1 raw@0 acd6cff8e435d1e9 0901000000000000 raw@surf 0901000000000000
+RLDBG p1 cell 55 d=2 emu_d=2 cls_cyc=6175277 wait_cyc=1348 logits  -27  -13   63  -28  -21  -23   -3  -20  -18  -71 raw@0 e5f33fe4ebe9fdec eeb9000000000000 raw@surf eeb9000000000000
+RLDBG p1 cell 61 d=8 emu_d=8 cls_cyc=6157118 wait_cyc=1360 logits   -6  -41  -12   -4  -46  -17   -2  -46   42   -1 raw@0 fad7f4fcd2effed2 2aff000000000000 raw@surf 2aff000000000000
+RLDBG p1 cell 62 d=3 emu_d=3 cls_cyc=6272990 wait_cyc=1362 logits  -73  -22  -49   80  -56   15  -95  -43  -12    1 raw@0 b7eacf50c80fa1d5 f401000000000000 raw@surf f401000000000000
+RLDBG p1 cell 68 d=7 emu_d=7 cls_cyc=6188375 wait_cyc=1321 logits   -9  -23  -10  -19  -24  -22  -59   48  -17    1 raw@0 f7e9f6ede8eac530 ef01000000000000 raw@surf ef01000000000000
+RLDBG p1 cell 74 d=1 emu_d=1 cls_cyc=6175031 wait_cyc=1440 logits  -23   38  -17  -52  -14  -34  -41  -12   -6  -38 raw@0 e926efccf2ded7f4 fada000000000000 raw@surf fada000000000000
+RLDBG p1 cell 75 d=2 emu_d=2 cls_cyc=6148952 wait_cyc=1404 logits  -26  -13   58    8  -12  -49  -38  -17  -23  -46 raw@0 e6f33a08f4cfdaef e9d2000000000000 raw@surf e9d2000000000000
+RLDBG p1 timing: setup_cyc=2341 classify_cyc=154497180 push_wait_cyc=34191 loop_cyc=170495583 tile CYC_CONV=2112
+RLDBG p1 status=0x00001902 nlit=25 expected=25 commit_cyc=30205 tile CYC_COMMIT=4141 misc=[46656 11988 729 25 0 524288 16 100]
+RLDBG p1 literal mismatches: 0
+RLDBG puzzle 2 layout_reg=0x00000020 logit_pa=0xa0212000
+RLDBG p2 cell  1 d=4 emu_d=4 cls_cyc=6164009 wait_cyc=1511 logits  -80  -41  -27  -34   61  -53  -50   -6  -12   22 raw@0 b0d7e5de3dcbcefa f416000000000000 raw@surf f416000000000000
+RLDBG p2 cell  3 d=1 emu_d=1 cls_cyc=6202171 wait_cyc=1378 logits  -35   44  -36  -51  -19  -28  -31  -14   -9  -48 raw@0 dd2cdccdede4e1f2 f7d0000000000000 raw@surf f7d0000000000000
+RLDBG p2 cell  4 d=5 emu_d=5 cls_cyc=6266999 wait_cyc=1301 logits  -92  -44  -72    0  -73   97  -38  -73  -13   -8 raw@0 a4d4b800b761dab7 f3f8000000000000 raw@surf f3f8000000000000
+RLDBG p2 cell  6 d=8 emu_d=8 cls_cyc=6192351 wait_cyc=1314 logits  -35  -42    5   10  -52  -28  -38  -45   67  -13 raw@0 ddd6050acce4dad3 43f3000000000000 raw@surf 43f3000000000000
+RLDBG p2 cell  7 d=7 emu_d=7 cls_cyc=6170189 wait_cyc=1378 logits  -27   -4   -9    2  -18  -34  -65   51  -25    1 raw@0 e5fcf702eedebf33 e701000000000000 raw@surf e701000000000000
+RLDBG p2 cell 12 d=9 emu_d=9 cls_cyc=6131425 wait_cyc=1306 logits  -34  -45  -36    4    2  -17  -70   -5   -6   58 raw@0 ded3dc0402efbafb fa3a000000000000 raw@surf fa3a000000000000
+RLDBG p2 cell 15 d=3 emu_d=3 cls_cyc=6165439 wait_cyc=1327 logits  -40  -29   -2   72  -62  -42  -70   -6    3  -13 raw@0 d8e3fe48c2d6bafa 03f3000000000000 raw@surf 03f3000000000000
+RLDBG p2 cell 16 d=6 emu_d=6 cls_cyc=6239453 wait_cyc=1390 logits  -19  -52  -53  -32   -3  -11   85  -61  -11  -26 raw@0 edcccbe0fdf555c3 f5e6000000000000 raw@surf f5e6000000000000
+RLDBG p2 cell 20 d=1 emu_d=1 cls_cyc=6301812 wait_cyc=1499 logits  -36   42  -31  -35   -8  -37  -40   -5  -17  -30 raw@0 dc2ae1ddf8dbd8fb efe2000000000000 raw@surf efe2000000000000
+RLDBG p2 cell 22 d=3 emu_d=3 cls_cyc=6150086 wait_cyc=1366 logits  -89  -35  -60   91  -31   10 -107  -11    8   -3 raw@0 a7ddc45be10a95f5 08fd000000000000 raw@surf 08fd000000000000
+RLDBG p2 cell 25 d=2 emu_d=2 cls_cyc=6169578 wait_cyc=1357 logits  -41    0   89   -9  -52  -73  -53   10  -38  -77 raw@0 d70059f7ccb7cb0a dab3000000000000 raw@surf dab3000000000000
+RLDBG p2 cell 28 d=2 emu_d=2 cls_cyc=6174327 wait_cyc=1395 logits  -25  -33   77  -12  -31  -40  -20  -25  -12  -78 raw@0 e7df4df4e1d8ece7 f4b2000000000000 raw@surf f4b2000000000000
+RLDBG p2 cell 29 d=9 emu_d=9 cls_cyc=6139236 wait_cyc=1389 logits  -78  -38  -40   -2    1   10  -73   -4  -26   48 raw@0 b2dad8fe010ab7fc e630000000000000 raw@surf e630000000000000
+RLDBG p2 cell 30 d=5 emu_d=5 cls_cyc=6240162 wait_cyc=1438 logits  -62  -36  -58    4  -29   63  -29  -28   10  -34 raw@0 c2dcc604e33fe3e4 0ade000000000000 raw@surf 0ade000000000000
+RLDBG p2 cell 31 d=6 emu_d=6 cls_cyc=6194425 wait_cyc=1307 logits  -24  -34  -22  -46   10   -2   74  -54  -23  -50 raw@0 e8deead20afe4aca e9ce000000000000 raw@surf e9ce000000000000
+RLDBG p2 cell 36 d=1 emu_d=1 cls_cyc=6176217 wait_cyc=1381 logits  -35   51  -33  -65  -15  -29  -53    1  -10  -44 raw@0 dd33dfbff1e3cb01 f6d4000000000000 raw@surf f6d4000000000000
+RLDBG p2 cell 38 d=4 emu_d=4 cls_cyc=6110653 wait_cyc=1314 logits  -58    3  -38  -41   66  -31  -39   -3    8    4 raw@0 c603dad742e1d9fd 0804000000000000 raw@surf 0804000000000000
+RLDBG p2 cell 42 d=2 emu_d=2 cls_cyc=6161505 wait_cyc=1290 logits  -27   -9   36   -4  -29  -50  -30   -1   14  -30 raw@0 e5f724fce3cee2ff 0ee2000000000000 raw@surf 0ee2000000000000
+RLDBG p2 cell 43 d=9 emu_d=9 cls_cyc=6185847 wait_cyc=1527 logits  -36  -48  -25   -9    7  -27  -62  -13  -16   64 raw@0 dcd0e7f707e5c2f3 f040000000000000 raw@surf f040000000000000
+RLDBG p2 cell 50 d=9 emu_d=9 cls_cyc=6234277 wait_cyc=1387 logits  -59  -58  -53  -19    8    8  -52  -12   -2   64 raw@0 c5c6cbed0808ccf4 fe40000000000000 raw@surf fe40000000000000
+RLDBG p2 cell 51 d=6 emu_d=6 cls_cyc=6273076 wait_cyc=1329 logits  -17  -47  -37  -21   14   -7   89  -80  -17  -49 raw@0 efd1dbeb0ef959b0 efcf000000000000 raw@surf efcf000000000000
+RLDBG p2 cell 52 d=1 emu_d=1 cls_cyc=6153930 wait_cyc=1289 logits  -29   44  -24  -42  -24  -37  -40   -5  -11  -51 raw@0 e32ce8d6e8dbd8fb f5cd000000000000 raw@surf f5cd000000000000
+RLDBG p2 cell 53 d=8 emu_d=8 cls_cyc=6172640 wait_cyc=1345 logits  -15  -33   16   -3  -57  -30  -39  -23   52  -27 raw@0 f1df10fdc7e2d9e9 34e5000000000000 raw@surf 34e5000000000000
+RLDBG p2 cell 54 d=5 emu_d=5 cls_cyc=6203367 wait_cyc=1401 logits  -69  -30  -70    5  -62   81  -37  -63   -9    9 raw@0 bbe2ba05c251dbc1 f709000000000000 raw@surf f709000000000000
+RLDBG p2 cell 56 d=7 emu_d=7 cls_cyc=6160011 wait_cyc=1303 logits  -35   -9  -26  -21    2  -21  -57   41  -19  -15 raw@0 ddf7e6eb02ebc729 edf1000000000000 raw@surf edf1000000000000
+RLDBG p2 cell 57 d=2 emu_d=2 cls_cyc=6243970 wait_cyc=1371 logits  -52   21   55   13  -25  -47  -64   19  -24  -54 raw@0 cc15370de7d1c013 e8ca000000000000 raw@surf e8ca000000000000
+RLDBG p2 cell 59 d=4 emu_d=4 cls_cyc=6197881 wait_cyc=1365 logits  -67  -12  -29  -57   79  -21  -33  -11  -15  -22 raw@0 bdf4e3c74febdff5 f1ea000000000000 raw@surf f1ea000000000000
+RLDBG p2 cell 61 d=8 emu_d=8 cls_cyc=6149491 wait_cyc=1403 logits  -29    6  -25  -23  -20  -40  -57  -27   26  -25 raw@0 e306e7e9ecd8c7e5 1ae7000000000000 raw@surf 1ae7000000000000
+RLDBG p2 cell 62 d=6 emu_d=6 cls_cyc=6232570 wait_cyc=1358 logits  -17  -56  -13  -39   -2    1   83  -55    9  -70 raw@0 efc8f3d9fe0153c9 09ba000000000000 raw@surf 09ba000000000000
+RLDBG p2 cell 64 d=1 emu_d=1 cls_cyc=6189844 wait_cyc=1324 logits  -38   43  -39  -36   -9  -43  -48   -8  -13  -19 raw@0 da2bd9dcf7d5d0f8 f3ed000000000000 raw@surf f3ed000000000000
+RLDBG p2 cell 68 d=5 emu_d=5 cls_cyc=6183213 wait_cyc=1511 logits  -34  -37  -51    6  -45   62  -17  -41    8   -3 raw@0 dedbcd06d33eefd7 08fd000000000000 raw@surf 08fd000000000000
+RLDBG p2 cell 69 d=9 emu_d=9 cls_cyc=6220950 wait_cyc=1493 logits  -26  -53  -34    5    0  -35  -69    0   -9   71 raw@0 e6cbde0500ddbb00 f747000000000000 raw@surf f747000000000000
+RLDBG p2 cell 73 d=9 emu_d=9 cls_cyc=6290896 wait_cyc=1313 logits  -45  -46  -42  -24   13  -19  -50  -11   -4   62 raw@0 d3d2d6e80dedcef5 fc3e000000000000 raw@surf fc3e000000000000
+RLDBG p2 cell 74 d=8 emu_d=8 cls_cyc=6168406 wait_cyc=1357 logits  -25  -71  -11   -2  -50  -18  -22  -50   44   19 raw@0 e7b9f5feceeeeace 2c13000000000000 raw@surf 2c13000000000000
+RLDBG p2 cell 75 d=7 emu_d=7 cls_cyc=6314496 wait_cyc=1392 logits  -24  -23   -7  -42   -3  -33  -36   38   -5    7 raw@0 e8e9f9d6fddfdc26 fb07000000000000 raw@surf fb07000000000000
+RLDBG p2 cell 76 d=1 emu_d=1 cls_cyc=6182409 wait_cyc=1479 logits  -41   56  -25  -66    0  -67  -67   -1  -22  -39 raw@0 d738e7be00bdbdff ead9000000000000 raw@surf ead9000000000000
+RLDBG p2 cell 77 d=3 emu_d=3 cls_cyc=6104103 wait_cyc=1358 logits  -15  -25  -19   41  -63    6  -53  -36  -37  -21 raw@0 f1e7ed29c106cbdc dbeb000000000000 raw@surf dbeb000000000000
+RLDBG p2 cell 79 d=5 emu_d=5 cls_cyc=6162532 wait_cyc=1343 logits  -79  -30  -59    3  -74   80  -34  -76   -5  -27 raw@0 b1e2c503b650deb4 fbe5000000000000 raw@surf fbe5000000000000
+RLDBG p2 timing: setup_cyc=2628 classify_cyc=235373946 push_wait_cyc=52289 loop_cyc=259650446 tile CYC_CONV=3187
+RLDBG p2 status=0x00002602 nlit=38 expected=38 commit_cyc=31408 tile CYC_COMMIT=4386 misc=[46656 11988 729 38 0 524288 16 100]
+RLDBG p2 literal mismatches: 0
+RLDBG puzzle 3 layout_reg=0x00000020 logit_pa=0xa0212000
+RLDBG p3 cell  1 d=6 emu_d=6 cls_cyc=6206046 wait_cyc=1337 logits  -49    3  -24  -44    5    0   57  -58  -17  -70 raw@0 cf03e8d4050039c6 efba000000000000 raw@surf efba000000000000
+RLDBG p3 cell  3 d=5 emu_d=5 cls_cyc=6187222 wait_cyc=1323 logits  -71  -37  -72  -12  -67   97  -40  -72    5  -17 raw@0 b9dbb8f4bd61d8b8 05ef000000000000 raw@surf 05ef000000000000
+RLDBG p3 cell  6 d=8 emu_d=8 cls_cyc=6172446 wait_cyc=1449 logits  -45  -12  -27   22  -25  -27  -57   -4   43    3 raw@0 d3f4e516e7e5c7fc 2b03000000000000 raw@surf 2b03000000000000
+RLDBG p3 cell  7 d=2 emu_d=2 cls_cyc=6104536 wait_cyc=1376 logits  -42   -7   78  -13  -53  -54  -44    3  -15  -58 raw@0 d6f94ef3cbcad403 f1c6000000000000 raw@surf f1c6000000000000
+RLDBG p3 cell 11 d=3 emu_d=3 cls_cyc=6243618 wait_cyc=1340 logits  -60  -17  -22   57  -48   10  -54  -17   -3  -19 raw@0 c4efea39d00acaef fded000000000000 raw@surf fded000000000000
+RLDBG p3 cell 12 d=9 emu_d=9 cls_cyc=6196782 wait_cyc=1370 logits  -83  -46  -37  -11   12    0  -91   -8  -14   56 raw@0 add2dbf50c00a5f8 f238000000000000 raw@surf f238000000000000
+RLDBG p3 cell 15 d=4 emu_d=4 cls_cyc=6200579 wait_cyc=1393 logits  -65  -13  -54  -45   80  -30  -30   -1    6   -4 raw@0 bff3cad350e2e2ff 06fc000000000000 raw@surf 06fc000000000000
+RLDBG p3 cell 17 d=5 emu_d=5 cls_cyc=6186189 wait_cyc=1358 logits  -49  -29  -80   21  -68   84  -60  -61  -16   10 raw@0 cfe3b015bc54c4c3 f00a000000000000 raw@surf f00a000000000000
+RLDBG p3 cell 23 d=8 emu_d=8 cls_cyc=6122468 wait_cyc=1340 logits  -20  -35   -6  -17  -32  -40  -29  -32   69  -20 raw@0 ecddfaefe0d8e3e0 45ec000000000000 raw@surf 45ec000000000000
+RLDBG p3 cell 26 d=7 emu_d=7 cls_cyc=6166978 wait_cyc=1300 logits  -63  -11   21  -12    2  -30  -67   57  -34  -18 raw@0 c1f515f402e2bd39 deee000000000000 raw@surf deee000000000000
+RLDBG p3 cell 27 d=2 emu_d=2 cls_cyc=6278445 wait_cyc=1328 logits  -41   -9   72  -35  -14  -51  -10  -27   -9  -68 raw@0 d7f748ddf2cdf6e5 f7bc000000000000 raw@surf f7bc000000000000
+RLDBG p3 cell 29 d=6 emu_d=6 cls_cyc=6154886 wait_cyc=1454 logits  -21  -60  -25  -37  -17   27   90  -73   -3  -78 raw@0 ebc4e7dbef1b5ab7 fdb2000000000000 raw@surf fdb2000000000000
+RLDBG p3 cell 31 d=5 emu_d=5 cls_cyc=6217291 wait_cyc=1290 logits  -52  -45  -76   15  -40   71  -60  -46    6   -1 raw@0 ccd3b40fd847c4d2 06ff000000000000 raw@surf 06ff000000000000
+RLDBG p3 cell 32 d=4 emu_d=4 cls_cyc=6226126 wait_cyc=1356 logits  -29  -42  -23  -54   89  -40   -5  -27  -41  -19 raw@0 e3d6e9ca59d8fbe5 d7ed000000000000 raw@surf d7ed000000000000
+RLDBG p3 cell 34 d=9 emu_d=9 cls_cyc=6182577 wait_cyc=1473 logits  -49  -40  -30    0    8  -21  -93   -2  -14   71 raw@0 cfd8e20008eba3fe f247000000000000 raw@surf f247000000000000
+RLDBG p3 cell 36 d=8 emu_d=8 cls_cyc=6150838 wait_cyc=1493 logits  -40  -49    2  -21  -31  -39  -38  -35   86  -24 raw@0 d8cf02ebe1d9dadd 56e8000000000000 raw@surf 56e8000000000000
+RLDBG p3 cell 42 d=6 emu_d=6 cls_cyc=6284966 wait_cyc=1338 logits  -16  -32  -28  -33  -12   14   77  -73  -10  -56 raw@0 f0e0e4dff40e4db7 f6c8000000000000 raw@surf f6c8000000000000
+RLDBG p3 cell 43 d=7 emu_d=7 cls_cyc=6326171 wait_cyc=1412 logits  -25   -9   11   -6  -13  -52  -42   47  -28  -37 raw@0 e7f70bfaf3ccd62f e4db000000000000 raw@surf e4db000000000000
+RLDBG p3 cell 44 d=4 emu_d=4 cls_cyc=6199284 wait_cyc=1358 logits  -20    0  -30  -40   28  -17  -48   10  -22   -9 raw@0 ec00e2d81cefd00a eaf7000000000000 raw@surf eaf7000000000000
+RLDBG p3 cell 49 d=6 emu_d=6 cls_cyc=6173439 wait_cyc=1432 logits  -12  -43  -27  -52    9   -4   75  -75  -36  -36 raw@0 f4d5e5cc09fc4bb5 dcdc000000000000 raw@surf dcdc000000000000
+RLDBG p3 cell 59 d=5 emu_d=5 cls_cyc=6118280 wait_cyc=1307 logits  -81  -50  -85   -6  -59   92  -46  -64   -5   -3 raw@0 afceabfac55cd2c0 fbfd000000000000 raw@surf fbfd000000000000
+RLDBG p3 cell 65 d=4 emu_d=4 cls_cyc=6157173 wait_cyc=1328 logits  -47  -23  -46  -53   76  -11  -24   -7  -20  -16 raw@0 d1e9d2cb4cf5e8f9 ecf0000000000000 raw@surf ecf0000000000000
+RLDBG p3 cell 67 d=8 emu_d=8 cls_cyc=6247232 wait_cyc=1438 logits  -35  -31    8   22  -47  -40  -62  -36   64  -14 raw@0 dde10816d1d8c2dc 40f2000000000000 raw@surf 40f2000000000000
+RLDBG p3 cell 71 d=2 emu_d=2 cls_cyc=6153476 wait_cyc=1519 logits  -31   11   66   -3  -60  -80  -68   29  -12  -81 raw@0 e10b42fdc4b0bc1d f4af000000000000 raw@surf f4af000000000000
+RLDBG p3 cell 74 d=2 emu_d=2 cls_cyc=6218200 wait_cyc=1330 logits  -36  -32   59    0  -30  -23  -23   -5    1  -65 raw@0 dce03b00e2e9e9fb 01bf000000000000 raw@surf 01bf000000000000
+RLDBG p3 cell 75 d=1 emu_d=1 cls_cyc=6190640 wait_cyc=1305 logits  -29   45  -25  -36  -18  -38  -50    5  -17  -31 raw@0 e32de7dceedace05 efe1000000000000 raw@surf efe1000000000000
+RLDBG p3 cell 78 d=7 emu_d=7 cls_cyc=6169384 wait_cyc=1465 logits  -19  -26  -16  -12  -13  -22  -68   51  -48    4 raw@0 ede6f0f4f3eabc33 d004000000000000 raw@surf d004000000000000
+RLDBG p3 timing: setup_cyc=2412 classify_cyc=167235272 push_wait_cyc=37212 loop_cyc=184640545 tile CYC_CONV=2253
+RLDBG p3 status=0x00001b02 nlit=27 expected=27 commit_cyc=32079 tile CYC_COMMIT=4240 misc=[46656 11988 729 27 0 524288 16 100]
+RLDBG p3 literal mismatches: 0
+RLDBG puzzle 4 layout_reg=0x00000020 logit_pa=0xa0212000
+RLDBG p4 cell  0 d=4 emu_d=4 cls_cyc=6275635 wait_cyc=1323 logits  -47  -25  -29  -39   72  -31  -24  -17  -19   -9 raw@0 d1e7e3d948e1e8ef edf7000000000000 raw@surf edf7000000000000
+RLDBG p4 cell  3 d=1 emu_d=1 cls_cyc=6200910 wait_cyc=1369 logits  -36   53  -25  -66  -18  -33  -48  -13  -11  -62 raw@0 dc35e7beeedfd0f3 f5c2000000000000 raw@surf f5c2000000000000
+RLDBG p4 cell  6 d=9 emu_d=9 cls_cyc=6260147 wait_cyc=1473 logits  -44  -53  -26    4    8  -31  -58  -11   -2   61 raw@0 d4cbe60408e1c6f5 fe3d000000000000 raw@surf fe3d000000000000
+RLDBG p4 cell  8 d=5 emu_d=5 cls_cyc=6099162 wait_cyc=1343 logits  -67  -40  -75   12  -58   80  -12  -76  -22    1 raw@0 bdd8b50cc650f4b4 ea01000000000000 raw@surf ea01000000000000
+RLDBG p4 cell 10 d=9 emu_d=9 cls_cyc=6169166 wait_cyc=1363 logits  -53  -53  -23   -3    2  -11  -66  -15   -7   53 raw@0 cbcbe9fd02f5bef1 f935000000000000 raw@surf f935000000000000
+RLDBG p4 cell 11 d=3 emu_d=3 cls_cyc=6169884 wait_cyc=1478 logits  -66  -24  -36   56  -29    8  -41  -29  -11  -13 raw@0 bee8dc38e308d7e3 f5f3000000000000 raw@surf f5f3000000000000
+RLDBG p4 cell 17 d=4 emu_d=4 cls_cyc=6234063 wait_cyc=1456 logits  -13   -9  -28  -38   39  -16  -32  -37  -27   32 raw@0 f3f7e4da27f0e0db e520000000000000 raw@surf e520000000000000
+RLDBG p4 cell 18 d=1 emu_d=1 cls_cyc=6218362 wait_cyc=1360 logits  -35   38  -30  -30  -14  -28  -29  -16  -14  -32 raw@0 dd26e2e2f2e4e3f0 f2e0000000000000 raw@surf f2e0000000000000
+RLDBG p4 cell 20 d=8 emu_d=8 cls_cyc=6186093 wait_cyc=1309 logits  -26  -43  -10    3  -36  -23  -37  -36   64  -16 raw@0 e6d5f603dce9dbdc 40f0000000000000 raw@surf 40f0000000000000
+RLDBG p4 cell 21 d=9 emu_d=9 cls_cyc=6189146 wait_cyc=1474 logits  -41  -47  -39    1   -4  -16  -54   -3    2   60 raw@0 d7d1d901fcf0cafd 023c000000000000 raw@surf 023c000000000000
+RLDBG p4 cell 25 d=2 emu_d=2 cls_cyc=6197402 wait_cyc=1457 logits  -41  -17   62  -26  -21  -13  -43   12  -54  -76 raw@0 d7ef3ee6ebf3d50c cab4000000000000 raw@surf cab4000000000000
+RLDBG p4 cell 28 d=1 emu_d=1 cls_cyc=6170238 wait_cyc=1349 logits  -27   39  -23  -31  -12  -43  -61   11  -17   -7 raw@0 e527e9e1f4d5c30b eff9000000000000 raw@surf eff9000000000000
+RLDBG p4 cell 30 d=6 emu_d=6 cls_cyc=6298466 wait_cyc=1363 logits  -17  -49  -43  -12   -3    3   84  -91  -13  -37 raw@0 efcfd5f4fd0354a5 f3db000000000000 raw@surf f3db000000000000
+RLDBG p4 cell 35 d=8 emu_d=8 cls_cyc=6188733 wait_cyc=1333 logits  -48  -16  -36  -11  -29    1  -15  -49   70  -34 raw@0 d0f0dcf5e301f1cf 46de000000000000 raw@surf 46de000000000000
+RLDBG p4 cell 38 d=6 emu_d=6 cls_cyc=6317345 wait_cyc=1354 logits  -20  -22  -28  -25   -9   12   59  -54    0  -45 raw@0 eceae4e7f70c3bca 00d3000000000000 raw@surf 00d3000000000000
+RLDBG p4 cell 39 d=3 emu_d=3 cls_cyc=6098634 wait_cyc=1374 logits  -68  -59   11   69  -69  -23  -89   -3   -1  -12 raw@0 bcc50b45bbe9a7fd fff4000000000000 raw@surf fff4000000000000
+RLDBG p4 cell 41 d=5 emu_d=5 cls_cyc=6153692 wait_cyc=1336 logits    5  -53  -60   -8  -50   41   -1  -25   -5   -9 raw@0 05cbc4f8ce29ffe7 fbf7000000000000 raw@surf fbf7000000000000
+RLDBG p4 cell 44 d=1 emu_d=1 cls_cyc=6188297 wait_cyc=1529 logits  -28   48  -22  -68  -21  -38  -43  -21  -12  -63 raw@0 e430eabcebdad5eb f4c1000000000000 raw@surf f4c1000000000000
+RLDBG p4 cell 45 d=7 emu_d=7 cls_cyc=6215159 wait_cyc=1409 logits  -27    4  -17   20  -32  -38  -54   43    1  -25 raw@0 e504ef14e0daca2b 01e7000000000000 raw@surf 01e7000000000000
+RLDBG p4 cell 46 d=8 emu_d=8 cls_cyc=6205520 wait_cyc=1327 logits  -33  -53    7    9  -61  -36  -51  -30   69  -10 raw@0 dfcb0709c3dccde2 45f6000000000000 raw@surf 45f6000000000000
+RLDBG p4 cell 51 d=3 emu_d=3 cls_cyc=6190912 wait_cyc=1351 logits  -62  -22  -45   88  -76   18  -99  -20  -15   -8 raw@0 c2ead358b4129dec f1f8000000000000 raw@surf f1f8000000000000
+RLDBG p4 cell 52 d=6 emu_d=6 cls_cyc=6176223 wait_cyc=1479 logits  -15  -41  -34  -36  -27   20   76  -80   -6  -35 raw@0 f1d7dedce5144cb0 fadd000000000000 raw@surf fadd000000000000
+RLDBG p4 cell 53 d=9 emu_d=9 cls_cyc=6162453 wait_cyc=1414 logits  -41  -55  -37   -7   -4  -40  -34  -16   21   59 raw@0 d7c9dbf9fcd8def0 153b000000000000 raw@surf 153b000000000000
+RLDBG p4 cell 55 d=3 emu_d=3 cls_cyc=6217353 wait_cyc=1321 logits  -72  -34  -24   68  -57   10  -72  -22    7  -19 raw@0 b8dee844c70ab8ea 07ed000000000000 raw@surf 07ed000000000000
+RLDBG p4 cell 57 d=5 emu_d=5 cls_cyc=6186510 wait_cyc=1361 logits  -65  -47  -57   -1  -34   60  -39  -29  -12   -6 raw@0 bfd1c7ffde3cd9e3 f4fa000000000000 raw@surf f4fa000000000000
+RLDBG p4 cell 58 d=1 emu_d=1 cls_cyc=6187942 wait_cyc=1383 logits  -31   38  -38  -30  -28  -25  -33   -3  -10  -35 raw@0 e126dae2e4e7dffd f6dd000000000000 raw@surf f6dd000000000000
+RLDBG p4 cell 60 d=7 emu_d=7 cls_cyc=6274098 wait_cyc=1430 logits  -38   10   17  -21    3  -38  -50   53  -26  -31 raw@0 da0a11eb03dace35 e6e1000000000000 raw@surf e6e1000000000000
+RLDBG p4 cell 61 d=9 emu_d=9 cls_cyc=6205569 wait_cyc=1321 logits  -19  -38  -35   -3    3  -15  -31  -14   -3   47 raw@0 eddaddfd03f1e1f2 fd2f000000000000 raw@surf fd2f000000000000
+RLDBG p4 cell 67 d=4 emu_d=4 cls_cyc=6173143 wait_cyc=1416 logits  -37  -20   -1  -38   45  -27  -14  -29  -19  -33 raw@0 dbecffda2de5f2e3 eddf000000000000 raw@surf eddf000000000000
+RLDBG p4 cell 68 d=3 emu_d=3 cls_cyc=6263634 wait_cyc=1358 logits  -58  -17  -31   75  -49   -4  -63   -6    4  -18 raw@0 c6efe14bcffcc1fa 04ee000000000000 raw@surf 04ee000000000000
+RLDBG p4 cell 69 d=1 emu_d=1 cls_cyc=6147481 wait_cyc=1508 logits  -26   46  -27  -49  -23  -38  -40  -11  -10  -50 raw@0 e62ee5cfe9dad8f5 f6ce000000000000 raw@surf f6ce000000000000
+RLDBG p4 cell 74 d=1 emu_d=1 cls_cyc=6158010 wait_cyc=1269 logits  -36   41  -24  -35  -25  -34  -33   -8  -11  -44 raw@0 dc29e8dde7dedff8 f5d4000000000000 raw@surf f5d4000000000000
+RLDBG p4 cell 75 d=2 emu_d=2 cls_cyc=6188628 wait_cyc=1371 logits  -10   12   61  -22  -65  -61  -55   -3  -28  -58 raw@0 f60c3deabfc3c9fd e4c6000000000000 raw@surf e4c6000000000000
+RLDBG p4 cell 76 d=7 emu_d=7 cls_cyc=6188033 wait_cyc=1467 logits  -70    7    7   21  -24  -41  -58   65   -2  -27 raw@0 ba070715e8d7c641 fee5000000000000 raw@surf fee5000000000000
+RLDBG p4 cell 78 d=4 emu_d=4 cls_cyc=6136775 wait_cyc=1345 logits  -58  -34  -44  -60   84  -29  -32   -6  -25  -10 raw@0 c6ded4c454e3e0fa e7f6000000000000 raw@surf e7f6000000000000
+RLDBG p4 timing: setup_cyc=2296 classify_cyc=216892818 push_wait_cyc=48573 loop_cyc=239273567 tile CYC_CONV=2963
+RLDBG p4 status=0x00002302 nlit=35 expected=35 commit_cyc=30279 tile CYC_COMMIT=4228 misc=[46656 11988 729 35 0 524288 16 100]
+RLDBG p4 literal mismatches: 0
+RLDBG puzzle 5 layout_reg=0x00000020 logit_pa=0xa0212000
+RLDBG p5 cell  1 d=4 emu_d=4 cls_cyc=6240799 wait_cyc=1471 logits  -66  -20  -35  -55   77  -36  -44  -14    1  -13 raw@0 beecddc94ddcd4f2 01f3000000000000 raw@surf 01f3000000000000
+RLDBG p5 cell  8 d=1 emu_d=1 cls_cyc=6171379 wait_cyc=1332 logits  -35   33    1  -23   10  -15  -37  -29  -24  -29 raw@0 dd2101e90af1dbe3 e8e3000000000000 raw@surf e8e3000000000000
+RLDBG p5 cell 12 d=5 emu_d=5 cls_cyc=6180717 wait_cyc=1352 logits  -22  -40   -9  -22  -31   23   13  -27    5  -43 raw@0 ead8f7eae1170de5 05d5000000000000 raw@surf 05d5000000000000
+RLDBG p5 cell 14 d=3 emu_d=3 cls_cyc=6270734 wait_cyc=1416 logits  -50  -32  -28   77  -69   -1  -88  -43   -5    0 raw@0 cee0e44dbbffa8d5 fb00000000000000 raw@surf fb00000000000000
+RLDBG p5 cell 19 d=7 emu_d=7 cls_cyc=6160446 wait_cyc=1367 logits  -63  -16   -2   14    4  -31  -63   65  -28   -3 raw@0 c1f0fe0e04e1c141 e4fd000000000000 raw@surf e4fd000000000000
+RLDBG p5 cell 21 d=2 emu_d=2 cls_cyc=6152971 wait_cyc=1462 logits  -21   10   71  -25  -54  -76  -59   -6  -40  -41 raw@0 eb0a47e7cab4c5fa d8d7000000000000 raw@surf d8d7000000000000
+RLDBG p5 cell 22 d=1 emu_d=1 cls_cyc=6274862 wait_cyc=1386 logits  -27   40  -23  -43  -22  -31  -35   -9  -14  -40 raw@0 e528e9d5eae1ddf7 f2d8000000000000 raw@surf f2d8000000000000
+RLDBG p5 cell 29 d=4 emu_d=4 cls_cyc=6186449 wait_cyc=1497 logits  -40  -10  -36  -46   33  -37  -46  -16   10   -7 raw@0 d8f6dcd221dbd2f0 0af9000000000000 raw@surf 0af9000000000000
+RLDBG p5 cell 31 d=3 emu_d=3 cls_cyc=6248715 wait_cyc=1489 logits  -48  -23  -33   79  -62   -7  -86  -28  -20  -16 raw@0 d0e9df4fc2f9aae4 ecf0000000000000 raw@surf ecf0000000000000
+RLDBG p5 cell 32 d=6 emu_d=6 cls_cyc=6210653 wait_cyc=1353 logits   -2  -72  -20  -26  -23    4   63  -90    5  -26 raw@0 feb8ece6e9043fa6 05e6000000000000 raw@surf 05e6000000000000
+RLDBG p5 cell 36 d=6 emu_d=6 cls_cyc=6188240 wait_cyc=1322 logits   -9  -32   -9  -26   -2    1   66  -62  -12  -58 raw@0 f7e0f7e6fe0142c2 f4c6000000000000 raw@surf f4c6000000000000
+RLDBG p5 cell 39 d=7 emu_d=7 cls_cyc=6236793 wait_cyc=1296 logits  -57   -4   22    8  -26  -43  -72   59    7  -58 raw@0 c7fc1608e6d5b83b 07c6000000000000 raw@surf 07c6000000000000
+RLDBG p5 cell 41 d=4 emu_d=4 cls_cyc=6149224 wait_cyc=1489 logits  -36  -34  -15  -42   67  -41  -34   -9   -4    3 raw@0 dcdef1d643d7def7 fc03000000000000 raw@surf fc03000000000000
+RLDBG p5 cell 42 d=2 emu_d=2 cls_cyc=6158382 wait_cyc=1332 logits   -9  -82   55   19  -74  -37  -23  -22  -12  -44 raw@0 f7ae3713b6dbe9ea f4d4000000000000 raw@surf f4d4000000000000
+RLDBG p5 cell 44 d=5 emu_d=5 cls_cyc=6206731 wait_cyc=1327 logits  -50  -43  -68   -4  -53   71  -26  -74    1    9 raw@0 ced5bcfccb47e6b6 0109000000000000 raw@surf 0109000000000000
+RLDBG p5 cell 48 d=5 emu_d=5 cls_cyc=6188410 wait_cyc=1494 logits  -79  -24  -83    5  -59   96  -29  -74  -16   -6 raw@0 b1e8ad05c560e3b6 f0fa000000000000 raw@surf f0fa000000000000
+RLDBG p5 cell 51 d=6 emu_d=6 cls_cyc=6144848 wait_cyc=1442 logits  -15  -46  -35  -11   -3    4   87  -85  -19  -42 raw@0 f1d2ddf5fd0457ab edd6000000000000 raw@surf edd6000000000000
+RLDBG p5 cell 55 d=8 emu_d=8 cls_cyc=6226004 wait_cyc=1392 logits  -53  -41  -40    2  -43    2  -25  -39   74  -15 raw@0 cbd7d802d502e7d9 4af1000000000000 raw@surf 4af1000000000000
+RLDBG p5 cell 56 d=3 emu_d=3 cls_cyc=6203333 wait_cyc=1352 logits  -70  -15  -27   93  -63  -20  -87  -30   -3  -16 raw@0 baf1e55dc1eca9e2 fdf0000000000000 raw@surf fdf0000000000000
+RLDBG p5 cell 57 d=4 emu_d=4 cls_cyc=6176362 wait_cyc=1511 logits  -37  -20   -1  -38   45  -27  -14  -29  -19  -33 raw@0 dbecffda2de5f2e3 eddf000000000000 raw@surf eddf000000000000
+RLDBG p5 cell 62 d=6 emu_d=6 cls_cyc=6105370 wait_cyc=1352 logits  -12  -34  -22  -30  -21   10   63  -70    1  -66 raw@0 f4deeae2eb0a3fba 01be000000000000 raw@surf 01be000000000000
+RLDBG p5 cell 63 d=7 emu_d=7 cls_cyc=6167635 wait_cyc=1351 logits  -34    5  -19   -2  -18  -31  -76   56  -17   -4 raw@0 de05edfeeee1b438 effc000000000000 raw@surf effc000000000000
+RLDBG p5 cell 64 d=6 emu_d=6 cls_cyc=6182865 wait_cyc=1380 logits  -16  -48  -18  -22   -8   -3   82  -76    7  -67 raw@0 f0d0eeeaf8fd52b4 07bd000000000000 raw@surf 07bd000000000000
+RLDBG p5 cell 68 d=8 emu_d=8 cls_cyc=6234102 wait_cyc=1363 logits   -2  -63   -9  -10  -41  -26    6  -57   37   -5 raw@0 fec1f7f6d7e606c7 25fb000000000000 raw@surf 25fb000000000000
+RLDBG p5 cell 71 d=3 emu_d=3 cls_cyc=6207090 wait_cyc=1339 logits  -48  -25  -18   52  -32   19  -38  -27   -8  -31 raw@0 d0e7ee34e013dae5 f8e1000000000000 raw@surf f8e1000000000000
+RLDBG p5 cell 74 d=1 emu_d=1 cls_cyc=6195485 wait_cyc=1338 logits  -41   38  -16  -37   -6  -41  -31   -8  -10  -28 raw@0 d726f0dbfad7e1f8 f6e4000000000000 raw@surf f6e4000000000000
+RLDBG p5 cell 75 d=3 emu_d=3 cls_cyc=6267656 wait_cyc=1484 logits  -67  -26  -38   91  -71   -4  -74  -28  -10  -15 raw@0 bde6da5bb9fcb6e4 f6f1000000000000 raw@surf f6f1000000000000
+RLDBG p5 cell 79 d=8 emu_d=8 cls_cyc=6155002 wait_cyc=1406 logits  -34  -28   22   -3  -51  -38  -51  -28   63  -42 raw@0 dee416fdcddacde4 3fd6000000000000 raw@surf 3fd6000000000000
+RLDBG p5 cell 80 d=9 emu_d=9 cls_cyc=6207397 wait_cyc=1325 logits  -29  -44  -29   -3    6  -36  -62    0   -3   62 raw@0 e3d4e3fd06dcc200 fd3e000000000000 raw@surf fd3e000000000000
+RLDBG p5 timing: setup_cyc=2689 classify_cyc=179698654 push_wait_cyc=40420 loop_cyc=198140804 tile CYC_CONV=2489
+RLDBG p5 status=0x00001d02 nlit=29 expected=29 commit_cyc=30455 tile CYC_COMMIT=4133 misc=[46656 11988 729 29 0 524288 16 100]
+RLDBG p5 literal mismatches: 0
+RLDBG puzzle 6 layout_reg=0x00000020 logit_pa=0xa0212000
+RLDBG p6 cell  6 d=8 emu_d=8 cls_cyc=6238865 wait_cyc=1339 logits   -9  -31  -31  -17  -16  -14  -39  -39   35    5 raw@0 f7e1e1eff0f2d9d9 2305000000000000 raw@surf 2305000000000000
+RLDBG p6 cell  8 d=7 emu_d=7 cls_cyc=6175448 wait_cyc=1292 logits  -40   -6    7   21  -10  -39  -68   58  -22  -10 raw@0 d8fa0715f6d9bc3a eaf6000000000000 raw@surf eaf6000000000000
+RLDBG p6 cell 10 d=3 emu_d=3 cls_cyc=6196077 wait_cyc=1364 logits  -70  -41  -28   85  -57    0  -72   -9   -4  -11 raw@0 bad7e455c700b8f7 fcf5000000000000 raw@surf fcf5000000000000
+RLDBG p6 cell 11 d=7 emu_d=7 cls_cyc=6154807 wait_cyc=1505 logits  -10   -7    7   -4  -22  -39  -58   41  -26   -5 raw@0 f6f907fcead9c629 e6fb000000000000 raw@surf e6fb000000000000
+RLDBG p6 cell 12 d=1 emu_d=1 cls_cyc=6209472 wait_cyc=1330 logits  -27   49  -11  -72  -15  -55  -58  -10  -14  -55 raw@0 e531f5b8f1c9c6f6 f2c9000000000000 raw@surf f2c9000000000000
+RLDBG p6 cell 14 d=6 emu_d=6 cls_cyc=6284070 wait_cyc=1371 logits  -34  -45  -15  -37   -1    2   88  -63  -37  -67 raw@0 ded3f1dbff0258c1 dbbd000000000000 raw@surf dbbd000000000000
+RLDBG p6 cell 16 d=5 emu_d=5 cls_cyc=6204035 wait_cyc=1344 logits  -29  -39  -32   -7  -29   25  -14  -28   -2    1 raw@0 e3d9e0f9e319f2e4 fe01000000000000 raw@surf fe01000000000000
+RLDBG p6 cell 18 d=9 emu_d=9 cls_cyc=6175910 wait_cyc=1494 logits  -62  -44  -42   -8   23  -23  -81    8  -14   62 raw@0 c2d4d6f817e9af08 f23e000000000000 raw@surf f23e000000000000
+RLDBG p6 cell 21 d=2 emu_d=2 cls_cyc=6130222 wait_cyc=1369 logits  -45  -28   48   -6  -28    5  -47   17  -36  -66 raw@0 d3e430fae405d111 dcbe000000000000 raw@surf dcbe000000000000
+RLDBG p6 cell 24 d=6 emu_d=6 cls_cyc=6282509 wait_cyc=1353 logits  -37  -38  -21  -56    7   13   68  -53  -27  -50 raw@0 dbdaebc8070d44cb e5ce000000000000 raw@surf e5ce000000000000
+RLDBG p6 cell 26 d=3 emu_d=3 cls_cyc=6196184 wait_cyc=1338 logits  -57  -42  -57   48  -38    9  -67  -26  -26   -1 raw@0 c7d6c730da09bde6 e6ff000000000000 raw@surf e6ff000000000000
+RLDBG p6 cell 28 d=9 emu_d=9 cls_cyc=6250814 wait_cyc=1480 logits  -44  -26  -35  -12   12  -11  -79    6   -6   47 raw@0 d4e6ddf40cf5b106 fa2f000000000000 raw@surf fa2f000000000000
+RLDBG p6 cell 29 d=2 emu_d=2 cls_cyc=6135193 wait_cyc=1366 logits  -27    8   52   -3  -57  -64  -74   36  -37  -48 raw@0 e50834fdc7c0b624 dbd0000000000000 raw@surf dbd0000000000000
+RLDBG p6 cell 34 d=8 emu_d=8 cls_cyc=6158223 wait_cyc=1307 logits  -29  -10  -24  -32  -17  -36  -15  -29   53  -49 raw@0 e3f6e8e0efdcf1e3 35cf000000000000 raw@surf 35cf000000000000
+RLDBG p6 cell 36 d=7 emu_d=7 cls_cyc=6168693 wait_cyc=1461 logits  -43    3    7   -3   -6  -20  -35   36  -13  -16 raw@0 d50307fdfaecdd24 f3f0000000000000 raw@surf f3f0000000000000
+RLDBG p6 cell 39 d=5 emu_d=5 cls_cyc=6201474 wait_cyc=1483 logits  -37  -52  -55   -2  -48   59  -25  -40  -13    6 raw@0 dbccc9fed03be7d8 f306000000000000 raw@surf f306000000000000
+RLDBG p6 cell 40 d=1 emu_d=1 cls_cyc=6274269 wait_cyc=1341 logits  -36   58  -26  -68   -7  -56  -51   -9  -21  -58 raw@0 dc3ae6bcf9c8cdf7 ebc6000000000000 raw@surf ebc6000000000000
+RLDBG p6 cell 46 d=5 emu_d=5 cls_cyc=6262242 wait_cyc=1339 logits  -34  -32  -55   19  -53   58  -28  -62  -34   -6 raw@0 dee0c913cb3ae4c2 defa000000000000 raw@surf defa000000000000
+RLDBG p6 cell 49 d=3 emu_d=3 cls_cyc=6188723 wait_cyc=1370 logits  -18   -9   -6   24  -34  -25  -68    9  -24    2 raw@0 eef7fa18dee7bc09 e802000000000000 raw@surf e802000000000000
+RLDBG p6 cell 50 d=2 emu_d=2 cls_cyc=6153390 wait_cyc=1489 logits  -33  -21   52  -15   -2   -5  -39    2  -49  -55 raw@0 dfeb34f1fefbd902 cfc9000000000000 raw@surf cfc9000000000000
+RLDBG p6 cell 52 d=7 emu_d=7 cls_cyc=6214191 wait_cyc=1367 logits  -16  -17  -23  -12  -14  -16  -56   58  -24    3 raw@0 f0efe9f4f2f0c83a e803000000000000 raw@surf e803000000000000
+RLDBG p6 cell 54 d=1 emu_d=1 cls_cyc=6288505 wait_cyc=1360 logits  -34   52  -21  -69  -12  -42  -52  -20  -15  -56 raw@0 de34ebbbf4d6ccec f1c8000000000000 raw@surf f1c8000000000000
+RLDBG p6 cell 58 d=2 emu_d=2 cls_cyc=6203085 wait_cyc=1313 logits  -34  -12   77  -10  -58  -46  -44    8    6  -45 raw@0 def44df6c6d2d408 06d3000000000000 raw@surf 06d3000000000000
+RLDBG p6 cell 63 d=5 emu_d=5 cls_cyc=6272483 wait_cyc=1352 logits  -20  -18  -21   15  -32   36  -48  -20  -29   -7 raw@0 eceeeb0fe024d0ec e3f9000000000000 raw@surf e3f9000000000000
+RLDBG p6 cell 64 d=8 emu_d=8 cls_cyc=6152892 wait_cyc=1401 logits  -46  -19  -37   10  -37   15  -40  -34   59  -29 raw@0 d2eddb0adb0fd8de 3be3000000000000 raw@surf 3be3000000000000
+RLDBG p6 cell 65 d=9 emu_d=9 cls_cyc=6219980 wait_cyc=1311 logits  -45  -49  -47    0    7  -18  -71   11   -4   63 raw@0 d3cfd10007eeb90b fc3f000000000000 raw@surf fc3f000000000000
+RLDBG p6 cell 66 d=7 emu_d=7 cls_cyc=6196028 wait_cyc=1341 logits  -30   18    3   -4  -31  -39  -70   45   -8  -20 raw@0 e21203fce1d9ba2d f8ec000000000000 raw@surf f8ec000000000000
+RLDBG p6 cell 67 d=6 emu_d=6 cls_cyc=6183518 wait_cyc=1410 logits   -1  -50  -27  -31    0   -6   90  -88  -12  -54 raw@0 ffcee5e100fa5aa8 f4ca000000000000 raw@surf f4ca000000000000
+RLDBG p6 cell 68 d=1 emu_d=1 cls_cyc=6197185 wait_cyc=1407 logits  -27   37  -25  -37  -17  -28  -28   -7  -11  -42 raw@0 e525e7dbefe4e4f9 f5d6000000000000 raw@surf f5d6000000000000
+RLDBG p6 cell 69 d=3 emu_d=3 cls_cyc=6282376 wait_cyc=1291 logits  -53  -43   -5   62  -45  -14  -73  -27   -8    3 raw@0 cbd5fb3ed3f2b7e5 f803000000000000 raw@surf f803000000000000
+RLDBG p6 cell 70 d=4 emu_d=4 cls_cyc=6225585 wait_cyc=1367 logits  -51  -18  -23  -38   69  -33  -52  -12  -22    0 raw@0 cdeee9da45dfccf4 ea00000000000000 raw@surf ea00000000000000
+RLDBG p6 cell 71 d=2 emu_d=2 cls_cyc=6180016 wait_cyc=1479 logits  -32  -14   92   20  -96  -56  -64    3    4  -69 raw@0 e0f25c14a0c8c003 04bb000000000000 raw@surf 04bb000000000000
+RLDBG p6 cell 76 d=9 emu_d=9 cls_cyc=6142837 wait_cyc=1474 logits  -60   -8  -43  -20   21  -38  -84  -15   -5   64 raw@0 c4f8d5ec15daacf1 fb40000000000000 raw@surf fb40000000000000
+RLDBG p6 cell 78 d=7 emu_d=7 cls_cyc=6291783 wait_cyc=1322 logits  -38  -16   20   -6  -25  -51  -70   39   -5  -41 raw@0 daf014fae7cdba27 fbd7000000000000 raw@surf fbd7000000000000
+RLDBG p6 cell 79 d=6 emu_d=6 cls_cyc=6291667 wait_cyc=1299 logits  -23  -37  -24  -37    6   -1   84  -47  -17  -54 raw@0 e9dbe8db06ff54d1 efca000000000000 raw@surf efca000000000000
+RLDBG p6 cell 80 d=1 emu_d=1 cls_cyc=6190160 wait_cyc=1324 logits  -38   48  -16  -60   -5  -43  -58   -8  -13  -53 raw@0 da30f0c4fbd5c6f8 f3cb000000000000 raw@surf f3cb000000000000
+RLDBG p6 timing: setup_cyc=2476 classify_cyc=223572911 push_wait_cyc=49553 loop_cyc=246454470 tile CYC_CONV=3003
+RLDBG p6 status=0x00002402 nlit=36 expected=36 commit_cyc=31985 tile CYC_COMMIT=4237 misc=[46656 11988 729 36 0 524288 16 100]
+RLDBG p6 literal mismatches: 0
+RLDBG puzzle 7 layout_reg=0x00000020 logit_pa=0xa0212000
+RLDBG p7 cell  1 d=8 emu_d=8 cls_cyc=6168945 wait_cyc=1378 logits  -18  -19  -26  -21  -39    1  -52   -7   40  -34 raw@0 eeede6ebd901ccf9 28de000000000000 raw@surf 28de000000000000
+RLDBG p7 cell  6 d=9 emu_d=9 cls_cyc=6185885 wait_cyc=1472 logits  -58  -52  -52  -16   22  -31  -63    9    1   63 raw@0 c6ccccf016e1c109 013f000000000000 raw@surf 013f000000000000
+RLDBG p7 cell  9 d=9 emu_d=9 cls_cyc=6157065 wait_cyc=1488 logits  -13  -41  -28  -10   13  -32  -42  -13    0   33 raw@0 f3d7e4f60de0d6f3 0021000000000000 raw@surf 0021000000000000
+RLDBG p7 cell 11 d=3 emu_d=3 cls_cyc=6159381 wait_cyc=1492 logits  -31  -41  -35   78  -79    1  -70  -27  -21  -13 raw@0 e1d7dd4eb101bae5 ebf3000000000000 raw@surf ebf3000000000000
+RLDBG p7 cell 14 d=6 emu_d=6 cls_cyc=6282115 wait_cyc=1308 logits  -12  -33  -23  -28  -53   14   38  -38    4  -16 raw@0 f4dfe9e4cb0e26da 04f0000000000000 raw@surf 04f0000000000000
+RLDBG p7 cell 20 d=1 emu_d=1 cls_cyc=6195032 wait_cyc=1441 logits  -53   41  -24  -30   -5  -24  -32  -15  -22  -42 raw@0 cb29e8e2fbe8e0f1 ead6000000000000 raw@surf ead6000000000000
+RLDBG p7 cell 21 d=3 emu_d=3 cls_cyc=6196753 wait_cyc=1371 logits  -50  -34  -11   70  -51  -12  -60  -25  -16  -17 raw@0 cedef546cdf4c4e7 f0ef000000000000 raw@surf f0ef000000000000
+RLDBG p7 cell 26 d=2 emu_d=2 cls_cyc=6160429 wait_cyc=1312 logits  -31  -27   72   -4  -52  -50  -45   24  -22  -72 raw@0 e1e548fcccced318 eab8000000000000 raw@surf eab8000000000000
+RLDBG p7 cell 27 d=7 emu_d=7 cls_cyc=6199093 wait_cyc=1355 logits  -21  -11   15   12  -35  -36  -59   33  -18  -19 raw@0 ebf50f0cdddcc521 eeed000000000000 raw@surf eeed000000000000
+RLDBG p7 cell 34 d=4 emu_d=4 cls_cyc=6286159 wait_cyc=1361 logits  -13   -5  -15  -27   31   -8   -6  -19  -18  -11 raw@0 f3fbf1e51ff8faed eef5000000000000 raw@surf eef5000000000000
+RLDBG p7 cell 37 d=3 emu_d=3 cls_cyc=6247597 wait_cyc=1380 logits  -69  -33  -19   87  -71  -14  -83  -15  -14  -14 raw@0 bbdfed57b9f2adf1 f2f2000000000000 raw@surf f2f2000000000000
+RLDBG p7 cell 38 d=5 emu_d=5 cls_cyc=6104000 wait_cyc=1342 logits  -13  -27  -10    3  -31   30    5  -46   -7  -41 raw@0 f3e5f603e11e05d2 f9d7000000000000 raw@surf f9d7000000000000
+RLDBG p7 cell 39 d=2 emu_d=2 cls_cyc=6168456 wait_cyc=1341 logits    2   -7   75  -33  -74  -62  -19  -39  -24  -68 raw@0 02f94bdfb6c2edd9 e8bc000000000000 raw@surf e8bc000000000000
+RLDBG p7 cell 42 d=7 emu_d=7 cls_cyc=6185113 wait_cyc=1441 logits  -32  -23   19    3  -33  -66  -58   41   -1  -24 raw@0 e0e91303dfbec629 ffe8000000000000 raw@surf ffe8000000000000
+RLDBG p7 cell 51 d=1 emu_d=1 cls_cyc=6149755 wait_cyc=1487 logits  -36   58  -19  -81   -8  -48  -50  -20  -19  -63 raw@0 dc3aedaff8d0ceec edc1000000000000 raw@surf edc1000000000000
+RLDBG p7 cell 52 d=8 emu_d=8 cls_cyc=6163581 wait_cyc=1313 logits  -18  -46   -3   -3  -48  -12   -8  -48   49  -31 raw@0 eed2fdfdd0f4f8d0 31e1000000000000 raw@surf 31e1000000000000
+RLDBG p7 cell 59 d=5 emu_d=5 cls_cyc=6247620 wait_cyc=1339 logits  -19  -25  -58  -16  -33   56   -1  -30   -4  -16 raw@0 ede7c6f0df38ffe2 fcf0000000000000 raw@surf fcf0000000000000
+RLDBG p7 cell 63 d=4 emu_d=4 cls_cyc=6178981 wait_cyc=1512 logits  -53  -17  -26  -56   73  -16  -43  -13  -21  -11 raw@0 cbefe6c849f0d5f3 ebf5000000000000 raw@surf ebf5000000000000
+RLDBG p7 cell 65 d=2 emu_d=2 cls_cyc=6102098 wait_cyc=1376 logits  -22   -7   64  -32   -6  -35  -22  -12  -33  -62 raw@0 eaf940e0faddeaf4 dfc2000000000000 raw@surf dfc2000000000000
+RLDBG p7 cell 66 d=1 emu_d=1 cls_cyc=6164796 wait_cyc=1342 logits  -44   42  -50  -41   -7  -22  -29  -21   -7  -21 raw@0 d42aced7f9eae3eb f9eb000000000000 raw@surf f9eb000000000000
+RLDBG p7 cell 68 d=7 emu_d=7 cls_cyc=6174595 wait_cyc=1489 logits  -47  -41   -5  -16  -10   -3   -7   30  -19  -29 raw@0 d1d7fbf0f6fdf91e ede3000000000000 raw@surf ede3000000000000
+RLDBG p7 cell 69 d=5 emu_d=5 cls_cyc=6256621 wait_cyc=1323 logits  -54  -46  -49  -15  -49   60  -21  -46  -24   18 raw@0 cad2cff1cf3cebd2 e812000000000000 raw@surf e812000000000000
+RLDBG p7 cell 76 d=9 emu_d=9 cls_cyc=6104229 wait_cyc=1316 logits  -58  -39  -46   -5   -2    5  -63  -22    3   60 raw@0 c6d9d2fbfe05c1ea 033c000000000000 raw@surf 033c000000000000
+RLDBG p7 cell 80 d=6 emu_d=6 cls_cyc=6164176 wait_cyc=1367 logits  -16  -40  -30  -24    9    2   78  -76  -27  -47 raw@0 f0d8e2e809024eb4 e5d1000000000000 raw@surf e5d1000000000000
+RLDBG p7 timing: setup_cyc=2682 classify_cyc=148402475 push_wait_cyc=33346 loop_cyc=163910843 tile CYC_CONV=2030
+RLDBG p7 status=0x00001802 nlit=24 expected=24 commit_cyc=30776 tile CYC_COMMIT=4253 misc=[46656 11988 729 24 0 524288 16 100]
+RLDBG p7 literal mismatches: 0
+RLDBG puzzle 8 layout_reg=0x00000020 logit_pa=0xa0212000
+RLDBG p8 cell  0 d=2 emu_d=2 cls_cyc=6164114 wait_cyc=1355 logits  -40   18   88  -27   -6  -42  -31  -18  -27  -88 raw@0 d81258e5fad6e1ee e5a8000000000000 raw@surf e5a8000000000000
+RLDBG p8 cell  2 d=7 emu_d=7 cls_cyc=6195321 wait_cyc=1326 logits  -19   -9    0    0  -25  -33  -73   58  -34   -5 raw@0 edf70000e7dfb73a defb000000000000 raw@surf defb000000000000
+RLDBG p8 cell  4 d=5 emu_d=5 cls_cyc=6180044 wait_cyc=1502 logits  -63  -33  -49  -12  -73   62    7  -52   20  -12 raw@0 c1dfcff4b73e07cc 14f4000000000000 raw@surf 14f4000000000000
+RLDBG p8 cell  5 d=3 emu_d=3 cls_cyc=6239352 wait_cyc=1446 logits  -51  -12  -33   67  -45   -5  -75  -13   -7    8 raw@0 cdf4df43d3fbb5f3 f908000000000000 raw@surf f908000000000000
+RLDBG p8 cell  7 d=1 emu_d=1 cls_cyc=6176177 wait_cyc=1324 logits  -52   32  -10  -21   -4  -28  -32  -21   -3  -43 raw@0 cc20f6ebfce4e0eb fdd5000000000000 raw@surf fdd5000000000000
+RLDBG p8 cell 10 d=5 emu_d=5 cls_cyc=6195489 wait_cyc=1366 logits  -22  -47  -57   12  -26   41  -29  -40   13   11 raw@0 ead1c70ce629e3d8 0d0b000000000000 raw@surf 0d0b000000000000
+RLDBG p8 cell 11 d=4 emu_d=4 cls_cyc=6175426 wait_cyc=1468 logits  -80   -8  -47  -40   50  -18  -59    0    5   18 raw@0 b0f8d1d832eec500 0512000000000000 raw@surf 0512000000000000
+RLDBG p8 cell 12 d=6 emu_d=6 cls_cyc=6102663 wait_cyc=1266 logits  -24  -47  -16   -4  -18    7   73  -66    3  -54 raw@0 e8d1f0fcee0749be 03ca000000000000 raw@surf 03ca000000000000
+RLDBG p8 cell 18 d=8 emu_d=8 cls_cyc=6186404 wait_cyc=1332 logits  -41  -48    0   17  -48  -11  -18  -67   59  -45 raw@0 d7d00011d0f5eebd 3bd3000000000000 raw@surf 3bd3000000000000
+RLDBG p8 cell 20 d=6 emu_d=6 cls_cyc=6267947 wait_cyc=1356 logits   -2  -48  -47  -26   -1  -33   76  -46  -17  -14 raw@0 fed0d1e6ffdf4cd2 eff2000000000000 raw@surf eff2000000000000
+RLDBG p8 cell 23 d=1 emu_d=1 cls_cyc=6147108 wait_cyc=1383 logits  -42   38  -38  -33   -3  -28  -26  -21  -14  -22 raw@0 d626dadffde4e6eb f2ea000000000000 raw@surf f2ea000000000000
+RLDBG p8 cell 24 d=9 emu_d=9 cls_cyc=6202415 wait_cyc=1287 logits  -39  -39  -21    5   13  -31  -74    2  -21   63 raw@0 d9d9eb050de1b602 eb3f000000000000 raw@surf eb3f000000000000
+RLDBG p8 cell 25 d=5 emu_d=5 cls_cyc=6199735 wait_cyc=1335 logits  -64  -53  -72  -17  -13   62  -45  -14   -5   20 raw@0 c0cbb8eff33ed3f2 fb14000000000000 raw@surf fb14000000000000
+RLDBG p8 cell 27 d=9 emu_d=9 cls_cyc=6177219 wait_cyc=1473 logits  -44  -18  -19  -24    0  -35  -70   14   13   31 raw@0 d4eeede800ddba0e 0d1f000000000000 raw@surf 0d1f000000000000
+RLDBG p8 cell 28 d=4 emu_d=4 cls_cyc=6190470 wait_cyc=1454 logits  -50  -17  -16  -44   67  -12  -24   -5  -25  -23 raw@0 ceeff0d443f4e8fb e7e9000000000000 raw@surf e7e9000000000000
+RLDBG p8 cell 30 d=3 emu_d=3 cls_cyc=6279024 wait_cyc=1333 logits  -28  -34   -9   48  -61    0  -36  -44  -32  -35 raw@0 e4def730c300dcd4 e0dd000000000000 raw@surf e0dd000000000000
+RLDBG p8 cell 32 d=5 emu_d=5 cls_cyc=6165074 wait_cyc=1358 logits  -49  -44  -58  -12  -24   65  -33  -33   10   -2 raw@0 cfd4c6f4e841dfdf 0afe000000000000 raw@surf 0afe000000000000
+RLDBG p8 cell 34 d=8 emu_d=8 cls_cyc=6181194 wait_cyc=1406 logits  -42  -43  -19    3  -65   -6  -26  -53   80  -25 raw@0 d6d5ed03bffae6cb 50e7000000000000 raw@surf 50e7000000000000
+RLDBG p8 cell 35 d=1 emu_d=1 cls_cyc=6144258 wait_cyc=1449 logits  -42   48  -37  -46   -9  -32  -35  -12  -20  -32 raw@0 d630dbd2f7e0ddf4 ece0000000000000 raw@surf ece0000000000000
+RLDBG p8 cell 42 d=3 emu_d=3 cls_cyc=6164799 wait_cyc=1319 logits  -99  -35  -22   90  -73   -4  -93  -29   20  -24 raw@0 9dddea5ab7fca3e3 14e8000000000000 raw@surf 14e8000000000000
+RLDBG p8 cell 43 d=6 emu_d=6 cls_cyc=6364795 wait_cyc=1297 logits    2  -53  -20  -32  -15   -2   77  -84  -17  -30 raw@0 02cbece0f1fe4dac efe2000000000000 raw@surf efe2000000000000
+RLDBG p8 cell 45 d=3 emu_d=3 cls_cyc=6173645 wait_cyc=1488 logits  -75  -26  -22   53  -52    6  -80  -23    3  -17 raw@0 b5e6ea35cc06b0e9 03ef000000000000 raw@surf 03ef000000000000
+RLDBG p8 cell 47 d=1 emu_d=1 cls_cyc=6200053 wait_cyc=1471 logits  -25   46  -20  -54  -23  -39  -49  -12   -7  -57 raw@0 e72eeccae9d9cff4 f9c7000000000000 raw@surf f9c7000000000000
+RLDBG p8 cell 51 d=5 emu_d=5 cls_cyc=6153867 wait_cyc=1344 logits  -49  -34  -68  -26  -16   65  -18  -18   -5  -16 raw@0 cfdebce6f041eeee fbf0000000000000 raw@surf fbf0000000000000
+RLDBG p8 cell 53 d=2 emu_d=2 cls_cyc=6194077 wait_cyc=1335 logits  -17    4   82   -8  -74  -52  -39  -22  -22  -67 raw@0 ef0452f8b6ccd9ea eabd000000000000 raw@surf eabd000000000000
+RLDBG p8 cell 54 d=7 emu_d=7 cls_cyc=6151570 wait_cyc=1459 logits  -32  -12  -20   -1  -19  -23  -60   52  -20   -3 raw@0 e0f4ecffede9c434 ecfd000000000000 raw@surf ecfd000000000000
+RLDBG p8 cell 55 d=2 emu_d=2 cls_cyc=6234199 wait_cyc=1487 logits  -57    2   86    1  -58  -70  -50    6   -4  -51 raw@0 c7025601c6bace06 fccd000000000000 raw@surf fccd000000000000
+RLDBG p8 cell 56 d=9 emu_d=9 cls_cyc=6178762 wait_cyc=1294 logits  -25  -31  -49  -10  -10  -10  -70   -1  -25   49 raw@0 e7e1cff6f6f6baff e731000000000000 raw@surf e731000000000000
+RLDBG p8 cell 57 d=5 emu_d=5 cls_cyc=6193466 wait_cyc=1352 logits  -29  -35  -43   -3  -27   59  -16  -40   -6   -6 raw@0 e3ddd5fde53bf0d8 fafa000000000000 raw@surf fafa000000000000
+RLDBG p8 cell 61 d=3 emu_d=3 cls_cyc=6156517 wait_cyc=1444 logits  -79  -26  -28   69  -57   12  -62  -31    3  -14 raw@0 b1e6e445c70cc2e1 03f2000000000000 raw@surf 03f2000000000000
+RLDBG p8 cell 62 d=8 emu_d=8 cls_cyc=6198404 wait_cyc=1475 logits  -40  -24  -30   22  -32  -15  -38  -28   59   -7 raw@0 d8e8e216e0f1dae4 3bf9000000000000 raw@surf 3bf9000000000000
+RLDBG p8 cell 63 d=4 emu_d=4 cls_cyc=6178290 wait_cyc=1344 logits  -66  -18  -40  -32   70  -43  -41  -27    2    4 raw@0 beeed8e046d5d7e5 0204000000000000 raw@surf 0204000000000000
+RLDBG p8 cell 66 d=9 emu_d=9 cls_cyc=6381227 wait_cyc=1311 logits  -18  -49  -28  -12    3  -27  -64   -9    5   69 raw@0 eecfe4f403e5c0f7 0545000000000000 raw@surf 0545000000000000
+RLDBG p8 cell 71 d=7 emu_d=7 cls_cyc=6177451 wait_cyc=1484 logits   -6  -48  -45  -42   -7   -3  -43   70  -46    2 raw@0 fad0d3d6f9fdd546 d202000000000000 raw@surf d202000000000000
+RLDBG p8 cell 73 d=1 emu_d=1 cls_cyc=6103027 wait_cyc=41425 logits  -29   44  -24  -42  -24  -37  -40   -5  -11  -51 raw@0 e32ce8d6e8dbd8fb f5cd000000000000 raw@surf f5cd000000000000
+RLDBG p8 cell 75 d=2 emu_d=2 cls_cyc=6157144 wait_cyc=1338 logits  -30  -20   91    8 -106  -81  -66   -6   12  -66 raw@0 e2ec5b0896afbefa 0cbe000000000000 raw@surf 0cbe000000000000
+RLDBG p8 cell 76 d=8 emu_d=8 cls_cyc=6191978 wait_cyc=1458 logits  -47  -23  -17   19  -34   -6  -72  -13   60  -33 raw@0 d1e9ef13defab8f3 3cdf000000000000 raw@surf 3cdf000000000000
+RLDBG p8 cell 78 d=4 emu_d=4 cls_cyc=6146508 wait_cyc=1479 logits  -54  -18  -30  -48   69  -21  -22  -21  -19  -22 raw@0 caeee2d045ebeaeb edea000000000000 raw@surf edea000000000000
+RLDBG p8 cell 79 d=9 emu_d=9 cls_cyc=6280329 wait_cyc=1302 logits  -40    3  -48  -24    3  -17  -85    0    2   43 raw@0 d803d0e803efab00 022b000000000000 raw@surf 022b000000000000
+RLDBG p8 timing: setup_cyc=2448 classify_cyc=241549542 push_wait_cyc=94125 loop_cyc=266333843 tile CYC_CONV=3222
+RLDBG p8 status=0x00002702 nlit=39 expected=39 commit_cyc=30516 tile CYC_COMMIT=4180 misc=[46656 11988 729 39 0 524288 16 100]
+RLDBG p8 literal mismatches: 0
+RLDBG puzzle 9 layout_reg=0x00000020 logit_pa=0xa0212000
+RLDBG p9 cell  3 d=4 emu_d=4 cls_cyc=6107472 wait_cyc=1337 logits  -66  -23  -39  -49   64  -51  -23   -4   21    0 raw@0 bee9d9cf40cde9fc 1500000000000000 raw@surf 1500000000000000
+RLDBG p9 cell  4 d=3 emu_d=3 cls_cyc=6171263 wait_cyc=1321 logits -100  -19  -43  105  -81    7  -96  -33   -6  -35 raw@0 9cedd569af07a0df fadd000000000000 raw@surf fadd000000000000
+RLDBG p9 cell  6 d=2 emu_d=2 cls_cyc=6173801 wait_cyc=1454 logits  -18   -4   89  -10  -95  -84  -75  -21   -9  -69 raw@0 eefc59f6a1acb5eb f7bb000000000000 raw@surf f7bb000000000000
+RLDBG p9 cell  7 d=9 emu_d=9 cls_cyc=6193937 wait_cyc=1354 logits  -22  -18  -40   -2    3  -26  -65  -13    2   54 raw@0 eaeed8fe03e6bff3 0236000000000000 raw@surf 0236000000000000
+RLDBG p9 cell 11 d=3 emu_d=3 cls_cyc=6227947 wait_cyc=1267 logits  -47  -29    6   26  -21   12  -45    9  -33  -17 raw@0 d1e3061aeb0cd309 dfef000000000000 raw@surf dfef000000000000
+RLDBG p9 cell 12 d=9 emu_d=9 cls_cyc=6292521 wait_cyc=1340 logits  -52  -41  -48   -1   -7  -34  -57  -11   10   70 raw@0 ccd7d0fff9dec7f5 0a46000000000000 raw@surf 0a46000000000000
+RLDBG p9 cell 15 d=5 emu_d=5 cls_cyc=6185352 wait_cyc=1341 logits  -24  -49  -25  -13  -26   54   -9  -47   -9  -30 raw@0 e8cfe7f3e636f7d1 f7e2000000000000 raw@surf f7e2000000000000
+RLDBG p9 cell 20 d=6 emu_d=6 cls_cyc=6151590 wait_cyc=1503 logits   14  -49  -56  -23    0  -14   47  -22  -35   -6 raw@0 0ecfc8e900f22fea ddfa000000000000 raw@surf ddfa000000000000
+RLDBG p9 cell 23 d=7 emu_d=7 cls_cyc=6214995 wait_cyc=1459 logits  -38  -13   13   31  -28  -40  -54   63  -13  -21 raw@0 daf30d1fe4d8ca3f f3eb000000000000 raw@surf f3eb000000000000
+RLDBG p9 cell 26 d=1 emu_d=1 cls_cyc=6156797 wait_cyc=1309 logits  -31   46  -18  -59  -28  -39  -47   -7   -2  -60 raw@0 e12eeec5e4d9d1f9 fec4000000000000 raw@surf fec4000000000000
+RLDBG p9 cell 27 d=6 emu_d=6 cls_cyc=6250182 wait_cyc=1343 logits  -15  -12    0  -34   19  -11   48  -41  -31  -60 raw@0 f1f400de13f530d7 e1c4000000000000 raw@surf e1c4000000000000
+RLDBG p9 cell 33 d=9 emu_d=9 cls_cyc=6163095 wait_cyc=1410 logits  -29   -4  -17  -27   10  -32  -81   -3    6   41 raw@0 e3fcefe50ae0affd 0629000000000000 raw@surf 0629000000000000
+RLDBG p9 cell 34 d=2 emu_d=2 cls_cyc=6204823 wait_cyc=1346 logits  -36  -24   76  -26  -33  -58  -57   11  -39  -43 raw@0 dce84ce6dfc6c70b d9d5000000000000 raw@surf d9d5000000000000
+RLDBG p9 cell 35 d=4 emu_d=4 cls_cyc=6189929 wait_cyc=1307 logits  -10  -38  -28  -50   66  -25  -16  -19  -34    2 raw@0 f6dae4ce42e7f0ed de02000000000000 raw@surf de02000000000000
+RLDBG p9 cell 36 d=4 emu_d=4 cls_cyc=6176762 wait_cyc=1541 logits  -40  -30  -19  -38   77  -30  -27   -3  -29  -13 raw@0 d8e2edda4de2e5fd e3f3000000000000 raw@surf e3f3000000000000
+RLDBG p9 cell 37 d=2 emu_d=2 cls_cyc=6166445 wait_cyc=1476 logits  -40  -61   75    0  -28  -39  -38  -33  -16  -39 raw@0 d8c34b00e4d9dadf f0d9000000000000 raw@surf f0d9000000000000
+RLDBG p9 cell 41 d=6 emu_d=6 cls_cyc=6234307 wait_cyc=1439 logits  -32  -12  -16  -38  -17    9   45  -45   16  -43 raw@0 e0f4f0daef092dd3 10d5000000000000 raw@surf 10d5000000000000
+RLDBG p9 cell 43 d=8 emu_d=8 cls_cyc=6279441 wait_cyc=1350 logits  -31  -16  -20  -25  -31    2   18  -39   46  -38 raw@0 e1f0ece7e10212d9 2eda000000000000 raw@surf 2eda000000000000
+RLDBG p9 cell 44 d=7 emu_d=7 cls_cyc=6177090 wait_cyc=1484 logits  -28  -14  -43  -18   -9  -19  -64   64   -9    8 raw@0 e4f2d5eef7edc040 f708000000000000 raw@surf f708000000000000
+RLDBG p9 cell 45 d=8 emu_d=8 cls_cyc=6155347 wait_cyc=1385 logits  -13  -51    4   -5  -45  -45    2  -58   54    1 raw@0 f3cd04fbd3d302c6 3601000000000000 raw@surf 3601000000000000
+RLDBG p9 cell 49 d=2 emu_d=2 cls_cyc=6160179 wait_cyc=1283 logits   -8  -38   60  -14  -70  -45  -55   -5  -28  -32 raw@0 f8da3cf2bad3c9fb e4e0000000000000 raw@surf e4e0000000000000
+RLDBG p9 cell 52 d=3 emu_d=3 cls_cyc=6202738 wait_cyc=1351 logits  -49  -47   -1   69  -44  -30  -60  -12    8   -7 raw@0 cfd1ff45d4e2c4f4 08f9000000000000 raw@surf 08f9000000000000
+RLDBG p9 cell 55 d=7 emu_d=7 cls_cyc=6271620 wait_cyc=1504 logits  -13  -22   -7  -26   15  -22  -18   46  -13   -9 raw@0 f3eaf9e60feaee2e f3f7000000000000 raw@surf f3f7000000000000
+RLDBG p9 cell 57 d=6 emu_d=6 cls_cyc=6142999 wait_cyc=1373 logits   -8  -36  -22  -40   20  -12   41  -37  -47  -30 raw@0 f8dcead814f429db d1e2000000000000 raw@surf d1e2000000000000
+RLDBG p9 cell 59 d=3 emu_d=3 cls_cyc=6156182 wait_cyc=1368 logits  -75  -28  -48   71  -38    2  -85  -15    8    1 raw@0 b5e4d047da02abf1 0801000000000000 raw@surf 0801000000000000
+RLDBG p9 cell 61 d=1 emu_d=1 cls_cyc=6183577 wait_cyc=1463 logits  -35   50  -36  -65  -15  -33  -45   -4   -7  -50 raw@0 dd32dcbff1dfd3fc f9ce000000000000 raw@surf f9ce000000000000
+RLDBG p9 cell 66 d=8 emu_d=8 cls_cyc=6150988 wait_cyc=1473 logits  -16  -36   19    1  -24  -47  -44   -7   38  -16 raw@0 f0dc1301e8d1d4f9 26f0000000000000 raw@surf 26f0000000000000
+RLDBG p9 cell 77 d=5 emu_d=5 cls_cyc=6151682 wait_cyc=1355 logits  -48  -24  -73    6  -43   81  -39  -64  -11   11 raw@0 d0e8b706d551d9c0 f50b000000000000 raw@surf f50b000000000000
+RLDBG p9 cell 78 d=4 emu_d=4 cls_cyc=6271627 wait_cyc=1354 logits  -62  -29  -24  -38   73  -40  -47  -21   -2    9 raw@0 c2e3e8da49d8d1eb fe09000000000000 raw@surf fe09000000000000
+RLDBG p9 timing: setup_cyc=37435 classify_cyc=179564688 push_wait_cyc=40290 loop_cyc=197988705 tile CYC_CONV=2415
+RLDBG p9 status=0x00001d02 nlit=29 expected=29 commit_cyc=31720 tile CYC_COMMIT=4312 misc=[46656 11988 729 29 0 524288 16 100]
+RLDBG p9 literal mismatches: 0

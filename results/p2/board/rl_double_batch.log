@@ -1,0 +1,26 @@
+PASS  /root/CU_SATACCEL/rl/data/base.cnf result=SAT expect=SAT grid==ref=n/a decisions=127 conflicts=0 restarts=0 build_cyc=65973664 load_cyc=47486436 solve_cyc=962823 bytes=5293556 tile_busy=871686 tile_mem_active=88469 tile_mem_stall=846073
+1/1 correct
+SAT-Accel interrupts: 151 -> 152
+NVDLA seven.pgm: 0 2 0 0 0 0 0 124 0 0  (ESP's published output: 0 2 0 0 0 0 0 124 0 0)
+rl_board binary: /root/rl_board_fix 8dd14a5d2fa5
+=== double_lean start
+double clear=lean xfer=used      nn=nvdla handoff=full  puzzles=100  wall 296169.9 ms (2961699.2 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 925
+Shutdown signal received, exiting
+=== double_lean rc=0
+=== double_delta start
+double clear=full xfer=allocated nn=nvdla handoff=delta puzzles=100  wall 247070.7 ms (2470707.4 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 925
+Shutdown signal received, exiting
+=== double_delta rc=0
+=== double_delta_resident start
+double clear=full xfer=allocated nn=nvdla handoff=delta+resident puzzles=100  wall 246840.9 ms (2468408.9 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 926
+Shutdown signal received, exiting
+=== double_delta_resident rc=0
+=== double_reasonlink start
+double clear=full xfer=allocated nn=nvdla handoff=reasonlink puzzles=100  wall 247236.3 ms (2472362.8 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 925
+Shutdown signal received, exiting
+=== double_reasonlink rc=0
+=== double_reasonlink_resident start
+double clear=full xfer=allocated nn=nvdla handoff=reasonlink+resident puzzles=100  wall 246727.6 ms (2467275.6 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 926
+Shutdown signal received, exiting
+=== double_reasonlink_resident rc=0
+=== BATCH DONE double_rest

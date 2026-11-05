@@ -1,0 +1,5 @@
+=== serial_reasonlink start
+serial clear=full xfer=allocated nn=nvdla handoff=reasonlink puzzles=100  wall 282091.5 ms (2820914.7 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 926
+Shutdown signal received, exiting
+=== serial_reasonlink rc=0
+=== serial_reasonlink_resident start

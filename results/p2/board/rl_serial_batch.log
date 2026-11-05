@@ -1,0 +1,31 @@
+### /root/rl_serial.log
+PASS  /root/CU_SATACCEL/rl/data/base.cnf result=SAT expect=SAT grid==ref=n/a decisions=127 conflicts=0 restarts=0 build_cyc=74704439 load_cyc=47505706 solve_cyc=947431 bytes=5293556 tile_busy=865936 tile_mem_active=88469 tile_mem_stall=840470
+1/1 correct
+SAT-Accel interrupts: 0 -> 1
+NVDLA seven.pgm: 0 2 0 0 0 0 0 124 0 0  (ESP's published output: 0 2 0 0 0 0 0 124 0 0)
+=== serial_delta start
+Emulator starting
+serial clear=full xfer=allocated nn=nvdla handoff=delta puzzles=100  wall 259169.1 ms (2591690.8 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 925
+Shutdown signal received, exiting
+=== serial_delta rc=0
+=== serial_reasonlink start
+Emulator starting
+serial clear=full xfer=allocated nn=nvdla handoff=reasonlink puzzles=100  wall 255510.1 ms (2555100.8 us/puzzle)  matches reference 19/100  NVDLA cells != emulator: 925
+Shutdown signal received, exiting
+=== serial_reasonlink rc=0
+=== serial_delta_resident start
+Emulator starting
+serial clear=full xfer=allocated nn=nvdla handoff=delta+resident puzzles=100  wall 249454.2 ms (2494542.0 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 925
+Shutdown signal received, exiting
+=== serial_delta_resident rc=0
+=== serial_reasonlink_resident start
+Emulator starting
+serial clear=full xfer=allocated nn=nvdla handoff=reasonlink+resident puzzles=100  wall 253128.8 ms (2531288.0 us/puzzle)  matches reference 19/100  NVDLA cells != emulator: 925
+Shutdown signal received, exiting
+=== serial_reasonlink_resident rc=0
+=== serial_faithful_trace start
+serial clear=full xfer=allocated nn=trace handoff=full  puzzles=100  wall 140373.9 ms (1403738.7 us/puzzle)  matches reference 98/100  NVDLA cells != emulator: 0
+=== serial_faithful_trace rc=0
+=== BATCH DONE serial
+
+PID:
