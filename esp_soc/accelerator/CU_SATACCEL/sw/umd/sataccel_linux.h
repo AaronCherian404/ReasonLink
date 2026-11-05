@@ -16,7 +16,9 @@ typedef struct {
     uint8_t *mem;
     uint64_t mem_phys;
     size_t mem_size;
-    unsigned wait_timeout_ms;   /* completion interrupt wait (default 60 s) */
+    unsigned wait_timeout_ms;   /* completion interrupt wait before polling (default 1 s,
+                                   env SATACCEL_WAIT_MS; 0: poll only) */
+    unsigned irq_timeouts;      /* solves whose interrupt did not arrive in time */
     sa_dev dev;
 } sa_linux;
 

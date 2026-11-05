@@ -235,7 +235,9 @@ void sa_dev_start_resident(sa_dev *d, const sa_image *img, int resident)
     (void)resident;
 #endif
 
-    /* Completion interrupt: solver ap_done */
+    /* Completion interrupt: solver ap_done (stale status cleared first, e.g.
+     * from an interrupted run; the register toggles on write) */
+    if (rd(d, S + XSOLVER_CONTROL_ADDR_ISR) & 1) wr(d, S + XSOLVER_CONTROL_ADDR_ISR, 1);
     wr(d, S + XSOLVER_CONTROL_ADDR_IER, 1);
     wr(d, S + XSOLVER_CONTROL_ADDR_GIE, 1);
 
@@ -259,8 +261,8 @@ int sa_dev_wait(sa_dev *d)
         wr(d, order[i], SA_AP_CONTINUE);
     }
     /* Clear the solver's ap_done interrupt status. The register toggles on
-     * write, so only write if it is still set: on Linux the kernel's
-     * interrupt handler has usually cleared it already. */
+     * write, so only write if it is set. (On Linux the kernel's interrupt
+     * handler only clears the global enable; sa_dev_start sets it again.) */
     if (rd(d, SA_KERNEL_BASE_SOLVER + XSOLVER_CONTROL_ADDR_ISR) & 1)
         wr(d, SA_KERNEL_BASE_SOLVER + XSOLVER_CONTROL_ADDR_ISR, 1);
     /* migrate back: answerStack, miscCounters, trackLBD (host.cpp 575) */

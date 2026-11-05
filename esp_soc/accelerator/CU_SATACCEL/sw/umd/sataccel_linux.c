@@ -4,6 +4,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -23,15 +24,16 @@ static uint32_t mmio_rd32(void *ctx, uint32_t off)
     return s->regs[off / 4];
 }
 
-/* The solver's completion raises the interrupt: sleep on it first, then
- * confirm in the register (other kernels finish right after, so plain
- * polling is fine for them). */
+/* The solver's completion raises the interrupt: sleep on it first (up to
+ * wait_timeout_ms; 0 skips it), then confirm in the register by polling
+ * (other kernels finish right after, so plain polling is fine for them). A
+ * missed interrupt only costs the timeout: polling still finds ap_done. */
 static int mmio_poll(void *ctx, uint32_t off, uint32_t mask, uint32_t val)
 {
     sa_linux *s = ctx;
-    if (off == SA_KERNEL_BASE_SOLVER && mask == SA_AP_DONE) {
+    if (off == SA_KERNEL_BASE_SOLVER && mask == SA_AP_DONE && s->wait_timeout_ms) {
         struct sataccel_wait w = {.timeout_ms = s->wait_timeout_ms};
-        if (ioctl(s->fd, SATACCEL_IOC_WAIT, &w) && errno == ETIMEDOUT) return -1;
+        if (ioctl(s->fd, SATACCEL_IOC_WAIT, &w) && errno == ETIMEDOUT) s->irq_timeouts++;
     }
     for (unsigned long i = 0; i < (1ul << 28); i++)
         if ((s->regs[off / 4] & mask) == val) return 0;
@@ -41,7 +43,9 @@ static int mmio_poll(void *ctx, uint32_t off, uint32_t mask, uint32_t val)
 int sa_linux_open(sa_linux *s, const sa_caps *caps)
 {
     memset(s, 0, sizeof(*s));
-    s->wait_timeout_ms = 60000;
+    /* SATACCEL_WAIT_MS overrides the interrupt wait; 0 polls only */
+    const char *w = getenv("SATACCEL_WAIT_MS");
+    s->wait_timeout_ms = w && *w ? (unsigned)strtoul(w, NULL, 10) : 1000;
     s->fd = open("/dev/sataccel", O_RDWR | O_CLOEXEC);
     if (s->fd < 0) return -1;
     struct sataccel_info info;

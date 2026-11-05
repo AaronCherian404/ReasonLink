@@ -5,7 +5,7 @@
  * It replays the register program the SAT-Accel driver core records for one
  * instance (sataccel_test.h, from sataccel_hw/tools/gen_baremetal_header.py)
  * after copying that instance's SAT-Accel memory image to the same physical
- * addresses, then checks the answer: SAT/UNSAT as expected, and for SAT
+ * addresses (minus the interrupt enables: it polls), then checks the answer: SAT/UNSAT as expected, and for SAT
  * every clause satisfied. It runs in coherent-DMA mode (ACC_COH_RECALL, as
  * the Linux driver does), set through the tile's CSRs as in ESP's
  * nv_nvdla_coh example, and prints the raw result words. run() also handles
@@ -32,6 +32,8 @@
 #define SATACCEL_TILE  4      /* tile number in esp_soc/socs/.../esp_config */
 
 #define SHELL_BASE     0xF0000
+#define SOLVER_GIE     0x60004   /* solver kernel interrupt enables (xsolver_hw.h) */
+#define SOLVER_IER     0x60008
 #define POLL_LIMIT     100000000u
 
 static uint64_t counter(struct esp_device *dev, unsigned off)
@@ -59,6 +61,12 @@ static int run(struct esp_device *dev, volatile unsigned int *coh, int mode, con
     for (unsigned i = 0; i < sizeof(sa_test_ops) / sizeof(sa_test_ops[0]); i++) {
         const uint32_t *op = sa_test_ops[i];
         if (op[0] == 0) {
+            /* No interrupt handler here: never enable the solver interrupt.
+             * ESP's socket sends a level interrupt once and waits for the
+             * PLIC complete; unacknowledged, it would block every later
+             * SAT-Accel interrupt (Linux included) until the FPGA is
+             * reprogrammed. */
+            if (op[1] == SOLVER_GIE || op[1] == SOLVER_IER) continue;
             iowrite32(dev, op[1], op[2]);
         } else if (op[0] == 1) {
             unsigned n = 0;

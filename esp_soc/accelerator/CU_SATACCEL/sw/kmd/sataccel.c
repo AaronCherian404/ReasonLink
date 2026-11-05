@@ -43,7 +43,7 @@
 #define ESP_ACC_COH_RECALL  2
 
 /* SAT-Accel registers used by the interrupt handler (sataccel_drv.h) */
-#define SA_SOLVER_ISR       (0x60000 + 0x0c)
+#define SA_SOLVER_GIE       (0x60000 + 0x04)
 
 static unsigned int tile = 4;
 module_param(tile, uint, 0444);
@@ -75,9 +75,15 @@ static irqreturn_t sataccel_isr(int irq, void *data)
 {
 	struct sataccel *sa = data;
 
-	/* Clear the solver's ap_done status (toggle on write) so the level
-	 * interrupt drops; user space still sees ap_done in AP_CTRL. */
-	iowrite32(1, sa->regs + SA_SOLVER_ISR);
+	/* Drop the level interrupt by clearing the solver's global enable
+	 * (user space re-enables it for each solve and clears the ap_done
+	 * status after polling). Not by writing ISR: it toggles on write, so a
+	 * repeated interrupt would set it again and the line would never
+	 * settle. ESP's socket re-sends the interrupt if the line is still high
+	 * when the PLIC complete arrives, so read back to make sure the write
+	 * has landed before this handler returns. */
+	iowrite32(0, sa->regs + SA_SOLVER_GIE);
+	ioread32(sa->regs + SA_SOLVER_GIE);
 	complete(&sa->done);
 	return IRQ_HANDLED;
 }

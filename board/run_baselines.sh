@@ -17,7 +17,19 @@ dmesg | grep -i sataccel | tail -3
 
 # Bring-up checks: SAT-Accel alone (the base Sudoku formula, no givens: SAT),
 # then NVDLA on ESP's demo image if present
+irqs() { awk '/sataccel/ {print $2}' /proc/interrupts; }
+i0=$(irqs)
 /root/CU_SATACCEL/sataccel_run cnf "$RL/data/base.cnf" 1
+# The completion interrupt must arrive, or every solve waits out the timeout.
+# ESP's socket blocks it if an earlier interrupt was never acknowledged (e.g.
+# an old bare-metal test that enabled it, then a reboot): then poll only, and
+# reprogram the FPGA before the next run.
+if [ "$(irqs)" = "$i0" ]; then
+  echo "WARNING: no SAT-Accel interrupt (reprogram the FPGA to clear it); polling for completion"
+  export SATACCEL_WAIT_MS=0
+else
+  echo "SAT-Accel completion interrupt OK ($i0 -> $(irqs))"
+fi
 if [ -f /root/NV_NVDLA/seven.pgm ]; then
   (cd /root/NV_NVDLA && ./nvdla_runtime --loadable lenet_mnist.nvdla --image seven.pgm --rawdump > /dev/null && cat output.dimg)
   echo "(ESP's published NVDLA output for seven.pgm: 0 2 0 0 0 0 0 124 0 0)"
