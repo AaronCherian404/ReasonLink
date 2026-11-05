@@ -12,6 +12,12 @@ root password comes from the `RL_PW` environment variable and is never stored.
 | `board_fetch.sh` | Every 5 min: copy `results/*.csv` and `/root/rl_*.log` off the board (no tar there: text between markers) |
 | `board_put.sh`, `board_put_bin.sh` | Copy a text file or a binary (base64, 8 KB chunks) onto the board |
 
-UART logger (tmux window `uart`): `while true; do socat -u TCP:espdev:4331 - >> ~/m2/uart_live.log; sleep 2; done`.
+**Backup (2026-11-05):** `~/m2/backup_reasonlink_20261105/` holds everything the board needs
+(`top_rl.bit`, `linux.bin`, `prom.bin`, `esplink` and the SoC config, `program.tcl`,
+`rl_board_fix`; md5s in `MD5SUMS`). With `RL_BACKUP` set, the boot scripts use it instead of
+the SoC folder, so the board comes back even after the folder was reconfigured:
+`RL_PW=<password> RL_BACKUP=~/m2/backup_reasonlink_20261105 ~/m2/boot_and_run.sh <batch>`.
+
+UART logger (tmux window `uart`; `boot_and_run.sh` starts it if session `rlb` is not running): `while true; do socat -u TCP:espdev:4331 - >> ~/m2/uart_live.log; sleep 2; done`.
 `rl_board_fix` is `board/rl_board` with the ReasonLink layout fix, built in `~/m2/rldbg` with the
 Makefile's flags against the existing objects until the Linux image is rebuilt.
