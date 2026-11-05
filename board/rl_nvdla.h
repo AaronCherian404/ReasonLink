@@ -31,6 +31,9 @@ void rl_nvdla_close(rl_nvdla *n);
  * channel group (8 or 32) and surface stride in bytes. */
 void *rl_nvdla_output(rl_nvdla *n, uint32_t *group, uint32_t *surf_stride);
 
+/* Debug: print the output tensor's descriptor (dims, strides, format) to stderr. */
+void rl_nvdla_describe(rl_nvdla *n);
+
 #ifdef __cplusplus
 }
 #endif

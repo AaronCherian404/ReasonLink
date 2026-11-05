@@ -95,6 +95,16 @@ extern "C" void *rl_nvdla_output(rl_nvdla *n, uint32_t *group, uint32_t *surf_st
     return n->out_buf + offset(n->out, 0, 0, 0);
 }
 
+extern "C" void rl_nvdla_describe(rl_nvdla *n)
+{
+    const nvdla::IRuntime::NvDlaTensor &t = n->out;
+    fprintf(stderr, "RLDBG out tensor: n=%u c=%u h=%u w=%u fmt=%d bufferSize=%llu stride=[%u %u %u %u] "
+                    "offset(c=0)=%ld offset(c=8)=%ld\n",
+            (unsigned)t.dims.n, (unsigned)t.dims.c, (unsigned)t.dims.h, (unsigned)t.dims.w, (int)t.pixelFormat,
+            (unsigned long long)t.bufferSize, (unsigned)t.stride[0], (unsigned)t.stride[1], (unsigned)t.stride[2],
+            (unsigned)t.stride[3], offset(t, 0, 0, 0), offset(t, 0, 0, 8));
+}
+
 extern "C" void rl_nvdla_close(rl_nvdla *n)
 {
     if (!n) return;

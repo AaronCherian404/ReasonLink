@@ -123,6 +123,22 @@ static rl_reference REF;
 static int USE_TRACE, LEAN_XFER, DELTA, RL, RESIDENT, STARTED;
 static rec_t *R;
 static uint32_t RL_LOGIT_PA, RL_GROUP, RL_SURF;   /* NVDLA's output tensor, for ReasonLink */
+static const volatile uint8_t *RL_OUT_VA;          /* the same buffer, CPU view (RL_DEBUG) */
+static int RL_DEBUG;                               /* env RL_DEBUG: dump ReasonLink's inputs/outputs */
+
+/* Debug (RL_DEBUG): the digit P1's argmax picks (digits 1..9, lowest wins ties) */
+static int cpu_digit(const int8_t *o)
+{
+    int d = 1;
+    for (int k = 2; k <= 9; k++) if (o[k] > o[d]) d = k;
+    return d;
+}
+
+static void dump_bytes(const char *tag, const volatile uint8_t *b, int n)
+{
+    fprintf(stderr, " %s", tag);
+    for (int i = 0; i < n; i++) fprintf(stderr, "%s%02x", i % 8 ? "" : " ", b[i]);
+}
 
 /* ReasonLink (phase B): after each NVDLA classification the tile fetches the
  * logits, converts them to a literal and queues it; COMMIT writes the delta.
@@ -135,10 +151,16 @@ static void prepare_rl(slot_t *s, uint32_t p)
     int8_t out[16];
     uint64_t t0 = rl_cycles();
     if (sa_rl_setup(&s->dev, &s->img, RL_GROUP, RL_SURF)) {
-        fprintf(stderr, "rl_board: no ReasonLink in this SAT-Accel tile\n");
+        fprintf(stderr, "rl_board: no ReasonLink in this SAT-Accel tile, or NVDLA's output layout "
+                        "(group %u, surface stride %u) is not one it can read\n", RL_GROUP, RL_SURF);
         exit(1);
     }
     sa_rl_begin(&s->dev);
+    int32_t expect[RL_CELLS];
+    uint32_t nexp = 0;
+    if (RL_DEBUG)
+        fprintf(stderr, "RLDBG puzzle %u layout_reg=0x%08x logit_pa=0x%08x\n", p,
+                S.regs[(SA_RL_BASE + 0x14) / 4], RL_LOGIT_PA);
     for (int cell = 0; cell < RL_CELLS; cell++) {
         int16_t im = cell_image(&CELLS, p, cell);
         if (im < 0) continue;
@@ -148,6 +170,15 @@ static void prepare_rl(slot_t *s, uint32_t p)
             exit(1);
         }
         if (memcmp(out, cell_ip2(&CELLS, p, cell), 10)) r->nn_mismatch++;
+        if (RL_DEBUG) {
+            int d = cpu_digit(out);
+            expect[nexp++] = 9 * cell + d;
+            fprintf(stderr, "RLDBG p%u cell %2d d=%d emu_d=%d logits", p, cell, d, cpu_digit(cell_ip2(&CELLS, p, cell)));
+            for (int c = 0; c < 10; c++) fprintf(stderr, " %4d", out[c]);
+            dump_bytes("raw@0", RL_OUT_VA, 16);
+            if (RL_GROUP == 8) dump_bytes("raw@surf", RL_OUT_VA + RL_SURF, 8);
+            fprintf(stderr, "\n");
+        }
         sa_rl_push(&s->dev, RL_LOGIT_PA, (uint32_t)cell);
         while ((S.regs[(SA_RL_BASE + 0x24) / 4] >> 16) & 0x7F) rl_cpu_relax();
     }
@@ -157,6 +188,23 @@ static void prepare_rl(slot_t *s, uint32_t p)
         exit(1);
     }
     uint64_t t2 = rl_cycles();
+    if (RL_DEBUG) {
+        /* what the tile wrote: answerStack literals and miscCounters[0..7] */
+        const int32_t *ans = (const int32_t *)(s->dev.mem_virt + s->dev.buf_off[SA_BUF_ANSWER_STACK]);
+        const int32_t *misc = (const int32_t *)(s->dev.mem_virt + s->dev.buf_off[SA_BUF_MISC]);
+        uint32_t st = S.regs[(SA_RL_BASE + 0x24) / 4], bad = 0;
+        fprintf(stderr, "RLDBG p%u status=0x%08x nlit=%u expected=%u misc=[%d %d %d %d %d %d %d %d]\n", p, st,
+                (st >> 8) & 0xFF, nexp, misc[0], misc[1], misc[2], misc[3], misc[4], misc[5], misc[6], misc[7]);
+        for (uint32_t i = 0; i < nexp + 2; i++) {
+            int32_t want = i < nexp ? expect[i] : 0;
+            if (ans[i] != want) {
+                bad++;
+                fprintf(stderr, "RLDBG p%u lit[%u] tile=%d (cell %d d=%d) cpu=%d (cell %d d=%d)\n", p, i, ans[i],
+                        (ans[i] - 1) / 9, (ans[i] - 1) % 9 + 1, want, (want - 1) / 9, (want - 1) % 9 + 1);
+            }
+        }
+        fprintf(stderr, "RLDBG p%u literal mismatches: %u\n", p, bad);
+    }
     r->nn = t1 - t0;               /* NVDLA, with the tile's conversion overlapped */
     r->argmax = 0;
     r->image = 0;
@@ -328,6 +376,13 @@ int main(int argc, char **argv)
         if (ioctl(S.fd, SATACCEL_IOC_VA2PA, &x) || (x.pa >> 32)) die("cannot translate NVDLA's output address");
         if (x.pa & 7) die("NVDLA's output buffer is not 8-byte aligned");
         RL_LOGIT_PA = (uint32_t)x.pa;
+        RL_OUT_VA = (const volatile uint8_t *)va;
+        RL_DEBUG = getenv("RL_DEBUG") != NULL;
+        if (RL_DEBUG) {
+            fprintf(stderr, "RLDBG group=%u surf_stride=%u logit_va=%p logit_pa=0x%08x\n", RL_GROUP, RL_SURF, va,
+                    RL_LOGIT_PA);
+            rl_nvdla_describe(NV);
+        }
     }
     slot_t slot[2];
     memset(slot, 0, sizeof slot);

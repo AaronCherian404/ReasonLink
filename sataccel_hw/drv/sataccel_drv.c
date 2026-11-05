@@ -166,10 +166,21 @@ size_t sa_dev_load_decisions(sa_dev *d, const sa_image *base, const int32_t *lit
 int sa_rl_setup(sa_dev *d, const sa_image *base, uint32_t group, uint32_t surf_stride)
 {
     if (rd(d, SA_RL_BASE + RL_ID) != SA_RL_ID_VALUE || base->decision_count != 0) return -1;
+    /* LAYOUT holds the surface stride in units of 256 B. With 8-channel groups
+     * and an 8 B surface stride (NVDLA's 1x1x10 ip2 output on the board), the
+     * two surfaces are adjacent: channels 0..9 are bytes 0..9, the contiguous
+     * (group 32) layout. Any other stride the register cannot hold is an error:
+     * rounding it down made ReasonLink read channels 8, 9 from channels 0, 1
+     * (board, 2026-11-05: every given 8 and 9 decoded wrongly, 19/100 correct). */
+    uint32_t layout;
+    if (group == 32) layout = 32;
+    else if (group == 8 && surf_stride == 8) layout = 32;
+    else if (group == 8 && surf_stride && !(surf_stride & 0xFF)) layout = surf_stride | 8;
+    else return -1;
     wr(d, SA_RL_BASE + RL_ANSWER_ADDR, (uint32_t)buf_addr(d, SA_BUF_ANSWER_STACK));
     wr(d, SA_RL_BASE + RL_MISC_ADDR, (uint32_t)buf_addr(d, SA_BUF_MISC));
     wr(d, SA_RL_BASE + RL_NUM_VARS, base->num_vars);
-    wr(d, SA_RL_BASE + RL_LAYOUT, (group == 8 ? ((surf_stride >> 8) << 8) : 0) | (group & 0xFF));
+    wr(d, SA_RL_BASE + RL_LAYOUT, layout);
     for (int k = 0; k < 8; k++) wr(d, SA_RL_BASE + RL_MISC_BASE + 4 * k, (uint32_t)base->misc[k]);
     d->num_vars = base->num_vars;
     d->num_clauses = base->num_clauses;
