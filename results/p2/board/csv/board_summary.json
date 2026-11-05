@@ -21,7 +21,7 @@
   "handoff_share": -0.0042603582893524115,
   "bytes_moved": 3940,
   "tile_mem_stall_share": 0.9840075300116593,
-  "tile_read_bytes": 8331.489448883425,
+  "tile_read_bytes": 650656.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -52,7 +52,7 @@
   "handoff_share": -0.0005929352680973823,
   "bytes_moved": 3940,
   "tile_mem_stall_share": 0.9114764160430578,
-  "tile_read_bytes": 2124.5935219562157,
+  "tile_read_bytes": 165952.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -83,7 +83,7 @@
   "handoff_share": 0.34481474996619416,
   "bytes_moved": 5293556,
   "tile_mem_stall_share": 0.985110811860122,
-  "tile_read_bytes": 8343.123447622462,
+  "tile_read_bytes": 651648.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -114,7 +114,7 @@
   "handoff_share": 0.1604174381745558,
   "bytes_moved": 632436,
   "tile_mem_stall_share": 0.9845578989752962,
-  "tile_read_bytes": 8344.298610666496,
+  "tile_read_bytes": 651648.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -145,7 +145,7 @@
   "handoff_share": -0.004472470264888742,
   "bytes_moved": 2948,
   "tile_mem_stall_share": 0.986767504710075,
-  "tile_read_bytes": 8336.239454110177,
+  "tile_read_bytes": 651152.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -176,7 +176,7 @@
   "handoff_share": -0.0007981323442561174,
   "bytes_moved": 2948,
   "tile_mem_stall_share": 0.9214571988041265,
-  "tile_read_bytes": 2131.2436778960036,
+  "tile_read_bytes": 166448.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -207,7 +207,7 @@
   "handoff_share": 0.0004227209782025946,
   "bytes_moved": 3940,
   "tile_mem_stall_share": 0.9806613669481983,
-  "tile_read_bytes": 8330.529415530375,
+  "tile_read_bytes": 650656.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -238,7 +238,7 @@
   "handoff_share": 0.00044508684954144655,
   "bytes_moved": 3940,
   "tile_mem_stall_share": 0.9037154057940786,
-  "tile_read_bytes": 2124.9199723424417,
+  "tile_read_bytes": 165952.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -269,7 +269,7 @@
   "handoff_share": 0.34944048874006,
   "bytes_moved": 5293556,
   "tile_mem_stall_share": 0.9821019100794272,
-  "tile_read_bytes": 8343.978078824042,
+  "tile_read_bytes": 651648.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -300,7 +300,7 @@
   "handoff_share": 0.9916779898156863,
   "bytes_moved": 5293556,
   "tile_mem_stall_share": 0.9821428147420074,
-  "tile_read_bytes": 8344.405460086564,
+  "tile_read_bytes": 651648.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -331,7 +331,7 @@
   "handoff_share": 0.16322670570226785,
   "bytes_moved": 632436,
   "tile_mem_stall_share": 0.9814998998726904,
-  "tile_read_bytes": 8343.55074133825,
+  "tile_read_bytes": 651648.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -362,7 +362,7 @@
   "handoff_share": 0.00023659132635596252,
   "bytes_moved": 2948,
   "tile_mem_stall_share": 0.9806231999234973,
-  "tile_read_bytes": 8331.169413180705,
+  "tile_read_bytes": 650656.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,
@@ -393,7 +393,7 @@
   "handoff_share": 0.00024073400126521958,
   "bytes_moved": 2948,
   "tile_mem_stall_share": 0.9019358465995011,
-  "tile_read_bytes": 2124.9471810696955,
+  "tile_read_bytes": 165952.0,
   "check": {
    "identical_across_runs": true,
    "match_reference": 98,

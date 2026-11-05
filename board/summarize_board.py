@@ -98,7 +98,9 @@ def main():
             "bytes_moved": int(rows[0]["xfer_bytes"]),
             "tile_mem_stall_share": float(np.median(col("tile_mem_stall") / np.maximum(col("tile_busy"), 1e-9))),
             # SAT-Accel's DRAM reads per solve (median; 8 B beats), what Milestone 2 reduces
-            "tile_read_bytes": float(np.median(col("tile_rd_beats"))) * 8 if "tile_rd_beats" in rows[0] else None,
+            # (a count, not cycles: not divided by cycles_per_us)
+            "tile_read_bytes": float(np.median([float(r["tile_rd_beats"]) for r in rows])) * 8
+                               if "tile_rd_beats" in rows[0] else None,
             "check": {"identical_across_runs": (grids, sats) == first, "match_reference": exact,
                       "valid_alternative": alt, "wrong": bad, "nvdla_cells_differing": nn_mism},
         }
