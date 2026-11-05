@@ -35,6 +35,12 @@ double_delta)               run double_delta               --mode double --hando
 double_reasonlink)          run double_reasonlink          --mode double --handoff reasonlink ;;
 double_delta_resident)      run double_delta_resident      --mode double --handoff delta --resident ;;
 double_reasonlink_resident) run double_reasonlink_resident --mode double --handoff reasonlink --resident ;;
+double_rest)   # the double-buffered configurations not yet run (2026-11-05), in one boot
+  run double_lean                --mode double --clear lean --xfer used
+  run double_delta               --mode double --handoff delta
+  run double_delta_resident      --mode double --handoff delta --resident
+  run double_reasonlink          --mode double --handoff reasonlink
+  run double_reasonlink_resident --mode double --handoff reasonlink --resident ;;
 *) echo "unknown batch $1"; exit 1 ;;
 esac
 echo "=== BATCH DONE $1"

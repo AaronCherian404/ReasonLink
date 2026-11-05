@@ -72,8 +72,12 @@ programmed with `vivado/program.tcl` on impl_rl's bit. Linux: `make fpga-run-lin
   + resident (about puzzle 15). The previous night's unexplained loss of SSH
   was probably the same (the board degrades over ~45 min after a hang:
   `dmesg`, then SSH, stop answering). Both were in runs where the SAT-Accel
-  tile does DMA while NVDLA runs (2 hangs in about 490 such puzzles, none in
-  about 600 without); cause not found.
+  tile does DMA while NVDLA runs, and both while the board was being polled
+  over SSH; a later batch of 500 such puzzles with no SSH during the runs did
+  not hang. Cause not found.
+- **SSH perturbs measurements.** A login costs the 78 MHz CPU about 1-1.5 s,
+  which lands in the running `rl_board` (0.3-3 s stalls in single puzzles);
+  measured runs go detached with no SSH until they end.
 - **EDCL is unreliable.** `fpga-run-linux`'s DRAM load often fails ("Handle
   EDCL message failed after 10 attempts"); retrying works (1-7 attempts). Once
   the final soft reset after a good load was lost (no boot banner); one more

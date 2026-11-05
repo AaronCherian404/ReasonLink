@@ -1,0 +1,405 @@
+{
+ "board_double_delta": {
+  "mode": "double",
+  "clear": "full",
+  "xfer": "allocated",
+  "nn": "nvdla",
+  "handoff": "delta",
+  "resident": false,
+  "puzzles": 100,
+  "cycles_per_us": 78.096,
+  "median_us": {
+   "T_nn": 2436898.5415386194,
+   "T_conv": 149.00891210817457,
+   "T_xfer": 339.3771768080311,
+   "T_sync": 2424838.320784675,
+   "T_sat": 12602.111503790205
+  },
+  "wall_us_per_puzzle": 2470708.217066175,
+  "wall_us_per_puzzle_no_stalls": 2469913.167720777,
+  "ssh_stall_us": 79504.93453976861,
+  "handoff_share": -0.0042603582893524115,
+  "bytes_moved": 3940,
+  "tile_mem_stall_share": 0.9840075300116593,
+  "tile_read_bytes": 8331.489448883425,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 925
+  }
+ },
+ "board_double_delta_resident": {
+  "mode": "double",
+  "clear": "full",
+  "xfer": "allocated",
+  "nn": "nvdla",
+  "handoff": "delta",
+  "resident": true,
+  "puzzles": 100,
+  "cycles_per_us": 78.11,
+  "median_us": {
+   "T_nn": 2435708.379208808,
+   "T_conv": 148.8797849187044,
+   "T_xfer": 336.4293944437332,
+   "T_sync": 2431709.3585968507,
+   "T_sat": 3323.1020355908336
+  },
+  "wall_us_per_puzzle": 2468414.971962617,
+  "wall_us_per_puzzle_no_stalls": 2467682.4766805293,
+  "ssh_stall_us": 73249.52820876753,
+  "handoff_share": -0.0005929352680973823,
+  "bytes_moved": 3940,
+  "tile_mem_stall_share": 0.9114764160430578,
+  "tile_read_bytes": 2124.5935219562157,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 926
+  }
+ },
+ "board_double_faithful": {
+  "mode": "double",
+  "clear": "full",
+  "xfer": "allocated",
+  "nn": "nvdla",
+  "handoff": "full",
+  "resident": false,
+  "puzzles": 100,
+  "cycles_per_us": 78.106,
+  "median_us": {
+   "T_nn": 2503527.763552096,
+   "T_conv": 722081.9271246768,
+   "T_xfer": 608418.8026528052,
+   "T_sync": 3780636.436381328,
+   "T_sat": 13454.209663790236
+  },
+  "wall_us_per_puzzle": 3944022.757406601,
+  "wall_us_per_puzzle_no_stalls": 3866853.0984519883,
+  "ssh_stall_us": 7716965.8954612985,
+  "handoff_share": 0.34481474996619416,
+  "bytes_moved": 5293556,
+  "tile_mem_stall_share": 0.985110811860122,
+  "tile_read_bytes": 8343.123447622462,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 925
+  }
+ },
+ "board_double_lean": {
+  "mode": "double",
+  "clear": "lean",
+  "xfer": "used",
+  "nn": "nvdla",
+  "handoff": "full",
+  "resident": false,
+  "puzzles": 100,
+  "cycles_per_us": 78.095,
+  "median_us": {
+   "T_nn": 2440548.6138677252,
+   "T_conv": 412009.17472309363,
+   "T_xfer": 73031.23119277802,
+   "T_sync": 2907804.5201357324,
+   "T_sat": 12968.602343299826
+  },
+  "wall_us_per_puzzle": 2961683.20622319,
+  "wall_us_per_puzzle_no_stalls": 2957292.9020039695,
+  "ssh_stall_us": 439030.4219220157,
+  "handoff_share": 0.1604174381745558,
+  "bytes_moved": 632436,
+  "tile_mem_stall_share": 0.9845578989752962,
+  "tile_read_bytes": 8344.298610666496,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 925
+  }
+ },
+ "board_double_reasonlink": {
+  "mode": "double",
+  "clear": "full",
+  "xfer": "allocated",
+  "nn": "nvdla",
+  "handoff": "reasonlink",
+  "resident": false,
+  "puzzles": 100,
+  "cycles_per_us": 78.111,
+  "median_us": {
+   "T_nn": 2440492.00496729,
+   "T_conv": 0.0,
+   "T_xfer": 64.2419121506574,
+   "T_sync": 2427784.915056778,
+   "T_sat": 12621.301737271318
+  },
+  "wall_us_per_puzzle": 2472351.5204004557,
+  "wall_us_per_puzzle_no_stalls": 2471503.1484494884,
+  "ssh_stall_us": 84837.19509671,
+  "handoff_share": -0.004472470264888742,
+  "bytes_moved": 2948,
+  "tile_mem_stall_share": 0.986767504710075,
+  "tile_read_bytes": 8336.239454110177,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 925
+  }
+ },
+ "board_double_reasonlink_resident": {
+  "mode": "double",
+  "clear": "full",
+  "xfer": "allocated",
+  "nn": "nvdla",
+  "handoff": "reasonlink",
+  "resident": true,
+  "puzzles": 100,
+  "cycles_per_us": 78.099,
+  "median_us": {
+   "T_nn": 2435815.945146545,
+   "T_conv": 0.0,
+   "T_xfer": 63.976491376330046,
+   "T_sync": 2432385.184189298,
+   "T_sat": 3314.940012036005
+  },
+  "wall_us_per_puzzle": 2467267.51763787,
+  "wall_us_per_puzzle_no_stalls": 2466565.3398525887,
+  "ssh_stall_us": 70217.77852810826,
+  "handoff_share": -0.0007981323442561174,
+  "bytes_moved": 2948,
+  "tile_mem_stall_share": 0.9214571988041265,
+  "tile_read_bytes": 2131.2436778960036,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 926
+  }
+ },
+ "board_serial_delta": {
+  "mode": "serial",
+  "clear": "full",
+  "xfer": "allocated",
+  "nn": "nvdla",
+  "handoff": "delta",
+  "resident": false,
+  "puzzles": 100,
+  "cycles_per_us": 78.105,
+  "median_us": {
+   "T_nn": 2547761.193265476,
+   "T_conv": 147.6537993726394,
+   "T_xfer": 335.60591511426924,
+   "T_sync": 562.5376096280647,
+   "T_sat": 10191.556238397028
+  },
+  "wall_us_per_puzzle": 2591695.278535305,
+  "wall_us_per_puzzle_no_stalls": 2506390.836701397,
+  "ssh_stall_us": 8530444.183390805,
+  "handoff_share": 0.0004227209782025946,
+  "bytes_moved": 3940,
+  "tile_mem_stall_share": 0.9806613669481983,
+  "tile_read_bytes": 8330.529415530375,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 925
+  }
+ },
+ "board_serial_delta_resident": {
+  "mode": "serial",
+  "clear": "full",
+  "xfer": "allocated",
+  "nn": "nvdla",
+  "handoff": "delta",
+  "resident": true,
+  "puzzles": 100,
+  "cycles_per_us": 78.098,
+  "median_us": {
+   "T_nn": 2458727.97638864,
+   "T_conv": 146.5658531588517,
+   "T_xfer": 336.39785910010505,
+   "T_sync": 545.4621117058055,
+   "T_sat": 3057.5622935286437
+  },
+  "wall_us_per_puzzle": 2494538.344259776,
+  "wall_us_per_puzzle_no_stalls": 2493867.5804070346,
+  "ssh_stall_us": 67076.385274173,
+  "handoff_share": 0.00044508684954144655,
+  "bytes_moved": 3940,
+  "tile_mem_stall_share": 0.9037154057940786,
+  "tile_read_bytes": 2124.9199723424417,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 925
+  }
+ },
+ "board_serial_faithful": {
+  "mode": "serial",
+  "clear": "full",
+  "xfer": "allocated",
+  "nn": "nvdla",
+  "handoff": "full",
+  "resident": false,
+  "puzzles": 100,
+  "cycles_per_us": 78.098,
+  "median_us": {
+   "T_nn": 2537826.2695587594,
+   "T_conv": 721970.0120361598,
+   "T_xfer": 608999.5902583932,
+   "T_sync": 723.2643601628722,
+   "T_sat": 10995.147122845656
+  },
+  "wall_us_per_puzzle": 3977674.259904223,
+  "wall_us_per_puzzle_no_stalls": 3878117.105828943,
+  "ssh_stall_us": 9955715.407527996,
+  "handoff_share": 0.34944048874006,
+  "bytes_moved": 5293556,
+  "tile_mem_stall_share": 0.9821019100794272,
+  "tile_read_bytes": 8343.978078824042,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 925
+  }
+ },
+ "board_serial_faithful_trace": {
+  "mode": "serial",
+  "clear": "full",
+  "xfer": "allocated",
+  "nn": "trace",
+  "handoff": "full",
+  "resident": false,
+  "puzzles": 100,
+  "cycles_per_us": 78.094,
+  "median_us": {
+   "T_nn": 155.17837477911235,
+   "T_conv": 720134.4213383871,
+   "T_xfer": 607548.5760749866,
+   "T_sync": 691.0774195200656,
+   "T_sat": 10979.531077931724
+  },
+  "wall_us_per_puzzle": 1403747.007708659,
+  "wall_us_per_puzzle_no_stalls": 1403747.007708659,
+  "ssh_stall_us": 0.0,
+  "handoff_share": 0.9916779898156863,
+  "bytes_moved": 5293556,
+  "tile_mem_stall_share": 0.9821428147420074,
+  "tile_read_bytes": 8344.405460086564,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 0
+  }
+ },
+ "board_serial_lean": {
+  "mode": "serial",
+  "clear": "lean",
+  "xfer": "used",
+  "nn": "nvdla",
+  "handoff": "full",
+  "resident": false,
+  "puzzles": 100,
+  "cycles_per_us": 78.102,
+  "median_us": {
+   "T_nn": 2530492.3113364573,
+   "T_conv": 411616.79598473787,
+   "T_xfer": 73198.09992061663,
+   "T_sync": 550.5876930168241,
+   "T_sat": 10644.554556861538
+  },
+  "wall_us_per_puzzle": 3037180.5978079946,
+  "wall_us_per_puzzle_no_stalls": 2994208.580043663,
+  "ssh_stall_us": 4297201.776433162,
+  "handoff_share": 0.16322670570226785,
+  "bytes_moved": 632436,
+  "tile_mem_stall_share": 0.9814998998726904,
+  "tile_read_bytes": 8343.55074133825,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 925
+  }
+ },
+ "board_serial_reasonlink": {
+  "mode": "serial",
+  "clear": "full",
+  "xfer": "allocated",
+  "nn": "nvdla",
+  "handoff": "reasonlink",
+  "resident": false,
+  "puzzles": 100,
+  "cycles_per_us": 78.099,
+  "median_us": {
+   "T_nn": 2618510.550711277,
+   "T_conv": 0.0,
+   "T_xfer": 59.859921381835875,
+   "T_sync": 552.3502221539328,
+   "T_sat": 10118.317776155904
+  },
+  "wall_us_per_puzzle": 2820924.5414153826,
+  "wall_us_per_puzzle_no_stalls": 2502213.811277938,
+  "ssh_stall_us": 31871073.01374449,
+  "handoff_share": 0.00023659132635596252,
+  "bytes_moved": 2948,
+  "tile_mem_stall_share": 0.9806231999234973,
+  "tile_read_bytes": 8331.169413180705,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 926
+  }
+ },
+ "board_serial_reasonlink_resident": {
+  "mode": "serial",
+  "clear": "full",
+  "xfer": "allocated",
+  "nn": "nvdla",
+  "handoff": "reasonlink",
+  "resident": true,
+  "puzzles": 100,
+  "cycles_per_us": 78.097,
+  "median_us": {
+   "T_nn": 2615483.6229304583,
+   "T_conv": 0.0,
+   "T_xfer": 60.43766085765139,
+   "T_sync": 538.0488367030744,
+   "T_sat": 3004.936169123014
+  },
+  "wall_us_per_puzzle": 2708554.320268384,
+  "wall_us_per_puzzle_no_stalls": 2495247.6856112503,
+  "ssh_stall_us": 21330663.465713385,
+  "handoff_share": 0.00024073400126521958,
+  "bytes_moved": 2948,
+  "tile_mem_stall_share": 0.9019358465995011,
+  "tile_read_bytes": 2124.9471810696955,
+  "check": {
+   "identical_across_runs": true,
+   "match_reference": 98,
+   "valid_alternative": 2,
+   "wrong": 0,
+   "nvdla_cells_differing": 925
+  }
+ }
+}

@@ -125,6 +125,8 @@ static rec_t *R;
 static uint32_t RL_LOGIT_PA, RL_GROUP, RL_SURF;   /* NVDLA's output tensor, for ReasonLink */
 static const volatile uint8_t *RL_OUT_VA;          /* the same buffer, CPU view (RL_DEBUG) */
 static int RL_DEBUG;                               /* env RL_DEBUG: dump ReasonLink's inputs/outputs */
+static int RL_TIMING;                              /* env RL_TIMING: per-puzzle ReasonLink timing only */
+static int RL_WAIT_LIT;                            /* env RL_WAIT_LIT: wait for each literal, not the dequeue */
 
 /* Debug (RL_DEBUG): the digit P1's argmax picks (digits 1..9, lowest wins ties) */
 static int cpu_digit(const int8_t *o)
@@ -156,6 +158,7 @@ static void prepare_rl(slot_t *s, uint32_t p)
         exit(1);
     }
     sa_rl_begin(&s->dev);
+    uint64_t t_setup = rl_cycles() - t0, sum_cls = 0, sum_wait = 0;
     int32_t expect[RL_CELLS];
     uint32_t nexp = 0;
     if (RL_DEBUG)
@@ -165,24 +168,38 @@ static void prepare_rl(slot_t *s, uint32_t p)
         int16_t im = cell_image(&CELLS, p, cell);
         if (im < 0) continue;
         r->givens++;
+        uint64_t ta = rl_cycles();
         if (rl_nvdla_classify(NV, CELLS.images + (size_t)im * IMG, out)) {
             fprintf(stderr, "rl_board: NVDLA submit failed (puzzle %u)\n", p);
             exit(1);
         }
+        uint64_t tb = rl_cycles();
         if (memcmp(out, cell_ip2(&CELLS, p, cell), 10)) r->nn_mismatch++;
-        if (RL_DEBUG) {
+        uint64_t tc = rl_cycles();
+        sa_rl_push(&s->dev, RL_LOGIT_PA, (uint32_t)cell);
+        if (RL_WAIT_LIT)   /* until the tile has converted this cell: its read of NVDLA's buffer is done */
+            while (((S.regs[(SA_RL_BASE + 0x24) / 4] >> 8) & 0xFF) != r->givens) rl_cpu_relax();
+        else               /* until the tile has taken the request */
+            while ((S.regs[(SA_RL_BASE + 0x24) / 4] >> 16) & 0x7F) rl_cpu_relax();
+        uint64_t td = rl_cycles();
+        sum_cls += tb - ta;
+        sum_wait += td - tc;
+        if (RL_DEBUG) {   /* printed after the timed part */
             int d = cpu_digit(out);
             expect[nexp++] = 9 * cell + d;
-            fprintf(stderr, "RLDBG p%u cell %2d d=%d emu_d=%d logits", p, cell, d, cpu_digit(cell_ip2(&CELLS, p, cell)));
+            fprintf(stderr, "RLDBG p%u cell %2d d=%d emu_d=%d cls_cyc=%llu wait_cyc=%llu logits", p, cell, d,
+                    cpu_digit(cell_ip2(&CELLS, p, cell)), (unsigned long long)(tb - ta), (unsigned long long)(td - tc));
             for (int c = 0; c < 10; c++) fprintf(stderr, " %4d", out[c]);
             dump_bytes("raw@0", RL_OUT_VA, 16);
             if (RL_GROUP == 8) dump_bytes("raw@surf", RL_OUT_VA + RL_SURF, 8);
             fprintf(stderr, "\n");
         }
-        sa_rl_push(&s->dev, RL_LOGIT_PA, (uint32_t)cell);
-        while ((S.regs[(SA_RL_BASE + 0x24) / 4] >> 16) & 0x7F) rl_cpu_relax();
     }
     uint64_t t1 = rl_cycles();
+    if (RL_DEBUG || RL_TIMING)
+        fprintf(stderr, "RLDBG p%u timing: setup_cyc=%llu classify_cyc=%llu push_wait_cyc=%llu loop_cyc=%llu "
+                        "tile CYC_CONV=%u\n", p, (unsigned long long)t_setup, (unsigned long long)sum_cls,
+                (unsigned long long)sum_wait, (unsigned long long)(t1 - t0), S.regs[(SA_RL_BASE + 0x28) / 4]);
     if (sa_rl_commit(&s->dev)) {
         fprintf(stderr, "rl_board: ReasonLink commit failed (puzzle %u)\n", p);
         exit(1);
@@ -193,8 +210,10 @@ static void prepare_rl(slot_t *s, uint32_t p)
         const int32_t *ans = (const int32_t *)(s->dev.mem_virt + s->dev.buf_off[SA_BUF_ANSWER_STACK]);
         const int32_t *misc = (const int32_t *)(s->dev.mem_virt + s->dev.buf_off[SA_BUF_MISC]);
         uint32_t st = S.regs[(SA_RL_BASE + 0x24) / 4], bad = 0;
-        fprintf(stderr, "RLDBG p%u status=0x%08x nlit=%u expected=%u misc=[%d %d %d %d %d %d %d %d]\n", p, st,
-                (st >> 8) & 0xFF, nexp, misc[0], misc[1], misc[2], misc[3], misc[4], misc[5], misc[6], misc[7]);
+        fprintf(stderr, "RLDBG p%u status=0x%08x nlit=%u expected=%u commit_cyc=%llu tile CYC_COMMIT=%u "
+                        "misc=[%d %d %d %d %d %d %d %d]\n", p, st, (st >> 8) & 0xFF, nexp,
+                (unsigned long long)(t2 - t1), S.regs[(SA_RL_BASE + 0x2C) / 4],
+                misc[0], misc[1], misc[2], misc[3], misc[4], misc[5], misc[6], misc[7]);
         for (uint32_t i = 0; i < nexp + 2; i++) {
             int32_t want = i < nexp ? expect[i] : 0;
             if (ans[i] != want) {
@@ -378,6 +397,8 @@ int main(int argc, char **argv)
         RL_LOGIT_PA = (uint32_t)x.pa;
         RL_OUT_VA = (const volatile uint8_t *)va;
         RL_DEBUG = getenv("RL_DEBUG") != NULL;
+        RL_TIMING = getenv("RL_TIMING") != NULL;
+        RL_WAIT_LIT = getenv("RL_WAIT_LIT") != NULL;
         if (RL_DEBUG) {
             fprintf(stderr, "RLDBG group=%u surf_stride=%u logit_va=%p logit_pa=0x%08x\n", RL_GROUP, RL_SURF, va,
                     RL_LOGIT_PA);
