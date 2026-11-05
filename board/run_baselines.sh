@@ -14,6 +14,10 @@ cd "$RL"
 lsmod | grep -q opendla || insmod /opt/drivers/opendla.ko
 lsmod | grep -q sataccel || insmod /opt/drivers/sataccel.ko
 dmesg | grep -i sataccel | tail -3
+# ESP's NVDLA driver logs ~300 debug lines per task: keep them off the
+# 115200-baud console (about 4 s per inference otherwise) and out of syslog
+dmesg -n 1
+kill $(pidof klogd) 2>/dev/null || true
 
 # Bring-up checks: SAT-Accel alone (the base Sudoku formula, no givens: SAT),
 # then NVDLA on ESP's demo image if present

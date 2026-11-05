@@ -58,6 +58,11 @@ static unsigned long mem_size = SATACCEL_DEFAULT_MEM_SIZE;
 module_param(mem_size, ulong, 0444);
 MODULE_PARM_DESC(mem_size, "Bytes of DMA memory to reserve for SAT-Accel's buffers");
 
+static unsigned long guard_size = 256UL << 20;
+module_param(guard_size, ulong, 0444);
+MODULE_PARM_DESC(guard_size, "Bytes at the bottom of the shared reserved region left to NVDLA's own "
+		 "pool (0: none)");
+
 struct sataccel {
 	struct device *dev;
 	void __iomem *regs;
@@ -65,6 +70,9 @@ struct sataccel {
 	void *mem_virt;
 	dma_addr_t mem_dma;
 	size_t mem_size;
+	void *guard_virt;
+	dma_addr_t guard_dma;
+	size_t guard_size;
 	int irq;
 	struct completion done;
 	struct mutex lock;
@@ -244,12 +252,25 @@ static int sataccel_probe(struct platform_device *pdev)
 	ret = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32));
 	if (ret)
 		goto err_mem;
+	/* NVDLA's driver declares its own DMA pool over the same reserved
+	 * region (dma_declare_coherent_memory), so both pools hand out memory
+	 * from its start: hold the bottom (guard_size; the pool aligns blocks
+	 * to their size) so our buffer lands above NVDLA's allocations. */
+	if (guard_size) {
+		sa->guard_size = PAGE_ALIGN(guard_size);
+		sa->guard_virt = dma_alloc_coherent(dev, sa->guard_size, &sa->guard_dma, GFP_KERNEL);
+		if (!sa->guard_virt) {
+			dev_err(dev, "cannot reserve the %zu MB guard below the buffer\n", sa->guard_size >> 20);
+			ret = -ENOMEM;
+			goto err_mem;
+		}
+	}
 	sa->mem_size = PAGE_ALIGN(mem_size);
 	sa->mem_virt = dma_alloc_coherent(dev, sa->mem_size, &sa->mem_dma, GFP_KERNEL);
 	if (!sa->mem_virt) {
 		dev_err(dev, "cannot allocate %zu bytes of DMA memory\n", sa->mem_size);
 		ret = -ENOMEM;
-		goto err_mem;
+		goto err_guard;
 	}
 
 	ret = sataccel_set_coherence(dev);
@@ -280,6 +301,9 @@ static int sataccel_probe(struct platform_device *pdev)
 
 err_dma:
 	dma_free_coherent(dev, sa->mem_size, sa->mem_virt, sa->mem_dma);
+err_guard:
+	if (sa->guard_virt)
+		dma_free_coherent(dev, sa->guard_size, sa->guard_virt, sa->guard_dma);
 err_mem:
 	of_reserved_mem_device_release(dev);
 	return ret;
@@ -291,6 +315,8 @@ static int sataccel_remove(struct platform_device *pdev)
 
 	misc_deregister(&sa->misc);
 	dma_free_coherent(sa->dev, sa->mem_size, sa->mem_virt, sa->mem_dma);
+	if (sa->guard_virt)
+		dma_free_coherent(sa->dev, sa->guard_size, sa->guard_virt, sa->guard_dma);
 	of_reserved_mem_device_release(sa->dev);
 	return 0;
 }
