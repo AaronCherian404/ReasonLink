@@ -1,0 +1,16 @@
+\begin{tikzpicture}[font=\small,>=Latex,
+ box/.style={draw,rounded corners,align=center,minimum height=11mm,text width=26mm},
+ pathlabel/.style={font=\scriptsize,align=center,fill=white,inner sep=2pt}]
+\node[box,fill=blue!8] (nn) at (0,0) {NVDLA tile\\int8 logits};
+\node[box,fill=gray!10,text width=32mm] (dram) at (4,0) {Coherent DRAM\\logits + base + delta};
+\node[box,fill=orange!12] (rl) at (8,0) {ReasonLink\\hardware-generated delta};
+\node[box,fill=green!10] (sat) at (12,0) {SAT-Accel\\load + search};
+\node[box,fill=gray!8,text width=44mm] (cpu) at (4,1.9) {Ariane CPU / Linux\\full image / CPU-generated delta\\descriptor and credit control};
+\draw[->,thick] (nn) -- node[pathlabel,above]{output} (dram);
+\draw[->,thick] (dram) -- node[pathlabel,above]{logit reads} (rl);
+\draw[->,thick] (rl.south) -- ++(0,-0.65) -| node[pathlabel,pos=0.25,below]{hardware-generated delta commit} (dram.south);
+\draw[->,thick] (dram.south east) -- ++(0,-1.35) -| node[pathlabel,pos=0.45,below]{solver image / delta reads} (sat.south);
+\draw[<->,thick] (cpu) -- node[pathlabel,right]{CPU-generated update} (dram);
+\draw[->,dashed] (cpu.east) -| node[pathlabel,pos=0.4,above]{descriptors / credits} (rl.north);
+\node[font=\scriptsize,align=center,text width=30mm] at (12,1.6) {Optional on-chip base reuse:\\retain structure;\\restore mutable state};
+\end{tikzpicture}

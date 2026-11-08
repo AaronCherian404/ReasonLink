@@ -11,15 +11,22 @@ Project Updates/
 │   ├── figures/
 │   ├── Template/                  original course template and instructions
 │   └── build/                     LaTeX auxiliary files
-└── P1 Exploration and Progress/
-    ├── neural-symbolic-p1.tex
-    ├── neural-symbolic-p1.pdf
-    ├── figures/                   diagrams, chart data, scripts, PDF/PNG exports
-    └── build/                     report and figure auxiliary files
+├── P1 Exploration and Progress/
+│   ├── neural-symbolic-p1.tex
+│   ├── neural-symbolic-p1.pdf
+│   ├── figures/                   diagrams, chart data, scripts, PDF/PNG exports
+│   └── build/                     report and figure auxiliary files
+└── Final Paper/
+    ├── neural-symbolic-final.tex  working final-paper draft
+    ├── neural-symbolic-final.pdf  compiled draft
+    ├── sections/                 editable paper sections
+    ├── figures/                  diagrams, generated data, and generation script
+    └── build/                    LaTeX auxiliary files
 ```
 
 - [Project proposal](Project%20Proposal/neural-symbolic-proposal.pdf)
 - [P1: Exploration and Progress](P1%20Exploration%20and%20Progress/neural-symbolic-p1.pdf)
+- [Final paper: working draft](Final%20Paper/neural-symbolic-final.pdf)
 
 Each report folder includes its bibliography and the supplied `IEEEtran.cls`,
 so it can be shared or uploaded to Overleaf independently. Keep its `figures/`
@@ -40,6 +47,13 @@ Or build P1 with:
 ```sh
 cd "P1 Exploration and Progress"
 latexmk -pdf neural-symbolic-p1.tex
+```
+
+Build the final-paper draft with:
+
+```sh
+cd "Final Paper"
+latexmk -pdf neural-symbolic-final.tex
 ```
 
 The local `.latexmkrc` files keep auxiliary files under `build/`; final PDFs

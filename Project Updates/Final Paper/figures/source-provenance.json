@@ -1,0 +1,11 @@
+{
+  "source": "results/p2/board/csv/board_summary.json",
+  "source_sha256": "420adf50acafc3b20589552fbc8b8f337a583b9efa47901c6cd9b0bf25265897",
+  "configurations": 13,
+  "puzzles_per_configuration": [
+    100
+  ],
+  "wall_units": "seconds per puzzle; mean whole-run wall time",
+  "stage_units": "milliseconds per puzzle; median stage intervals",
+  "adjustment": "Existing summary estimate; not a clean repeated measurement"
+}

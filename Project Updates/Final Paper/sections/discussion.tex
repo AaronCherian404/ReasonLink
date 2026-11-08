@@ -1,0 +1,10 @@
+\section{Discussion and Remaining Evaluation}
+\subsection{Where the Benefit Comes From}
+The primary observed benefit is eliminating repeated construction and movement of a shared formula. Hardware argmax is one way to produce the resulting small update, but the optimized CPU path also produces it cheaply. Once both paths reduce interface work to approximately a millisecond per puzzle, Linux-managed NVDLA execution dominates the approximately 2.5-second pipeline. Increasing conversion throughput alone has little remaining end-to-end opportunity in this setting.
+
+This result depends on the deployment. Faster or batched inference could expose conversion and submission costs that are currently hidden. More expensive SAT search could instead amortize both neural and handoff work. The current replay diagnostic illustrates the importance of distinguishing actual inference from score availability, but a full-image replay run alone cannot locate either crossover. Likewise, passing non-Sudoku functional checks does not constitute a performance study on harder workloads.
+
+\subsection{Limits of the Current Evidence}
+The evaluation uses one small structured workload family and 100 board puzzles per completed configuration. Sudoku is largely propagation dominated, so it is particularly suited to revealing loading and initialization overhead. Capacity limits, large learned-clause populations, sustained buffer backpressure, and long-running searches remain insufficiently explored. No power or energy measurements are available. Synthesized LUT comparisons are useful implementation context, but the current prototype does not establish an energy or area-efficiency advantage.
+
+Measurement interference is another material limitation. A model-based subtraction can help diagnose the board's behavior, but raw timings and clean repeated runs must carry the final claims. The control path also retains per-cell CPU submissions and a DRAM round trip, so these results do not evaluate a fully autonomous direct-stream design.

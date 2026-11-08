@@ -1,0 +1,44 @@
+\section{Background and Problem Formulation}
+\subsection{Neural Perception and SAT Reasoning}
+SATNet connects learned perception and satisfiability-based reasoning~\cite{satnet}. Our study instead fixes the trained classifier and solver behavior and varies the systems interface. NVDLA runs a LeNet-style classifier~\cite{lenet,nvdla}; SAT-Accel supplies the CDCL implementation. ESP provides the tiled SoC and third-party accelerator integration~\cite{esp,espnvdla}. We use these components as infrastructure and study the work between inference and solving.
+
+For a cell $(r,c)$ and candidate digit $d\in\{1,\ldots,9\}$, the Boolean variable is
+\begin{equation}
+v(r,c,d)=81r+9c+d,\qquad r,c\in\{0,\ldots,8\}.
+\end{equation}
+The extended Sudoku encoding has 729 variables and 11,988 clauses. The shared base formula contains the structural rules. A given contributes a positive literal for the predicted digit. Argmax considers digits 1--9 and resolves ties toward the lowest digit. All compared paths use this same mapping.
+
+SAT-Accel consumes a memory image containing clause storage, clause metadata, literal occurrence lists, mutable clause states, per-variable metadata, and an answer stack. Its host flow already represents unit clauses as level-0 fixed decisions. Consequently, predicted givens can be passed as an answer-stack prefix and a count without rebuilding the structural formula.
+
+\subsection{Measuring the Handoff}
+For serial execution, the instrumented stages are
+\begin{equation}
+T_{\mathrm{inst}}=T_{\mathrm{nn}}+T_{\mathrm{conv}}+T_{\mathrm{xfer}}
+                  +T_{\mathrm{sync}}+T_{\mathrm{sat}},
+\end{equation}
+where conversion includes argmax and image construction, transfer measures the host-side update path, synchronization includes completion handling, and solver time includes internal loading and search. Instrumented stages do not necessarily exhaust process wall time. Their medians also need not sum to a median or mean total.
+
+The serial handoff fraction is computed per puzzle as
+\begin{equation}
+f_{\mathrm{handoff}}=\frac{T_{\mathrm{conv}}+T_{\mathrm{xfer}}+T_{\mathrm{sync}}}
+                              {T_{\mathrm{inst}}},
+\end{equation}
+and summarized by its median. For double-buffered execution, we record the normalized timing residual
+\begin{equation}
+R=\frac{T_{\mathrm{wall}}-\sum_i T_{\mathrm{nn},i}-\sum_i T_{\mathrm{sat},i}}
+           {T_{\mathrm{wall}}}.
+\end{equation}
+Overlapping neural and solver execution can make their cumulative durations exceed wall time, yielding $R<0$. The residual reflects both execution overlap and overhead outside the measured stages; end-to-end performance comparisons use wall time.
+
+\subsection{Hypotheses}
+We organize the study around three hypotheses:
+\begin{itemize}
+\item \textbf{H1---Handoff cost:} In serial execution, rebuilding and transferring the full solver image account for a substantial fraction of runtime, dominated by representation preparation rather than the size of the neural outputs.
+\item \textbf{H2---Execution overlap:} Double buffering can hide preparation of the next puzzle behind the current solve, but it leaves the amount of representation construction and the transfer volume unchanged. Its benefit depends on the work available to overlap.
+\item \textbf{H3---Reasoning-cost sensitivity:} With interface costs held fixed, increasing solver search time reduces the fractional end-to-end benefit of handoff optimization.
+\end{itemize}
+The board evaluation examines H1 and H2 on visual Sudoku. H3 motivates the planned study varying reasoning difficulty.
+
+\draftnote{Add a dedicated related-work section comparing accelerator-interface systems such as DMX and AccelFlow, neurosymbolic architectures, and incremental SAT/state-reuse techniques. Distinguish new mechanisms from those inherited from SAT-Accel and identify the specific contribution beyond existing conversion and reuse mechanisms. Test H3.}
+
+\draftnote{Evaluate a range of workloads beyond Sudoku, including autonomous-driving tasks combining neural perception and symbolic reasoning. For each, define neural outputs, symbolic inputs, reusable constraints, correctness criteria, and the required accelerator support.}
