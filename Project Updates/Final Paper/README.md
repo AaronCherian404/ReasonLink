@@ -114,6 +114,7 @@ inference-path profiling, restoration pseudocode, and precise prior-work positio
 - Complete closest-work comparisons, individual contributions, and feedback responses.
 - Confirm the course's final-paper format and page limit, then remove resolved draft notes.
 
-Red `Draft TODO` notes in the PDF deliberately identify unfinished evidence or
-unconfirmed attribution. No new board runs or remote builds were performed to
+`Draft TODO` notes are commented out in the section sources (lines starting
+`% TODO (for later): \draftnote{...}`) so they no longer print; uncomment a line
+to show it in red in the PDF again. No new board runs or remote builds were performed to
 prepare this draft.

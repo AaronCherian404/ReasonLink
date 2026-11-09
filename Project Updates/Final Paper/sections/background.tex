@@ -37,8 +37,8 @@ We organize the study around three hypotheses:
 \item \textbf{H2---Execution overlap:} Double buffering can hide preparation of the next puzzle behind the current solve, but it leaves the amount of representation construction and the transfer volume unchanged. Its benefit depends on the work available to overlap.
 \item \textbf{H3---Reasoning-cost sensitivity:} With interface costs held fixed, increasing solver search time reduces the fractional end-to-end benefit of handoff optimization.
 \end{itemize}
-The board evaluation examines H1 and H2 on visual Sudoku. H3 motivates the planned study varying reasoning difficulty.
+The board evaluation examines H1 and H2 on visual Sudoku. H3 is outside the scope of this study: Sudoku's propagation-dominated search keeps $T_{\mathrm{sat}}$ small, and we do not vary reasoning difficulty. Section~\ref{sec:discussion} discusses how the results would change under harder reasoning.
 
-\draftnote{Add a dedicated related-work section comparing accelerator-interface systems such as DMX and AccelFlow, neurosymbolic architectures, and incremental SAT/state-reuse techniques. Distinguish new mechanisms from those inherited from SAT-Accel and identify the specific contribution beyond existing conversion and reuse mechanisms. Test H3.}
+% TODO (for later): \draftnote{Add a dedicated related-work section comparing accelerator-interface systems such as DMX and AccelFlow, neurosymbolic architectures, and incremental SAT/state-reuse techniques. Distinguish new mechanisms from those inherited from SAT-Accel and identify the specific contribution beyond existing conversion and reuse mechanisms. Test H3.}
 
-\draftnote{Evaluate a range of workloads beyond Sudoku, including autonomous-driving tasks combining neural perception and symbolic reasoning. For each, define neural outputs, symbolic inputs, reusable constraints, correctness criteria, and the required accelerator support.}
+% TODO (for later): \draftnote{Evaluate a range of workloads beyond Sudoku, including autonomous-driving tasks combining neural perception and symbolic reasoning. For each, define neural outputs, symbolic inputs, reusable constraints, correctness criteria, and the required accelerator support.}
