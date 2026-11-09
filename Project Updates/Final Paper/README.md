@@ -91,7 +91,6 @@ Its tasks are retained as local TODOs:
 | Task previously in VI-C | Current location |
 | --- | --- |
 | Workloads beyond Sudoku, including autonomous-driving tasks; define inputs, reusable constraints, and correctness | II-C: Hypotheses |
-| Test H3 | II-C: Hypotheses |
 | FIFO-depth and transfer-granularity sweeps | III-B: Hardware-Generated Delta |
 | Fixed workload matrix, correctness checks, configuration order, budget, raw data, repeats, uncertainty | V-A: Configurations and Measurement Protocol |
 | Controlled failure/boundary study | V-F: Correctness and Boundary Cases |
@@ -106,7 +105,7 @@ inference-path profiling, restoration pseudocode, and precise prior-work positio
   autonomous-driving tasks that combine neural perception with symbolic reasoning.
 - Replace interference-adjusted headline estimates with clean repeated runs;
   randomize configuration order and report uncertainty across runs.
-- Test H3; complete controlled FIFO-depth and transfer-granularity sweeps.
+- Complete controlled FIFO-depth and transfer-granularity sweeps.
 - Add a controlled failure/boundary case and document hang/timeout handling.
 - Quantify NVDLA/emulator logit differences and board ground-truth accuracy.
 - Archive final routed resources, timing reports, source revisions, and binary hashes.
