@@ -36,6 +36,9 @@ Hardware acceleration reduces computation time within individual pipeline stages
 \input{sections/implementation}
 \input{sections/evaluation}
 \input{sections/discussion}
+\subsection{Next Steps}
+Three extensions would sharpen these conclusions. First, we will restructure the neural stage so that it no longer masks the interface. All givens of a puzzle will be classified in a single NVDLA submission, ReasonLink will walk the resulting output tensor after one descriptor per puzzle rather than one per cell, and multiple output buffers will let NVDLA run ahead of the SAT-Accel tile without per-cell credit waits. These changes target the two costs that currently dominate, per-cell inference through the Linux runtime and per-cell CPU control, and will show whether hardware delta generation gains an advantage once conversion is no longer hidden behind inference. Second, we will replace the interference-adjusted estimates with clean repeated measurements: approximately three independent runs of each key configuration, executed in randomized order without network monitoring and reported with their variation across runs. These runs will establish whether the 0.17\% difference between CPU-generated and hardware-generated deltas exceeds run-to-run variation. Third, we will isolate the effect of computation placement with matched controls: a CPU-generated delta path that encodes each literal as soon as its classification completes, overlapping conversion with subsequent inference as ReasonLink does, and CPU and hardware paths that write update payloads of identical size. In the current comparison, the generation schedule and the payload (3,940 versus 2,948 bytes) differ along with placement; these controls will attribute any remaining difference to where the delta is generated.
+
 \input{sections/conclusion}
 
 \bibliographystyle{IEEEtran}
