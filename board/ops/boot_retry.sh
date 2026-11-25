@@ -11,11 +11,13 @@ FPGA_SCRIPT=${FPGA_SCRIPT:-$HOME/esp/socs/reasonlink-vcu118/fpga-script.sh}
 B=${RL_BACKUP:-}
 if [ -n "$B" ]; then
   E=$B/socgen_esp/esplink
-  load() { $E --reset && $E --brom -i $B/prom.bin && $E --dram -i $B/linux.bin && $E --reset; }
+  # esplink retries forever when the board never answers (2026-11-24): bound every step
+  load() { timeout 60 $E --reset && timeout 120 $E --brom -i $B/prom.bin \
+           && timeout 900 $E --dram -i $B/linux.bin && timeout 60 $E --reset; }
 else
   cd ~/esp/socs/reasonlink-vcu118 || exit 1
   E=./socgen/esp/esplink
-  load() { make fpga-run-linux; }
+  load() { timeout 1200 make fpga-run-linux; }
 fi
 say() { echo "$(date +%T) $*" >> $L; }
 seen_after() { tail -c +$(( $1 + 1 )) $U | grep -a -q -E "$2"; }
