@@ -18,7 +18,7 @@ ReasonLink measures that handoff and designs a data-movement-aware interface to 
 
 The proposal and P1 report are organized by milestone in [Project Updates](Project%20Updates/). [`PROGRESS.md`](PROGRESS.md) is the running log of results, decisions, and open issues.
 
-**Status:** P1 (infrastructure and baselines) is in progress. See the stage table in `PROGRESS.md`.
+**Status (2026-11-24):** ReasonLink runs end to end on a VCU118 (Ariane + NVDLA + SAT-Accel with the ReasonLink core); all 13 handoff configurations ran correctly on 100 board puzzles. P1, P2 and the P3 evaluation plan are done; Milestone 4 (repeated main results and ablations) is next. See `PROGRESS.md`.
 
 ## Repository layout
 

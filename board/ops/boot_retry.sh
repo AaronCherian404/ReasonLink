@@ -5,6 +5,9 @@
 # RL_BACKUP=<dir>: boot from a backup (esplink, prom.bin, linux.bin) instead of the
 # SoC folder, e.g. after the folder was reconfigured for another project.
 L=~/m2/boot_retry.log; U=~/m2/uart_live.log
+# Lab FPGA settings (FPGA_HOST, UART_*, ESPLINK_*, ...): sourced before any make/esplink
+FPGA_SCRIPT=${FPGA_SCRIPT:-$HOME/esp/socs/reasonlink-vcu118/fpga-script.sh}
+. "$FPGA_SCRIPT" || { echo "$(date +%T) cannot source $FPGA_SCRIPT" >> $L; exit 1; }
 B=${RL_BACKUP:-}
 if [ -n "$B" ]; then
   E=$B/socgen_esp/esplink

@@ -37,7 +37,9 @@ if ! grep -q '^ESP_DEFCONFIG' "$SOC/Makefile"; then
 fi
 # The lab's VCU118 (2026-11-02): hw_server, UART and ESPLink through the
 # gateways; the SoC's own Ethernet address is CONFIG_DSU_IP/ETH in esp_defconfig.
-# Each stays overridable from the environment (?=).
+# Each stays overridable from the environment (?=). fpga-script.sh exports the same
+# values; source it once per terminal before any board make target.
+ln -sfn "$HERE/socs/reasonlink-vcu118/fpga-script.sh" "$SOC/fpga-script.sh"
 for kv in FPGA_HOST=espdev XIL_HW_SERVER_PORT=3132 UART_IP=espdev UART_PORT=4331 SSH_IP=espgate \
           SSH_PORT=5508 ESPLINK_IP=128.59.22.75 ESPLINK_PORT=46314 LINUX_MAC=000A350746D0; do
   sed -i -E "s|^#? ?${kv%%=*} \?=.*|${kv%%=*} ?= ${kv#*=}|" "$SOC/Makefile"

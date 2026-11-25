@@ -6,6 +6,9 @@
 # esplink, prom.bin, linux.bin and rl_board_fix from the backup, not the SoC folder.
 L=~/m2/boot_retry.log
 : > $L
+# Lab FPGA settings (FPGA_HOST, UART_*, ESPLINK_*, ...): sourced before any make/esplink/vivado
+FPGA_SCRIPT=${FPGA_SCRIPT:-$HOME/esp/socs/reasonlink-vcu118/fpga-script.sh}
+. "$FPGA_SCRIPT" || { echo "$(date +%T) cannot source $FPGA_SCRIPT" >> $L; exit 1; }
 B=${RL_BACKUP:-}
 if [ -n "$B" ]; then
   P=$B/program.tcl; BIT=$B/top_rl.bit; FIX=$B/rl_board_fix
@@ -15,10 +18,10 @@ else
 fi
 # console logger (boot_retry.sh watches it); tmux session rlb, window uart
 tmux has-session -t rlb 2>/dev/null || tmux new-session -d -s rlb -n uart \
-  "while true; do socat -u TCP:espdev:4331 - >> ~/m2/uart_live.log; sleep 2; done"
+  "while true; do socat -u TCP:$UART_IP:$UART_PORT - >> ~/m2/uart_live.log; sleep 2; done"
 echo "$(date +%T) programming $BIT ($(md5sum < $BIT | cut -c1-8))" >> $L
 (cd ~/m2 && vivado -mode batch -nojournal -log ~/m2/program_rl_auto.log -source $P \
-   -tclargs espdev 3132 xcvu9p $BIT > /dev/null 2>&1)
+   -tclargs $FPGA_HOST $XIL_HW_SERVER_PORT xcvu9p $BIT > /dev/null 2>&1)
 grep -q "End of startup status: HIGH" ~/m2/program_rl_auto.log || { echo "$(date +%T) PROGRAM_FAILED" >> $L; exit 1; }
 sleep 5   # DDR calibration, as ESP's fpga-program
 ~/m2/boot_retry.sh || exit 1

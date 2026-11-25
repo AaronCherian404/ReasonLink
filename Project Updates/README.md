@@ -16,6 +16,10 @@ Project Updates/
 │   ├── neural-symbolic-p1.pdf
 │   ├── figures/                   diagrams, chart data, scripts, PDF/PNG exports
 │   └── build/                     report and figure auxiliary files
+├── P3 Evaluation Plan/
+│   ├── neural-symbolic-p3.tex     P3 report (course P3 template)
+│   ├── neural-symbolic-p3.pdf
+│   └── figures/                   pipeline diagram, generated result chart and script
 └── Final Paper/
     ├── neural-symbolic-final.tex  working final-paper draft
     ├── neural-symbolic-final.pdf  compiled draft
@@ -26,6 +30,7 @@ Project Updates/
 
 - [Project proposal](Project%20Proposal/neural-symbolic-proposal.pdf)
 - [P1: Exploration and Progress](P1%20Exploration%20and%20Progress/neural-symbolic-p1.pdf)
+- [P3: Evaluation Plan and Initial Results](P3%20Evaluation%20Plan/neural-symbolic-p3.pdf)
 - [Final paper: working draft](Final%20Paper/neural-symbolic-final.pdf)
 
 Each report folder includes its bibliography and the supplied `IEEEtran.cls`,

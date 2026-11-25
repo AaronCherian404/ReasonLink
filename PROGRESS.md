@@ -2,8 +2,17 @@
 
 Running record of what is built, what was decided, and what is blocked. Update at the end of every stage.
 
-**Current target:** P2: everything up to the VCU118 board run, without Vitis (v++/XRT), Vitis HLS only (see "P2 hardware plan"). P1 (Oct 19) is done.
-**Branch:** `p2` (also merged into `main`), pushed to `github.com/AaronCherian404/ReasonLink` (public). torino uses a clone of it at `~/ReasonLink`; ESP at `~/esp` (tag 2026.1.0).
+**Current target:** Milestone 4 (Dec 7): main results with repeats, ablations, a boundary case (plan fixed in the P3 report). P1, P2 and P3 are done.
+**Branch:** `main` only (`p2` was merged and deleted on 2026-11-24), pushed to `github.com/AaronCherian404/ReasonLink` (public). torino uses a clone at `~/ReasonLink` (still on the old `p2` branch with local changes; switch it to `main`); ESP at `~/esp` (tag 2026.1.0).
+
+## Update 2026-11-24: P3 report, NVDLA driver finding
+
+- **P3 report** (`Project Updates/P3 Evaluation Plan/neural-symbolic-p3.tex`, course P3 template, 2 pages): fixed evaluation (workload, held-out puzzles 100-199 and SAT-Accel's benchmark CNFs, baselines B1 faithful / B2 lean / B3 CPU delta, quality + systems metrics, 3 randomized repeats without SSH), initial board results (H1 and H2 hold; CPU and hardware deltas tie), ablations A1-A5, boundary case (stale state under base reuse), Milestone 4 plan. Result figure generated from `results/p2/board/csv/board_summary.json` by `figures/generate-p3-figures.py`; pipeline diagram from the midterm slides. No midterm or P2 feedback was received.
+- **NVDLA is slowed by its driver build (finding, not yet measured).** ESP builds `opendla.ko` with `VERBOSE=1` (`sw/kmd/port/linux/Makefile`), so `dla_debug`/`dla_info` call `vprintk`: about 470 kernel-log messages per LeNet task (10 hardware layers, 16 interrupt events), formatted on the 78 MHz CPU even with `dmesg -n 1`. Every board number so far used this driver (79 ms per cell for about 2.3 M MACs). A `VERBOSE=0` build against the same kernel is in `~/m2/nvdla_quiet/kmd/port/linux/opendla.ko` (md5 9747ba5e; same vermagic; disassembly confirms `dla_debug` no longer calls `vprintk`). Other per-submit costs seen in the UMD: the dependency graph is reloaded from the loadable on every `submit()`; the emulator thread sleeps 500 ms when idle (irrelevant for the logits loadable, which has no EMU task).
+- **Driver profile run (prepared, not completed):** `board/ops/nvprof_run.sh` (torino) programs `top_rl.bit` from the 11-05 backup, boots, pushes the quiet driver and runs `board/ops/rl_nvprof.sh` on the board (stock vs quiet driver, 20 puzzles; delta, ReasonLink, faithful); `board/nvprof_summary.py` summarizes. The 2026-11-24 attempt programmed the FPGA, but `esplink --reset` got no EDCL reply (UDP 46314) in two attempts of about 5 min each; stopped for a manual connection check.
+- **`fpga-script.sh`:** the lab settings are now in `esp_soc/socs/reasonlink-vcu118/fpga-script.sh` (linked into the SoC folder by `install.sh`). Source it once per terminal before any board make target; the boot scripts source it too.
+- **Run commands** (`~/esp/socs/reasonlink-vcu118`, after `source fpga-script.sh`): `make fpga-program` programs impl_1's `top.bit` (SAT-Accel only); for ReasonLink use `(cd vivado && vivado -mode batch -nojournal -source program.tcl -tclargs $FPGA_HOST $XIL_HW_SERVER_PORT xcvu9p ../top_rl.bit)`; then `make fpga-run` or `make fpga-run-linux`; `make uart` in a second terminal.
+- **Next (Milestone 4):** measure the quiet driver; add a puzzle-offset option to `rl_board` for the held-out set; rebuild the Linux image with the layout fix and the quiet driver; 3 repeats of the 13 configurations; ablations A1 (matched CPU paths), A2, A4 (rotating NVDLA output buffers), A5 (push window); boundary study on the benchmark CNFs.
 
 ## Status at a glance (2026-11-05)
 
